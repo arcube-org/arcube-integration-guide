@@ -252,7 +252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../iframe/" class="md-nav__link">
+      <a href="../iframe.md" class="md-nav__link">
         
   
   
@@ -572,9 +572,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#customization-of-look-and-feel" class="md-nav__link">
+  <a href="#customization" class="md-nav__link">
     <span class="md-ellipsis">
-      Customization of Look and Feel
+      Customization
     </span>
   </a>
   
@@ -599,9 +599,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#security-considerations" class="md-nav__link">
+  <a href="#security" class="md-nav__link">
     <span class="md-ellipsis">
-      Security Considerations
+      Security
     </span>
   </a>
   
@@ -625,44 +625,33 @@
 
 <h1 id="widget-integration-embedded-solution">Widget Integration (Embedded Solution)</h1>
 <h2 id="overview">Overview</h2>
-<p>The Widget Integration allows Arcube’s ancillary services to be embedded directly into the airline’s or TMC’s booking flow, providing passengers with personalized ancillary offers during the booking process.<br />
-The widget is dynamically injected into the booking page and presents a seamless experience for passengers as they browse and select relevant ancillaries.</p>
-<hr />
+<p>The Widget Integration allows Arcube’s ancillary services to be embedded directly into your booking flow, providing passengers with personalized offers.</p>
 <h2 id="how-it-works">How It Works</h2>
 <ol>
-<li>The airline or TMC's front-end (such as the booking page) dynamically loads the Arcube widget once the passenger reaches a specified point in the booking flow (typically after the passenger details step).</li>
-<li>The front-end system sends a <strong>POST</strong> request to Arcube’s backend, providing contextual data about the passenger’s trip, such as flight segments, passenger type, and loyalty information.</li>
-<li>Arcube's backend processes this data and responds with a <strong>secure, signed widget URL</strong> that is embedded into the booking page.</li>
-<li>The passenger sees the widget, which displays a list of personalized ancillary services tailored to their needs.</li>
-<li>Once the passenger makes a selection, Arcube tracks the purchase and sends a confirmation to the airline or TMC.</li>
+<li>Your front-end dynamically loads the Arcube Widget after a specific booking step.</li>
+<li>Send trip context to Arcube’s backend via API.</li>
+<li>Arcube responds with a signed iFrame URL.</li>
+<li>Display the iFrame to the passenger.</li>
+<li>Track selections and confirm orders.</li>
 </ol>
-<hr />
-<h2 id="customization-of-look-and-feel">Customization of Look and Feel</h2>
-<p>Arcube offers the flexibility to fully customize the look and feel of the widget to match the partner’s branding.<br />
-This includes:
-- Colors<br />
-- Fonts<br />
-- Logo<br />
-- Overall visual identity  </p>
-<p>This ensures that ancillary services appear as a natural part of the partner’s existing booking flow, maintaining a consistent brand experience for the passenger.</p>
-<hr />
+<h2 id="customization">Customization</h2>
+<ul>
+<li>Colors</li>
+<li>Fonts</li>
+<li>Logo</li>
+</ul>
 <h2 id="benefits">Benefits</h2>
 <ul>
-<li><strong>Seamless User Experience</strong> – Integrated directly into the booking flow, offering a smooth, uninterrupted experience for the passenger.  </li>
-<li><strong>Custom Branding</strong> – Tailored to reflect the airline or TMC’s branding, ensuring it feels like a native part of their platform.  </li>
-<li><strong>Real-Time Personalization</strong> – Arcube’s AI engine dynamically generates personalized ancillary offers based on the passenger’s details, enhancing conversion rates.</li>
+<li>Seamless user experience</li>
+<li>Real-time personalization</li>
+<li>Fully branded</li>
 </ul>
-<hr />
 <h2 id="payment-flow">Payment Flow</h2>
-<p>In the widget integration:
-- The <strong>airline or TMC</strong> handles payment processing for ancillaries.<br />
-- Once the passenger completes their purchase, the airline or TMC pays Arcube for the ancillaries sold.</p>
-<hr />
-<h2 id="security-considerations">Security Considerations</h2>
+<p>You process payments; Arcube invoices for ancillaries.</p>
+<h2 id="security">Security</h2>
 <ul>
-<li><strong>JWT tokens or HMAC signatures</strong> are used to validate the integrity of requests.  </li>
-<li><strong>HTTPS encryption</strong> ensures secure transmission of data.  </li>
-<li>Only <strong>anonymized data</strong> is passed to Arcube, ensuring passenger privacy.</li>
+<li>HTTPS encryption</li>
+<li>JWT/HMAC request validation</li>
 </ul>
 
 
