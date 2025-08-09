@@ -23,33 +23,34 @@ This data is passed to the **tenant’s back-end**, which must call the [Ingest 
 
 ---
 
-## 2. Widget Activation
+## 2. Widget Activation, Authentication & Rendering
 
-The widget should be present and mounted in the relevant booking step (e.g., Extras page) inside the IBE.
+### Widget Authentication
+Arcube widgets are designed to be embedded directly into tenant (e.g., airline) websites without requiring any backend integration from the partner side. To ensure secure communication and prevent unauthorized use, the following authentication flow is used:
 
----
-
-## 3. Widget Rendering
-
-At render time, the widget requires `tenantId` and `sessionId`. These must be passed to the widget using one of the following methods:
-
-### Option A – NPM Package
-
+### Authentication Flow
+When the airline embeds the widget, they reference a dynamic bootstrap script:
 ```jsx
-<ArcubeWidget tenantId={tenantId} sessionId={sessionId} />
+<script src="https://arcube.com/widget-loader.js?clientId=airline123"></script>
 ```
-### Option B – Script Package
-```jsx
-<script>
-  window.arcubeConfig = {
-    tenantId: "YOUR_TENANT_ID",
-    sessionId: "CLIENT_SESSION_ID"
-  };
-</script>
-<script src="https://arcube-cdn.com/arcube-widget.js" async></script>
-<div id="arcube-widget"></div>
-```
-## 4. Ancillary Selection Event
+
+This script is served dynamically by Arcube’s backend, which:
+
+- Validates the request origin (via Origin or Referer headers).
+
+- Generates a short-lived, signed JWT initialization token (initToken) specific to the client and request.
+
+- Injects the main widget script (widget.js) into the page along with the initToken.
+
+####Upon initialization, the widget:
+
+- Sends the initToken and clientId to the Arcube backend to request a short-lived session token.
+
+- If the initToken is valid (signature, expiration, origin match), the session token is issued.
+
+- The session token is then used to authenticate subsequent API calls (e.g., order creation).
+
+## 2. Ancillary Selection Event
 When a user selects an ancillary product in the widget, the widget emits an event to the parent window. The front-end listens and handles this event.
 ```json 
 {
@@ -67,7 +68,7 @@ When a user selects an ancillary product in the widget, the widget emits an even
   ]
 }
 ```
-## 5. Proceed to Payment (Optional)
+## 3. Proceed to Payment (Optional)
 When the user proceeds to payment, the IBE may:
 
 - Close the widget, or
@@ -111,7 +112,7 @@ When the user proceeds to payment, the IBE may:
   ]
 }
 ```
-## 6. Tenant Confirms Payment to Arcube
+## 4. Tenant Confirms Payment to Arcube
 Once the payment is captured, the tenant must notify Arcube to finalize booking with the vendors.
 
 ####Request Payload
@@ -170,7 +171,6 @@ Arcube offers full visual customization of the widget to match the partner’s b
 This ensures the widget feels like a native part of the partner’s IBE.
 
 ###Security Considerations
-- Backend-to-Backend Communication: All sensitive data exchanges happen server-to-server.
 
 - JWT Tokens or HMAC Signatures: Used to validate authenticity and prevent tampering.
 

@@ -42,6 +42,7 @@ By using one or more of these integration methods, travel providers can maximize
 ---
 
 ## Contents
-- [Integration Methods](integration-methods/iframe.md)
+- [Business Context](arcube-product-overview.md)
+- [Integration Methods](integration-methods/widget.md)
 - [Integration Details](integration-details/overview.md)
 

@@ -1,6 +1,8 @@
 # Essential API Calls
 Below are the essential API calls which allow interaction with Arcube AI Recommendation Engine. For each of the integration methods further below, we mention what api calls are required.
-
+## Bearer Token
+All of the calls require a valid beared token which is given after a successful call to our authorise endpoint. The required credentials are client-id and client-secret which
+will be provided to you by Arcube.
 ## Ingestion of Passenger Data
 ### Description: This is used in order to insert specific client data into Arcube. 
 !!! note "Request URL Parameter"

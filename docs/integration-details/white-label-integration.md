@@ -48,7 +48,7 @@ After successful purchase:
 
 ## Customization of Look and Feel
 
-The white-label site is fully customized to reflect the partner’s branding, including:
+The white-label site is fully customized to reflect the tenant’s branding, including:
 
 - ✅ Brand colors
 - ✅ Fonts
