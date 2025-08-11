@@ -11,6 +11,10 @@
         <link rel="canonical" href="https://arcube-org.github.io/arcube-integration-guide/integration-methods/widget/">
       
       
+        <link rel="prev" href="../../arcube-platforms/">
+      
+      
+        <link rel="next" href="../email/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -18,7 +22,7 @@
     
     
       
-        <title>Widget Integration (Embedded Solution) - Arcube Integration Guide</title>
+        <title>Widget Integration - Arcube Integration Guide</title>
       
     
     
@@ -60,7 +64,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#widget-integration-embedded-solution" class="md-skip">
+        <a href="#npm-package-or-widget-integration-embedded-solution" class="md-skip">
           Skip to content
         </a>
       
@@ -96,7 +100,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Widget Integration (Embedded Solution)
+              Widget Integration
             
           </span>
         </div>
@@ -213,24 +217,70 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../product-overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Product Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arcube-platforms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tenant Dashboard and Arcube Platform
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
-    Integration Methods
+    Integration Methods Outline
     
   </span>
   
@@ -238,10 +288,10 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
-            Integration Methods
+            Integration Methods Outline
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -249,20 +299,116 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../iframe.md" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Widget Integration
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
-    iFrame Integration
+    Widget Integration
     
   </span>
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      How It Works
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Customization
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benefits" class="md-nav__link">
+    <span class="md-ellipsis">
+      Benefits
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#payment-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Payment Flow
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -298,12 +444,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../white-label/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    White-Label Website
+    API Integration
     
   </span>
   
@@ -321,12 +467,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/" class="md-nav__link">
+      <a href="../white-label/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    API Integration
+    (POS) White-Label Website
     
   </span>
   
@@ -359,15 +505,15 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
-    Integration Details
+    Technical & Integration Details
     
   </span>
   
@@ -375,10 +521,10 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
-            Integration Details
+            Technical & Integration Details
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -481,12 +627,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../../integration-details/white-label-integration/" class="md-nav__link">
+      <a href="../../integration-details/api-integration/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    White-Label Integration
+    API Integration
     
   </span>
   
@@ -504,12 +650,58 @@
   
   
     <li class="md-nav__item">
-      <a href="../../integration-details/api-integration/" class="md-nav__link">
+      <a href="../../integration-details/white-label-integration/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    API Integration
+    (POS) White-Label Integration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration-details/api-versioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API Versioning
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration-details/scalability-security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Scalability & Security
     
   </span>
   
@@ -623,15 +815,16 @@
 
 
 
-<h1 id="widget-integration-embedded-solution">Widget Integration (Embedded Solution)</h1>
+<h1 id="npm-package-or-widget-integration-embedded-solution">NPM Package or Widget Integration (Embedded Solution)</h1>
 <h2 id="overview">Overview</h2>
-<p>The Widget Integration allows Arcube’s ancillary services to be embedded directly into your booking flow, providing passengers with personalized offers.</p>
+<p>In this section we outline how the widget works, please note that if the tenant technology allow it, we can also provide an NPM package which gives to the tenant more control and transparency instead of the Widget. </p>
+<p>The widget Integration allows Arcube’s ancillary services to be embedded directly into the airline’s or TMC’s booking flow, providing passengers with personalized ancillary offers during the booking process. The widget is dynamically injected into the booking page and presents a seamless experience for passengers as they browse and select relevant ancillaries. The typical insertion point is after collecting passenger information and before payment selection in the booking flow.</p>
 <h2 id="how-it-works">How It Works</h2>
 <ol>
+<li>Your back end sends anonymyzed trip data to Arcube via API.</li>
 <li>Your front-end dynamically loads the Arcube Widget after a specific booking step.</li>
-<li>Send trip context to Arcube’s backend via API.</li>
-<li>Arcube responds with a signed iFrame URL.</li>
-<li>Display the iFrame to the passenger.</li>
+<li>Arcube responds with a signed Widget.</li>
+<li>Display the Widget to the passenger.</li>
 <li>Track selections and confirm orders.</li>
 </ol>
 <h2 id="customization">Customization</h2>
