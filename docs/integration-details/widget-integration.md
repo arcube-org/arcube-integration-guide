@@ -7,7 +7,7 @@ Depending on whether the airline's IBE (Internet Booking Engine) uses an NPM-com
 - **NPM Package**
 - **JavaScript Script Injection**
 
-### Sample Activity Diagram
+### Sample Sequence Diagram
 
 ![](../images/ArcubeiFrame-Widget-Drawio.png)
 
