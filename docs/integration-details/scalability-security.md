@@ -5,14 +5,15 @@ through a robust architecture powered by **AWS Lambda**, **AWS API
 Gateway**, and **Azure MongoDB Atlas**. These technologies ensure that
 the platform can handle high volumes of traffic, maintain operational
 reliability, and provide strong security for sensitive data. Below, we
-outline how each component contributes to Arcube\'s scalability and
+outline how each component contributes to Arcube's scalability and
 security, along with the best practices implemented to ensure high
 performance and data protection.
 
 ## Scalability
 
-**AWS Lambda\
-** Arcube leverages **AWS Lambda** for serverless computing, ensuring
+**AWS Lambda**
+
+Arcube leverages **AWS Lambda** for serverless computing, ensuring
 that the platform automatically scales to meet demand without the need
 for manual intervention. Lambda's inherent scalability allows Arcube to
 handle high traffic volumes efficiently, processing millions of requests
@@ -24,12 +25,13 @@ with zero downtime.
     > functions are invoked in parallel, maintaining high performance
     > even during peak times.
 
--   **Concurrency Control**: Lambda\'s concurrency feature ensures that
+-   **Concurrency Control**: Lambda's concurrency feature ensures that
     > multiple requests can be processed simultaneously, providing
     > seamless scaling across thousands of concurrent users.
 
-**AWS API Gateway\
-** **AWS API Gateway** is the gateway for managing, monitoring, and
+**AWS API Gateway**
+
+**AWS API Gateway** is the gateway for managing, monitoring, and
 scaling Arcube's API services. API Gateway supports automatic scaling,
 ensuring that Arcube's APIs can handle any amount of incoming traffic
 without performance degradation.
@@ -46,8 +48,9 @@ without performance degradation.
     > APIs** through API Gateway, ensuring low-latency access to APIs
     > for users across the globe by utilizing **Amazon CloudFront**.
 
-**Azure MongoDB Atlas\
-** Arcube uses **Azure MongoDB Atlas** for its data storage needs,
+**Azure MongoDB Atlas**
+
+Arcube uses **Azure MongoDB Atlas** for its data storage needs,
 taking advantage of the platform's **auto-scaling capabilities** and
 **global distribution** to ensure that data is always available and
 quickly accessible.
@@ -67,7 +70,8 @@ quickly accessible.
 
 ## Security
 
-**AWS Lambda Security\
+**AWS Lambda Security** 
+
 ** Security is built into the foundation of **AWS Lambda** with several
 built-in features that ensure data protection and minimize
 vulnerabilities.
@@ -92,8 +96,9 @@ vulnerabilities.
     > monitor Lambda function execution and logs, ensuring that any
     > issues or suspicious activity are detected in real time.
 
-**AWS API Gateway Security\
-** Arcube has implemented **AWS API Gateway** as the primary entry point
+**AWS API Gateway Security**
+
+Arcube has implemented **AWS API Gateway** as the primary entry point
 for managing all external API requests, with advanced security features
 to safeguard the platform and its data.
 
@@ -116,8 +121,9 @@ to safeguard the platform and its data.
     > Policies**, specifying which IP addresses and VPCs can access the
     > APIs, further tightening security.
 
-**Azure MongoDB Atlas Security\
-** **Azure MongoDB Atlas** provides robust security features to protect
+**Azure MongoDB Atlas Security** 
+
+**Azure MongoDB Atlas** provides robust security features to protect
 sensitive data and ensure compliance with data protection regulations.
 
 -   **Encryption**: All sensitive data in **MongoDB Atlas** is

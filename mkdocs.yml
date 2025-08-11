@@ -10,15 +10,15 @@ nav:
   - Integration Methods Outline:
       - Widget Integration: integration-methods/widget.md
       - Email Integration: integration-methods/email.md
-      - (POS) White-Label Website: integration-methods/white-label.md
       - API Integration: integration-methods/api.md
+      - (POS) White-Label Website: integration-methods/white-label.md
   - Technical & Integration Details:
       - Overview: integration-details/overview.md
       - Essential API Calls: integration-details/essential-api-calls.md
       - Widget Integration: integration-details/widget-integration.md
       - Email Integration: integration-details/email-integration.md
+      - API Integration: integration-details/api-integration.md
       - (POS) White-Label Integration: integration-details/white-label-integration.md
-      - API Integration: api-integration.md
       - API Versioning: integration-details/api-versioning.md
       - Scalability & Security: integration-details/scalability-security.md
 

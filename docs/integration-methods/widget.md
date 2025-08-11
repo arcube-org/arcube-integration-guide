@@ -7,10 +7,10 @@ The widget Integration allows Arcube’s ancillary services to be embedded direc
 
 
 ## How It Works
-1. Your front-end dynamically loads the Arcube Widget after a specific booking step.
-2. Send trip context to Arcube’s backend via API.
-3. Arcube responds with a signed iFrame URL.
-4. Display the iFrame to the passenger.
+1. Your back end sends anonymyzed trip data to Arcube via API.
+2. Your front-end dynamically loads the Arcube Widget after a specific booking step.
+3. Arcube responds with a signed Widget.
+4. Display the Widget to the passenger.
 5. Track selections and confirm orders.
 
 ## Customization

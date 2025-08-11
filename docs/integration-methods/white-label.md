@@ -1,13 +1,11 @@
 # White‑Label Website Integration (Point of Sale)
 
 ## Overview
-The White‑Label Website Integration is a **fully branded platform** where passengers can purchase ancillary services after being directed via a link from the **Widget** or **Email** integration.  
-This method provides a dedicated, seamless **Point of Sale** for ancillary products.
-
+The White‑Label Website Integration is a **fully branded platform** where passengers can purchase ancillary services after being directed via a link from Email integration or alternate communication methods such as SMS & WhatsApp. This method provides a dedicated, seamless **Point of Sale** for ancillary products.
 ---
 
 ## How It Works
-1. The Widget or Email directs the passenger to the **White‑Label Website**.
+1. The Email directs the passenger to the **White‑Label Website**.
 2. The site is fully branded to match the airline or TMC’s **visual identity**.
 3. Arcube’s AI curates a **personalized list of relevant ancillary services** based on:
    - Passenger trip details  
