@@ -1,21 +1,26 @@
 site_name: Arcube Integration Guide
+site_url: https://arcube-org.github.io/arcube-integration-guide/
 theme:
   name: material
 
 nav:
   - Home: index.md
-  - Integration Methods:
-      - iFrame Integration: integration-methods/iframe.md
+  - Product Overview: product-overview.md
+  - Tenant Dashboard and Arcube Platform: arcube-platforms.md
+  - Integration Methods Outline:
+      - Widget Integration: integration-methods/widget.md
       - Email Integration: integration-methods/email.md
-      - White-Label Website: integration-methods/white-label.md
+      - (POS) White-Label Website: integration-methods/white-label.md
       - API Integration: integration-methods/api.md
-  - Integration Details:
+  - Technical & Integration Details:
       - Overview: integration-details/overview.md
       - Essential API Calls: integration-details/essential-api-calls.md
       - Widget Integration: integration-details/widget-integration.md
       - Email Integration: integration-details/email-integration.md
-      - White-Label Integration: integration-details/white-label-integration.md
-      - API Integration: integration-details/api-integration.md
+      - (POS) White-Label Integration: integration-details/white-label-integration.md
+      - API Integration: api-integration.md
+      - API Versioning: integration-details/api-versioning.md
+      - Scalability & Security: integration-details/scalability-security.md
 
 markdown_extensions:
   - admonition
