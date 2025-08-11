@@ -7,6 +7,12 @@ Depending on whether the airline's IBE (Internet Booking Engine) uses an NPM-com
 - **NPM Package**
 - **JavaScript Script Injection**
 
+### Sample Activity Diagram
+
+![](../images/ArcubeiFrame-Widget-Drawio.png)
+
+<small> Figure : Example Process and required calls for integrated with Arcube using the direct integration method </small>
+
 The steps below describe how to integrate the Arcube Widget into the tenant's IBE.
 
 ---
@@ -31,16 +37,14 @@ Arcube widgets are designed to be embedded directly into tenant (e.g., airline) 
 ### Authentication Flow
 When the airline embeds the widget, they reference a dynamic bootstrap script:
 ```jsx
-<script src="https://arcube.com/widget-loader.js?clientId=airline123"></script>
+<script src="https://tenantx.arcube.com/widget-loader.js"></script>
 ```
-
-This script is served dynamically by Arcube’s backend, which:
 
 - Validates the request origin (via Origin or Referer headers).
 
 - Generates a short-lived, signed JWT initialization token (initToken) specific to the client and request.
 
-- Injects the main widget script (widget.js) into the page along with the initToken.
+- Uses the token to make all subsescuent calls to Arcube's backend.
 
 ####Upon initialization, the widget:
 

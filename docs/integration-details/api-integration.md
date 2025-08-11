@@ -5,7 +5,11 @@
 The API Integration method allows airlines, TMCs, and other travel service providers to directly integrate Arcube’s ancillary recommendation engine into their own platforms using a **RESTful API**.
 
 This method provides maximum control and flexibility, enabling you to offer personalized ancillaries during any phase of the user journey.
+### Sample Activity Diagram
 
+![](../images/API-Integration-DrawingIO.png)
+
+<small> Figure : Example Process and required calls for integrated with Arcube using the direct integration method </small>
 ---
 
 ## 1. API Request
