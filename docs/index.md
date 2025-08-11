@@ -48,7 +48,7 @@ Section **Integation Methods** below briefly talks about the different integrati
 Section **Integration Details** further below gives exact integration requirements in order to integrate with one or methods described above.
 
 ## Integration Overview Diagram
-![Arcube Integration Diagram](images/arcube-integration-diagram.png)
+![Arcube Integration Diagram](images/arcube-integration-diagram.jpg)
 
 
 ## Choosing the Right Integration Method
