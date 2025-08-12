@@ -2,74 +2,78 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/arcube-platforms/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/arcube-product-overview-old/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/arcube-product-overview/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
+    </url>
+    <url>
+         <loc>https://arcube-org.github.io/arcube-integration-guide/glossary/</loc>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/product-overview/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/images/arcube-product-overview/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/integration-details/api-integration/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/integration-details/api-versioning/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/integration-details/email-integration/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/integration-details/essential-api-calls/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/integration-details/overview/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/integration-details/scalability-security/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/integration-details/white-label-integration/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/integration-details/widget-integration/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/integration-methods/api/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/integration-methods/email/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/integration-methods/white-label/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
     <url>
          <loc>https://arcube-org.github.io/arcube-integration-guide/integration-methods/widget/</loc>
-         <lastmod>2025-08-11</lastmod>
+         <lastmod>2025-08-12</lastmod>
     </url>
 </urlset>
