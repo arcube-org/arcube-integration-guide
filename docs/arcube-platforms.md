@@ -43,10 +43,6 @@ For example, if a passenger needs lounge access at a specific airport, the AI wi
 Arcube is continually adding new suppliers to improve service quality, expand coverage,
 increase affordability, and secure the best margins for the airline
 
-
-Arcube is continually adding new suppliers to improve service quality,
-expand coverage,increase affordability, and secure the best margins for the airline
-
 ### Other Features on Arcube's Tenant Dashboard
 
 #### Sales Tracking
@@ -113,14 +109,11 @@ through:
 
 ##### Process:
 
-1.  The tenant (Merchant of Record) collects the full payment directly
-    > from passengers.
+1.  The tenant (Merchant of Record) directly collects the payment in full from passengers (flight + all ancillaries).
 
-2.  On a bi-weekly/monthly basis, the tenant remits Arcube's share +
-    > ancillary costs.
+2.  On a bi-weekly/monthly basis, the tenant remits ancillary costs to Arcube.
 
-3.  Arcube then disburses payments promptly to the relevant ancillary
-    > suppliers.
+3.  Arcube then disburses payments to the relevant ancillary suppliers promptly.
 
 **Note:** If Tenant's payment processor supports split payments, Arcube
 can enable settlement at source, where each party receives their share directly at
@@ -156,7 +149,7 @@ accurate.
 
 ## ![](images/invoicing-2.png)
 
-<small>Figure : Example Invoicing and Payments Feature within Arcube\'s Airline
+<small>Figure : Example Invoicing and Payments Feature within Arcube's Airline
 Dashboard</small>
 
 ### Accepted Payment Methods

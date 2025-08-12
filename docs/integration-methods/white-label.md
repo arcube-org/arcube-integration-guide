@@ -1,6 +1,7 @@
 # White‑Label Website Integration (Point of Sale)
 
 ## Overview
+
 The White‑Label Website Integration is a **fully branded platform** where passengers can purchase ancillary services after being directed via a link from Email integration or alternate communication methods such as SMS & WhatsApp. This method provides a dedicated, seamless **Point of Sale** for ancillary products.
 ---
 

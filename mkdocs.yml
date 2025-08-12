@@ -5,6 +5,7 @@ theme:
 
 nav:
   - Home: index.md
+  - Glossary: glossary.md
   - Product Overview: product-overview.md
   - Tenant Dashboard and Arcube Platform: arcube-platforms.md
   - Integration Methods Outline:

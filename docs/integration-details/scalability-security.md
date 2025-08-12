@@ -102,76 +102,44 @@ Arcube has implemented **AWS API Gateway** as the primary entry point
 for managing all external API requests, with advanced security features
 to safeguard the platform and its data.
 
--   **Authentication & Authorization**: Arcube uses **AWS Cognito**,
-    > **Lambda authorizers**, and **IAM roles** to authenticate and
-    > authorize all API requests. This ensures that only authorized
-    > clients can access the platform's resources.
+-   **Authentication & Authorization**: Arcube uses **AWS Cognito**, **Lambda authorizers**, and **IAM roles** to authenticate and authorize all API requests. This ensures that only authorized clients can access the platform's resources.
 
--   **WAF (Web Application Firewall)**: Arcube integrates **AWS WAF**
-    > with API Gateway to filter out malicious traffic, such as **SQL
-    > injections** or **cross-site scripting (XSS)** attacks, before it
-    > reaches the application.
+-   **WAF (Web Application Firewall)**: Arcube integrates **AWS WAF** with API Gateway to filter out malicious traffic, such as **SQL injections** or **cross-site scripting (XSS)** attacks, before it reaches the application.
 
--   **Rate Limiting**: API Gateway enforces **rate limiting** and
-    > **throttling** to control the number of requests a user can make
-    > in a given time period, protecting against DoS (Denial of Service)
-    > attacks and ensuring fair usage across all clients.
+-   **Rate Limiting**: API Gateway enforces **rate limiting** and **throttling** to control the number of requests a user can make in a given time period, protecting against DoS (Denial of Service) attacks and ensuring fair usage across all clients.
 
--   **Access Control**: Arcube defines strict **API Gateway Resource
-    > Policies**, specifying which IP addresses and VPCs can access the
-    > APIs, further tightening security.
+-   **Access Control**: Arcube defines strict **API Gateway Resource Policies**, specifying which IP addresses and VPCs can access the APIs, further tightening security.
 
 **Azure MongoDB Atlas Security** 
 
 **Azure MongoDB Atlas** provides robust security features to protect
 sensitive data and ensure compliance with data protection regulations.
 
--   **Encryption**: All sensitive data in **MongoDB Atlas** is
-    > **encrypted at rest** using **AES-256 encryption** and **in
-    > transit** using **TLS**. This guarantees that sensitive
-    > information is protected both while stored and during
-    > transmission.
+-   **Encryption**: All sensitive data in **MongoDB Atlas** is **encrypted at rest** using **AES-256 encryption** and **in transit** using **TLS**. This guarantees that sensitive information is protected both while stored and during transmission.
 
--   **Role-Based Access Control (RBAC)**: Arcube uses **RBAC** in
-    > MongoDB Atlas to control access to specific data based on user
-    > roles, ensuring that only authorized personnel or services can
-    > access sensitive data.
+-   **Role-Based Access Control (RBAC)**: Arcube uses **RBAC** in MongoDB Atlas to control access to specific data based on user roles, ensuring that only authorized personnel or services can access sensitive data.
 
--   **Network Isolation**: MongoDB Atlas provides **network isolation**
-    > using **IP whitelisting**, ensuring that only trusted IPs can
-    > connect to the database, adding an extra layer of security.
+-   **Network Isolation**: MongoDB Atlas provides **network isolation** using **IP whitelisting**, ensuring that only trusted IPs can connect to the database, adding an extra layer of security.
 
--   **Auditing**: Arcube enables **audit logging** to track all access
-    > to MongoDB Atlas, ensuring full transparency and allowing for
-    > quick detection of any unauthorized access.
+-   **Auditing**: Arcube enables **audit logging** to track all access to MongoDB Atlas, ensuring full transparency and allowing for quick detection of any unauthorized access.
 
 **Best Practices for Security**:
 
 1.  **End-to-End Encryption**:
 
-    -   Arcube enforces **encryption** of sensitive data throughout its
-        > lifecycle, ensuring both **data in transit** and **data at
-        > rest** are encrypted.
+    -   Arcube enforces **encryption** of sensitive data throughout its lifecycle, ensuring both **data in transit** and **data at rest** are encrypted.
 
 2.  **Access Control**:
 
-    -   Arcube adheres to **least privilege access** principles,
-        > ensuring that services and users only have the minimum
-        > necessary permissions to perform their tasks.
+    -   Arcube adheres to **least privilege access** principles, ensuring that services and users only have the minimum necessary permissions to perform their tasks.
 
 3.  **Secure API Access**:
 
-    -   **AWS API Gateway** and **AWS Lambda** are configured to ensure
-        > that only **authenticated and authorized requests** are
-        > allowed, preventing unauthorized access to sensitive data or
-        > services.
+    -   **AWS API Gateway** and **AWS Lambda** are configured to ensure that only **authenticated and authorized requests** are allowed, preventing unauthorized access to sensitive data or services.
 
 4.  **Constant Monitoring**:
 
-    -   Arcube continuously monitors system performance and security
-        > metrics using **CloudWatch** and **AWS GuardDuty**, and is
-        > alerted to any potential security breaches or performance
-        > degradation.
+    -   Arcube continuously monitors system performance and security metrics using **CloudWatch** and **AWS GuardDuty**, and is alerted to any potential security breaches or performance degradation.
 
 ## Data Location
 
