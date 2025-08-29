@@ -1,0 +1,95 @@
+# Authentication
+
+Arcube APIs use **OAuth2 Client Credentials** for secure server-to-server access.  
+All requests to protected endpoints require a valid **Bearer token**.
+
+---
+
+## 1. Token Endpoint
+
+**POST** `/v1/oauth/token`
+
+### Request
+```http
+POST /v1/oauth/token
+Content-Type: application/json
+
+{
+  "grant_type": "client_credentials",
+  "client_id": "<your-client-id>",
+  "client_secret": "<your-client-secret>"
+}
+```
+
+### Response
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6...",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}
+```
+
+---
+
+## 2. Using the Token
+
+Include the token in the request headers:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+### Token Lifetime
+- Default expiry: **3600 seconds (1 hour)**
+- Clock skew tolerance: **±60 seconds**
+- On expiry, API returns `401 UNAUTHENTICATED`
+- Clients should cache tokens and refresh when near expiry
+
+---
+
+## 3. Widget Authentication Flow
+
+For **front-end widget integrations**, Arcube provides a secure, domain-bound flow:
+
+1. **Init Token**
+   - Short-lived (≈ 60s) JWT issued at widget load
+   - Bound to tenant domain via `Origin` / `Referer`
+   - Prevents unauthorized embedding
+
+2. **Session Token**
+   - Exchanged automatically from init token
+   - Lifetime: ~15 minutes (sliding refresh supported)
+   - Used by widget for all subsequent API calls
+
+This ensures no secrets are exposed in the browser.
+
+---
+
+## 4. Best Practices
+
+- Always use **HTTPS** (TLS 1.2+)
+- **Do not embed** client secrets in front-end code
+- Use **short-lived tokens** for widgets, **longer-lived tokens** server-side
+- Refresh tokens proactively before expiry
+- Request separate credentials for **sandbox** and **production**
+
+---
+
+## 5. Error Responses
+
+Authentication errors follow the [Error Model](error-model.md):
+
+```json
+{
+  "error": {
+    "code": "UNAUTHENTICATED",
+    "message": "The access token is expired or invalid.",
+    "requestId": "req_abc123"
+  }
+}
+```
+
+### Common Codes
+- `401 UNAUTHENTICATED` — token missing or expired
+- `403 PERMISSION_DENIED` — token valid but insufficient scope

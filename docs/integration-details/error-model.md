@@ -1,0 +1,150 @@
+# Error Model
+
+Arcube returns errors in a **single, consistent JSON shape** across all endpoints.  
+Use the `code` to branch logic, `message` for operators, and `details[]` for field-level issues.
+
+## Structure
+
+```json
+{
+  "error": {
+    "code": "INVALID_ARGUMENT",
+    "message": "segments[1].departureTime must be in the future",
+    "details": [
+      { "field": "segments[1].departureTime", "reason": "PAST_DATE" }
+    ],
+    "requestId": "req_3f8b1a"
+  }
+}
+```
+
+### Fields
+- **code** *(string, required)* — Stable, machine-readable error identifier.
+- **message** *(string, required)* — Human-readable description (English).
+- **details** *(array, optional)* — Fine-grained context (e.g., invalid fields, constraints).
+  - `field` *(string, optional)* — JSONPath-like reference to the problematic field.
+  - `reason` *(string, optional)* — Brief reason tag (e.g., `PAST_DATE`, `MISSING`, `OUT_OF_RANGE`).
+- **requestId** *(string, required)* — ID for support/debug; also returned as the `X-Request-Id` header.
+
+---
+
+## HTTP Status Mapping
+
+| HTTP | When                                                                 | Typical `code`                     | Retry? |
+|-----:|----------------------------------------------------------------------|------------------------------------|:-----:|
+| 400  | Malformed/invalid payload                                            | `INVALID_ARGUMENT`                 |  No   |
+| 401  | Missing/expired/invalid token                                        | `UNAUTHENTICATED`                  |  No   |
+| 403  | Authenticated but not allowed (scope/tenant/policy)                  | `PERMISSION_DENIED`                |  No   |
+| 404  | Resource not found                                                   | `NOT_FOUND`                        |  No   |
+| 409  | Idempotency or state conflict                                        | `CONFLICT`                         |  No   |
+| 422  | Semantically invalid (business rule failed)                          | `UNPROCESSABLE_ENTITY`             |  No   |
+| 429  | Rate limit exceeded                                                  | `RATE_LIMIT_EXCEEDED`              | Later |
+| 5xx  | Transient server/vendor failure                                      | `INTERNAL` / `UNAVAILABLE`         | Later |
+
+**Rate limit headers:** `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After`  
+**Request correlation header:** `X-Request-Id`
+
+---
+
+## Canonical Examples
+
+### 1) Authentication Failure
+```json
+{
+  "error": {
+    "code": "UNAUTHENTICATED",
+    "message": "The access token is expired or invalid.",
+    "requestId": "req_7c21fe"
+  }
+}
+```
+
+### 2) Validation Error (400)
+```json
+{
+  "error": {
+    "code": "INVALID_ARGUMENT",
+    "message": "One or more fields are invalid.",
+    "details": [
+      { "field": "passengers[0].email", "reason": "INVALID_EMAIL" },
+      { "field": "segments[1].departureTime", "reason": "PAST_DATE" }
+    ],
+    "requestId": "req_b1a9c0"
+  }
+}
+```
+
+### 3) Business Rule (422)
+```json
+{
+  "error": {
+    "code": "UNPROCESSABLE_ENTITY",
+    "message": "Selected lounge is not available for the given time window.",
+    "details": [
+      { "field": "ancillaryIds[0]", "reason": "NOT_AVAILABLE" }
+    ],
+    "requestId": "req_9f0d33"
+  }
+}
+```
+
+### 4) Idempotency Conflict (409)
+```json
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "Idempotency-Key was reused with a different payload.",
+    "details": [
+      { "field": "Idempotency-Key", "reason": "PAYLOAD_MISMATCH" }
+    ],
+    "requestId": "req_5021aa"
+  }
+}
+```
+
+### 5) Rate Limit (429)
+```json
+{
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Too many requests. Please retry after the indicated delay.",
+    "requestId": "req_d0dd21"
+  }
+}
+```
+
+---
+
+## Client Guidance
+
+- **Branch on `code`**, not on the `message`.
+- **Include `Idempotency-Key`** on all mutation endpoints and **never retry** without it.
+- **Retry with backoff** only on:
+  - `429 RATE_LIMIT_EXCEEDED` (respect `Retry-After`)
+  - `5xx INTERNAL/UNAVAILABLE` (exponential backoff; jitter)
+- **Do not retry** on 4xx other than 409 (fix input or state first).
+
+Suggested retry policy:
+- Initial delay **250 ms**, exponent **×2**, max delay **5 s**, up to **6 attempts** (only for 429/5xx).
+
+---
+
+## Relationship to Authentication
+
+The token endpoint also uses this model. Example invalid grant:
+
+```json
+{
+  "error": {
+    "code": "UNAUTHENTICATED",
+    "message": "Invalid client credentials.",
+    "requestId": "req_a12ef3"
+  }
+}
+```
+
+---
+
+## Observability
+
+Every response includes `X-Request-Id`. Provide this ID when contacting Arcube Support; it maps to server logs and traces for accelerated triage.

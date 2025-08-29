@@ -232,7 +232,7 @@ settlement effortless and
 
 accurate.
 
-![](media/image3.png){width="6.267716535433071in"
+![](images/image3.png){width="6.267716535433071in"
 height="2.236111111111111in"}
 
 ## ![](media/image7.png){width="6.267716535433071in" height="1.75in"}
@@ -248,7 +248,7 @@ ensure flexibility,
 accessibility, and high acquisition, low chargeback and low decline
 rates:
 
-![](media/image4.png){width="4.703125546806649in"
+![](images/image4.png){width="4.703125546806649in"
 height="5.210937226596675in"}
 
 Figure: Payment Processing Options Available on the Arcube Platform (if

@@ -216,6 +216,28 @@
   
   
     <li class="md-nav__item">
+      <a href="../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Glossary
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../product-overview/" class="md-nav__link">
         
   
@@ -268,10 +290,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -284,8 +306,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Integration Methods Outline
           </label>
@@ -407,10 +429,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -423,8 +445,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             Technical & Integration Details
           </label>
@@ -889,27 +911,16 @@ for managing all external API requests, with advanced security features
 to safeguard the platform and its data.</p>
 <ul>
 <li>
-<p><strong>Authentication &amp; Authorization</strong>: Arcube uses <strong>AWS Cognito</strong>,
-    &gt; <strong>Lambda authorizers</strong>, and <strong>IAM roles</strong> to authenticate and
-    &gt; authorize all API requests. This ensures that only authorized
-    &gt; clients can access the platform's resources.</p>
+<p><strong>Authentication &amp; Authorization</strong>: Arcube uses <strong>AWS Cognito</strong>, <strong>Lambda authorizers</strong>, and <strong>IAM roles</strong> to authenticate and authorize all API requests. This ensures that only authorized clients can access the platform's resources.</p>
 </li>
 <li>
-<p><strong>WAF (Web Application Firewall)</strong>: Arcube integrates <strong>AWS WAF</strong>
-    &gt; with API Gateway to filter out malicious traffic, such as <strong>SQL
-    &gt; injections</strong> or <strong>cross-site scripting (XSS)</strong> attacks, before it
-    &gt; reaches the application.</p>
+<p><strong>WAF (Web Application Firewall)</strong>: Arcube integrates <strong>AWS WAF</strong> with API Gateway to filter out malicious traffic, such as <strong>SQL injections</strong> or <strong>cross-site scripting (XSS)</strong> attacks, before it reaches the application.</p>
 </li>
 <li>
-<p><strong>Rate Limiting</strong>: API Gateway enforces <strong>rate limiting</strong> and
-    &gt; <strong>throttling</strong> to control the number of requests a user can make
-    &gt; in a given time period, protecting against DoS (Denial of Service)
-    &gt; attacks and ensuring fair usage across all clients.</p>
+<p><strong>Rate Limiting</strong>: API Gateway enforces <strong>rate limiting</strong> and <strong>throttling</strong> to control the number of requests a user can make in a given time period, protecting against DoS (Denial of Service) attacks and ensuring fair usage across all clients.</p>
 </li>
 <li>
-<p><strong>Access Control</strong>: Arcube defines strict <strong>API Gateway Resource
-    &gt; Policies</strong>, specifying which IP addresses and VPCs can access the
-    &gt; APIs, further tightening security.</p>
+<p><strong>Access Control</strong>: Arcube defines strict <strong>API Gateway Resource Policies</strong>, specifying which IP addresses and VPCs can access the APIs, further tightening security.</p>
 </li>
 </ul>
 <p><strong>Azure MongoDB Atlas Security</strong> </p>
@@ -917,27 +928,16 @@ to safeguard the platform and its data.</p>
 sensitive data and ensure compliance with data protection regulations.</p>
 <ul>
 <li>
-<p><strong>Encryption</strong>: All sensitive data in <strong>MongoDB Atlas</strong> is
-    &gt; <strong>encrypted at rest</strong> using <strong>AES-256 encryption</strong> and <strong>in
-    &gt; transit</strong> using <strong>TLS</strong>. This guarantees that sensitive
-    &gt; information is protected both while stored and during
-    &gt; transmission.</p>
+<p><strong>Encryption</strong>: All sensitive data in <strong>MongoDB Atlas</strong> is <strong>encrypted at rest</strong> using <strong>AES-256 encryption</strong> and <strong>in transit</strong> using <strong>TLS</strong>. This guarantees that sensitive information is protected both while stored and during transmission.</p>
 </li>
 <li>
-<p><strong>Role-Based Access Control (RBAC)</strong>: Arcube uses <strong>RBAC</strong> in
-    &gt; MongoDB Atlas to control access to specific data based on user
-    &gt; roles, ensuring that only authorized personnel or services can
-    &gt; access sensitive data.</p>
+<p><strong>Role-Based Access Control (RBAC)</strong>: Arcube uses <strong>RBAC</strong> in MongoDB Atlas to control access to specific data based on user roles, ensuring that only authorized personnel or services can access sensitive data.</p>
 </li>
 <li>
-<p><strong>Network Isolation</strong>: MongoDB Atlas provides <strong>network isolation</strong>
-    &gt; using <strong>IP whitelisting</strong>, ensuring that only trusted IPs can
-    &gt; connect to the database, adding an extra layer of security.</p>
+<p><strong>Network Isolation</strong>: MongoDB Atlas provides <strong>network isolation</strong> using <strong>IP whitelisting</strong>, ensuring that only trusted IPs can connect to the database, adding an extra layer of security.</p>
 </li>
 <li>
-<p><strong>Auditing</strong>: Arcube enables <strong>audit logging</strong> to track all access
-    &gt; to MongoDB Atlas, ensuring full transparency and allowing for
-    &gt; quick detection of any unauthorized access.</p>
+<p><strong>Auditing</strong>: Arcube enables <strong>audit logging</strong> to track all access to MongoDB Atlas, ensuring full transparency and allowing for quick detection of any unauthorized access.</p>
 </li>
 </ul>
 <p><strong>Best Practices for Security</strong>:</p>
@@ -945,35 +945,25 @@ sensitive data and ensure compliance with data protection regulations.</p>
 <li>
 <p><strong>End-to-End Encryption</strong>:</p>
 <ul>
-<li>Arcube enforces <strong>encryption</strong> of sensitive data throughout its
-    &gt; lifecycle, ensuring both <strong>data in transit</strong> and <strong>data at
-    &gt; rest</strong> are encrypted.</li>
+<li>Arcube enforces <strong>encryption</strong> of sensitive data throughout its lifecycle, ensuring both <strong>data in transit</strong> and <strong>data at rest</strong> are encrypted.</li>
 </ul>
 </li>
 <li>
 <p><strong>Access Control</strong>:</p>
 <ul>
-<li>Arcube adheres to <strong>least privilege access</strong> principles,
-    &gt; ensuring that services and users only have the minimum
-    &gt; necessary permissions to perform their tasks.</li>
+<li>Arcube adheres to <strong>least privilege access</strong> principles, ensuring that services and users only have the minimum necessary permissions to perform their tasks.</li>
 </ul>
 </li>
 <li>
 <p><strong>Secure API Access</strong>:</p>
 <ul>
-<li><strong>AWS API Gateway</strong> and <strong>AWS Lambda</strong> are configured to ensure
-    &gt; that only <strong>authenticated and authorized requests</strong> are
-    &gt; allowed, preventing unauthorized access to sensitive data or
-    &gt; services.</li>
+<li><strong>AWS API Gateway</strong> and <strong>AWS Lambda</strong> are configured to ensure that only <strong>authenticated and authorized requests</strong> are allowed, preventing unauthorized access to sensitive data or services.</li>
 </ul>
 </li>
 <li>
 <p><strong>Constant Monitoring</strong>:</p>
 <ul>
-<li>Arcube continuously monitors system performance and security
-    &gt; metrics using <strong>CloudWatch</strong> and <strong>AWS GuardDuty</strong>, and is
-    &gt; alerted to any potential security breaches or performance
-    &gt; degradation.</li>
+<li>Arcube continuously monitors system performance and security metrics using <strong>CloudWatch</strong> and <strong>AWS GuardDuty</strong>, and is alerted to any potential security breaches or performance degradation.</li>
 </ul>
 </li>
 </ol>
