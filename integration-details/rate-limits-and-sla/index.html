@@ -8,25 +8,25 @@
       
       
       
-        <link rel="canonical" href="https://arcube-org.github.io/arcube-integration-guide/glossary/">
+        <link rel="canonical" href="https://arcube-org.github.io/arcube-integration-guide/integration-details/rate-limits-and-sla/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../error-model/">
       
       
-        <link rel="next" href="../product-overview/">
+        <link rel="next" href="../essential-api-calls/">
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
     
     
       
-        <title>Glossary - Arcube Integration Guide</title>
+        <title>Rate Limits & SLA - Arcube Integration Guide</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.7e37652d.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
       
       
 
@@ -45,7 +45,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -64,7 +64,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#glossary" class="md-skip">
+        <a href="#rate-limits-sla" class="md-skip">
           Skip to content
         </a>
       
@@ -80,7 +80,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="Arcube Integration Guide" class="md-header__button md-logo" aria-label="Arcube Integration Guide" data-md-component="logo">
+    <a href="../.." title="Arcube Integration Guide" class="md-header__button md-logo" aria-label="Arcube Integration Guide" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -100,7 +100,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Glossary
+              Rate Limits & SLA
             
           </span>
         </div>
@@ -178,7 +178,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="Arcube Integration Guide" class="md-nav__button md-logo" aria-label="Arcube Integration Guide" data-md-component="logo">
+    <a href="../.." title="Arcube Integration Guide" class="md-nav__button md-logo" aria-label="Arcube Integration Guide" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -196,7 +196,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -215,32 +215,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Glossary
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../glossary/" class="md-nav__link">
         
   
   
@@ -251,122 +229,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#actors" class="md-nav__link">
-    <span class="md-ellipsis">
-      Actors
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Actors">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#arcube" class="md-nav__link">
-    <span class="md-ellipsis">
-      Arcube
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tenant" class="md-nav__link">
-    <span class="md-ellipsis">
-      Tenant
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#vendor" class="md-nav__link">
-    <span class="md-ellipsis">
-      Vendor
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#customer" class="md-nav__link">
-    <span class="md-ellipsis">
-      Customer
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ibe-internet-booking-engine" class="md-nav__link">
-    <span class="md-ellipsis">
-      IBE (Internet Booking Engine)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      Back‑End
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#white-label" class="md-nav__link">
-    <span class="md-ellipsis">
-      White Label
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mailserver" class="md-nav__link">
-    <span class="md-ellipsis">
-      MailServer
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#token" class="md-nav__link">
-    <span class="md-ellipsis">
-      Token
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -378,7 +240,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../product-overview/" class="md-nav__link">
+      <a href="../../product-overview/" class="md-nav__link">
         
   
   
@@ -400,7 +262,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../arcube-platforms/" class="md-nav__link">
+      <a href="../../arcube-platforms/" class="md-nav__link">
         
   
   
@@ -460,7 +322,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-methods/widget/" class="md-nav__link">
+      <a href="../../integration-methods/widget/" class="md-nav__link">
         
   
   
@@ -483,7 +345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-methods/email/" class="md-nav__link">
+      <a href="../../integration-methods/email/" class="md-nav__link">
         
   
   
@@ -506,7 +368,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-methods/api/" class="md-nav__link">
+      <a href="../../integration-methods/api/" class="md-nav__link">
         
   
   
@@ -529,7 +391,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-methods/white-label/" class="md-nav__link">
+      <a href="../../integration-methods/white-label/" class="md-nav__link">
         
   
   
@@ -556,18 +418,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
           <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
@@ -583,7 +447,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             Technical & Integration Details
@@ -597,7 +461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/overview/" class="md-nav__link">
+      <a href="../overview/" class="md-nav__link">
         
   
   
@@ -620,7 +484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/authentication/" class="md-nav__link">
+      <a href="../authentication/" class="md-nav__link">
         
   
   
@@ -643,7 +507,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/error-model/" class="md-nav__link">
+      <a href="../error-model/" class="md-nav__link">
         
   
   
@@ -663,10 +527,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../integration-details/rate-limits-and-sla/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Rate Limits & SLA
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -677,6 +563,53 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rate-limits-per-tenant" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rate Limits (per tenant)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#retries" class="md-nav__link">
+    <span class="md-ellipsis">
+      Retries
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sla-platform-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      SLA (Platform targets)
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -689,7 +622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/essential-api-calls/" class="md-nav__link">
+      <a href="../essential-api-calls/" class="md-nav__link">
         
   
   
@@ -712,7 +645,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/widget-integration/" class="md-nav__link">
+      <a href="../widget-integration/" class="md-nav__link">
         
   
   
@@ -735,7 +668,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/email-integration/" class="md-nav__link">
+      <a href="../email-integration/" class="md-nav__link">
         
   
   
@@ -758,7 +691,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/api-integration/" class="md-nav__link">
+      <a href="../api-integration/" class="md-nav__link">
         
   
   
@@ -781,7 +714,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/white-label-integration/" class="md-nav__link">
+      <a href="../white-label-integration/" class="md-nav__link">
         
   
   
@@ -804,7 +737,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/api-versioning/" class="md-nav__link">
+      <a href="../api-versioning/" class="md-nav__link">
         
   
   
@@ -827,7 +760,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/scalability-security/" class="md-nav__link">
+      <a href="../scalability-security/" class="md-nav__link">
         
   
   
@@ -877,98 +810,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#actors" class="md-nav__link">
+  <a href="#rate-limits-per-tenant" class="md-nav__link">
     <span class="md-ellipsis">
-      Actors
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Actors">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#arcube" class="md-nav__link">
-    <span class="md-ellipsis">
-      Arcube
+      Rate Limits (per tenant)
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#tenant" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#retries" class="md-nav__link">
     <span class="md-ellipsis">
-      Tenant
+      Retries
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#vendor" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#sla-platform-targets" class="md-nav__link">
     <span class="md-ellipsis">
-      Vendor
+      SLA (Platform targets)
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#customer" class="md-nav__link">
-    <span class="md-ellipsis">
-      Customer
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ibe-internet-booking-engine" class="md-nav__link">
-    <span class="md-ellipsis">
-      IBE (Internet Booking Engine)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      Back‑End
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#white-label" class="md-nav__link">
-    <span class="md-ellipsis">
-      White Label
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mailserver" class="md-nav__link">
-    <span class="md-ellipsis">
-      MailServer
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#token" class="md-nav__link">
-    <span class="md-ellipsis">
-      Token
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -988,28 +852,27 @@
 
 
 
-<h1 id="glossary">Glossary</h1>
-<p>Below are some terms used extensively in this document and a brief explanation for each of them.</p>
-<h2 id="actors">Actors</h2>
-<p>The following actors are involved in various integration methods of the system, either as <strong>human participants</strong> or as <strong>systems</strong>:</p>
-<h3 id="arcube"><strong>Arcube</strong></h3>
-<p>The owner and provider of the product described in this documentation.</p>
-<h3 id="tenant"><strong>Tenant</strong></h3>
-<p>Refers to the airline or Travel Management Company (TMC) that has a contract with Arcube to sell ancillaries through the platform.</p>
-<h3 id="vendor"><strong>Vendor</strong></h3>
-<p>The provider responsible for fulfilling an ancillary product. A Vendor is a partner of Arcube, with whom Arcube has a contractual agreement to offer ancillaries.</p>
-<h3 id="customer"><strong>Customer</strong></h3>
-<p>The end user who purchases ancillary products from the Tenant.</p>
-<h3 id="ibe-internet-booking-engine"><strong>IBE (Internet Booking Engine)</strong></h3>
-<p>The system through which the Customer interacts to browse and purchase ancillaries.</p>
-<h3 id="backend"><strong>Back‑End</strong></h3>
-<p>The Tenant’s back‑end system that exchanges requests with Arcube to process ancillary transactions.</p>
-<h3 id="white-label"><strong>White Label</strong></h3>
-<p>A platform owned by Arcube and customized to reflect the Tenant’s branding. It serves as a point of sale where customers can purchase third‑party ancillary products.</p>
-<h3 id="mailserver"><strong>MailServer</strong></h3>
-<p>The email server used to send marketing emails, either on behalf of Arcube or the Tenant.</p>
-<h3 id="token"><strong>Token</strong></h3>
-<p>A <strong>bearer token</strong> needed for the Tenant to authenticate and communicate securely with Arcube’s systems.</p>
+<h1 id="rate-limits-sla">Rate Limits &amp; SLA</h1>
+<h2 id="rate-limits-per-tenant">Rate Limits (per tenant)</h2>
+<ul>
+<li>Baseline: <strong>600 requests/minute</strong> (burst up to <strong>60 rps</strong>)</li>
+<li>Headers: <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>, <code>Retry-After</code></li>
+</ul>
+<h2 id="retries">Retries</h2>
+<ul>
+<li>Use <strong>exponential backoff</strong> on <code>429</code> or retryable <code>5xx</code> (start at 250ms, cap at 5s, max 6 tries).</li>
+<li>For non-idempotent endpoints: always include <code>Idempotency-Key</code>.</li>
+</ul>
+<h2 id="sla-platform-targets">SLA (Platform targets)</h2>
+<ul>
+<li><strong>Availability:</strong> 99.5% monthly (standard tier)</li>
+<li><strong>RTO:</strong> ≤ 4 hours</li>
+<li><strong>RPO:</strong> ≤ 15 minutes (MongoDB Atlas backups + PITR)</li>
+<li>Incident comms via status page &amp; email.</li>
+</ul>
+<blockquote>
+<p>Higher tiers can be agreed commercially. Contact Arcube for tenant-specific SLAs.</p>
+</blockquote>
 
 
 
@@ -1058,10 +921,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../assets/javascripts/bundle.50899def.min.js"></script>
       
     
   </body>

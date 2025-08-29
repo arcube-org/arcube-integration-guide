@@ -8,25 +8,25 @@
       
       
       
-        <link rel="canonical" href="https://arcube-org.github.io/arcube-integration-guide/glossary/">
+        <link rel="canonical" href="https://arcube-org.github.io/arcube-integration-guide/integration-details/authentication/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../overview/">
       
       
-        <link rel="next" href="../product-overview/">
+        <link rel="next" href="../error-model/">
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
     
     
       
-        <title>Glossary - Arcube Integration Guide</title>
+        <title>Authentication - Arcube Integration Guide</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.7e37652d.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
       
       
 
@@ -45,7 +45,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -64,7 +64,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#glossary" class="md-skip">
+        <a href="#authentication" class="md-skip">
           Skip to content
         </a>
       
@@ -80,7 +80,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="Arcube Integration Guide" class="md-header__button md-logo" aria-label="Arcube Integration Guide" data-md-component="logo">
+    <a href="../.." title="Arcube Integration Guide" class="md-header__button md-logo" aria-label="Arcube Integration Guide" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -100,7 +100,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Glossary
+              Authentication
             
           </span>
         </div>
@@ -178,7 +178,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="Arcube Integration Guide" class="md-nav__button md-logo" aria-label="Arcube Integration Guide" data-md-component="logo">
+    <a href="../.." title="Arcube Integration Guide" class="md-nav__button md-logo" aria-label="Arcube Integration Guide" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -196,7 +196,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -215,32 +215,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Glossary
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../glossary/" class="md-nav__link">
         
   
   
@@ -251,122 +229,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#actors" class="md-nav__link">
-    <span class="md-ellipsis">
-      Actors
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Actors">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#arcube" class="md-nav__link">
-    <span class="md-ellipsis">
-      Arcube
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tenant" class="md-nav__link">
-    <span class="md-ellipsis">
-      Tenant
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#vendor" class="md-nav__link">
-    <span class="md-ellipsis">
-      Vendor
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#customer" class="md-nav__link">
-    <span class="md-ellipsis">
-      Customer
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ibe-internet-booking-engine" class="md-nav__link">
-    <span class="md-ellipsis">
-      IBE (Internet Booking Engine)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      Back‑End
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#white-label" class="md-nav__link">
-    <span class="md-ellipsis">
-      White Label
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mailserver" class="md-nav__link">
-    <span class="md-ellipsis">
-      MailServer
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#token" class="md-nav__link">
-    <span class="md-ellipsis">
-      Token
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -378,7 +240,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../product-overview/" class="md-nav__link">
+      <a href="../../product-overview/" class="md-nav__link">
         
   
   
@@ -400,7 +262,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../arcube-platforms/" class="md-nav__link">
+      <a href="../../arcube-platforms/" class="md-nav__link">
         
   
   
@@ -460,7 +322,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-methods/widget/" class="md-nav__link">
+      <a href="../../integration-methods/widget/" class="md-nav__link">
         
   
   
@@ -483,7 +345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-methods/email/" class="md-nav__link">
+      <a href="../../integration-methods/email/" class="md-nav__link">
         
   
   
@@ -506,7 +368,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-methods/api/" class="md-nav__link">
+      <a href="../../integration-methods/api/" class="md-nav__link">
         
   
   
@@ -529,7 +391,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-methods/white-label/" class="md-nav__link">
+      <a href="../../integration-methods/white-label/" class="md-nav__link">
         
   
   
@@ -556,18 +418,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
           <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
@@ -583,7 +447,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             Technical & Integration Details
@@ -597,7 +461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/overview/" class="md-nav__link">
+      <a href="../overview/" class="md-nav__link">
         
   
   
@@ -617,10 +481,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../integration-details/authentication/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Authentication
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -631,6 +517,125 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-token-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Token Endpoint
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Token Endpoint">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request" class="md-nav__link">
+    <span class="md-ellipsis">
+      Request
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#response" class="md-nav__link">
+    <span class="md-ellipsis">
+      Response
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-using-the-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Using the Token
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Using the Token">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#token-lifetime" class="md-nav__link">
+    <span class="md-ellipsis">
+      Token Lifetime
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-widget-authentication-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Widget Authentication Flow
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Best Practices
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-error-responses" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Error Responses
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Error Responses">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Codes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -643,7 +648,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/error-model/" class="md-nav__link">
+      <a href="../error-model/" class="md-nav__link">
         
   
   
@@ -666,7 +671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/rate-limits-and-sla/" class="md-nav__link">
+      <a href="../rate-limits-and-sla/" class="md-nav__link">
         
   
   
@@ -689,7 +694,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/essential-api-calls/" class="md-nav__link">
+      <a href="../essential-api-calls/" class="md-nav__link">
         
   
   
@@ -712,7 +717,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/widget-integration/" class="md-nav__link">
+      <a href="../widget-integration/" class="md-nav__link">
         
   
   
@@ -735,7 +740,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/email-integration/" class="md-nav__link">
+      <a href="../email-integration/" class="md-nav__link">
         
   
   
@@ -758,7 +763,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/api-integration/" class="md-nav__link">
+      <a href="../api-integration/" class="md-nav__link">
         
   
   
@@ -781,7 +786,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/white-label-integration/" class="md-nav__link">
+      <a href="../white-label-integration/" class="md-nav__link">
         
   
   
@@ -804,7 +809,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/api-versioning/" class="md-nav__link">
+      <a href="../api-versioning/" class="md-nav__link">
         
   
   
@@ -827,7 +832,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integration-details/scalability-security/" class="md-nav__link">
+      <a href="../scalability-security/" class="md-nav__link">
         
   
   
@@ -877,91 +882,94 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#actors" class="md-nav__link">
+  <a href="#1-token-endpoint" class="md-nav__link">
     <span class="md-ellipsis">
-      Actors
+      1. Token Endpoint
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Actors">
+    <nav class="md-nav" aria-label="1. Token Endpoint">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#arcube" class="md-nav__link">
+  <a href="#request" class="md-nav__link">
     <span class="md-ellipsis">
-      Arcube
+      Request
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#tenant" class="md-nav__link">
+  <a href="#response" class="md-nav__link">
     <span class="md-ellipsis">
-      Tenant
+      Response
     </span>
   </a>
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#vendor" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-using-the-token" class="md-nav__link">
     <span class="md-ellipsis">
-      Vendor
+      2. Using the Token
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Using the Token">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#token-lifetime" class="md-nav__link">
+    <span class="md-ellipsis">
+      Token Lifetime
     </span>
   </a>
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#customer" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-widget-authentication-flow" class="md-nav__link">
     <span class="md-ellipsis">
-      Customer
+      3. Widget Authentication Flow
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#ibe-internet-booking-engine" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#4-best-practices" class="md-nav__link">
     <span class="md-ellipsis">
-      IBE (Internet Booking Engine)
+      4. Best Practices
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#backend" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#5-error-responses" class="md-nav__link">
     <span class="md-ellipsis">
-      Back‑End
+      5. Error Responses
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="5. Error Responses">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#white-label" class="md-nav__link">
+  <a href="#common-codes" class="md-nav__link">
     <span class="md-ellipsis">
-      White Label
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mailserver" class="md-nav__link">
-    <span class="md-ellipsis">
-      MailServer
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#token" class="md-nav__link">
-    <span class="md-ellipsis">
-      Token
+      Common Codes
     </span>
   </a>
   
@@ -988,28 +996,84 @@
 
 
 
-<h1 id="glossary">Glossary</h1>
-<p>Below are some terms used extensively in this document and a brief explanation for each of them.</p>
-<h2 id="actors">Actors</h2>
-<p>The following actors are involved in various integration methods of the system, either as <strong>human participants</strong> or as <strong>systems</strong>:</p>
-<h3 id="arcube"><strong>Arcube</strong></h3>
-<p>The owner and provider of the product described in this documentation.</p>
-<h3 id="tenant"><strong>Tenant</strong></h3>
-<p>Refers to the airline or Travel Management Company (TMC) that has a contract with Arcube to sell ancillaries through the platform.</p>
-<h3 id="vendor"><strong>Vendor</strong></h3>
-<p>The provider responsible for fulfilling an ancillary product. A Vendor is a partner of Arcube, with whom Arcube has a contractual agreement to offer ancillaries.</p>
-<h3 id="customer"><strong>Customer</strong></h3>
-<p>The end user who purchases ancillary products from the Tenant.</p>
-<h3 id="ibe-internet-booking-engine"><strong>IBE (Internet Booking Engine)</strong></h3>
-<p>The system through which the Customer interacts to browse and purchase ancillaries.</p>
-<h3 id="backend"><strong>Back‑End</strong></h3>
-<p>The Tenant’s back‑end system that exchanges requests with Arcube to process ancillary transactions.</p>
-<h3 id="white-label"><strong>White Label</strong></h3>
-<p>A platform owned by Arcube and customized to reflect the Tenant’s branding. It serves as a point of sale where customers can purchase third‑party ancillary products.</p>
-<h3 id="mailserver"><strong>MailServer</strong></h3>
-<p>The email server used to send marketing emails, either on behalf of Arcube or the Tenant.</p>
-<h3 id="token"><strong>Token</strong></h3>
-<p>A <strong>bearer token</strong> needed for the Tenant to authenticate and communicate securely with Arcube’s systems.</p>
+<h1 id="authentication">Authentication</h1>
+<p>Arcube APIs use <strong>OAuth2 Client Credentials</strong> for secure server-to-server access.<br />
+All requests to protected endpoints require a valid <strong>Bearer token</strong>.</p>
+<hr />
+<h2 id="1-token-endpoint">1. Token Endpoint</h2>
+<p><strong>POST</strong> <code>/v1/oauth/token</code></p>
+<h3 id="request">Request</h3>
+<div class="language-http highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="err">POST /v1/oauth/token</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="err">Content-Type: application/json</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="err">{</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="err">  &quot;grant_type&quot;: &quot;client_credentials&quot;,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="err">  &quot;client_id&quot;: &quot;&lt;your-client-id&gt;&quot;,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="err">  &quot;client_secret&quot;: &quot;&lt;your-client-secret&gt;&quot;</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="err">}</span>
+</span></code></pre></div>
+<h3 id="response">Response</h3>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;access_token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;eyJhbGciOiJIUzI1NiIsInR5cCI6...&quot;</span><span class="p">,</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;token_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Bearer&quot;</span><span class="p">,</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;expires_in&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="p">}</span>
+</span></code></pre></div>
+<hr />
+<h2 id="2-using-the-token">2. Using the Token</h2>
+<p>Include the token in the request headers:</p>
+<div class="language-http highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="err">Authorization: Bearer &lt;access_token&gt;</span>
+</span></code></pre></div>
+<h3 id="token-lifetime">Token Lifetime</h3>
+<ul>
+<li>Default expiry: <strong>3600 seconds (1 hour)</strong></li>
+<li>Clock skew tolerance: <strong>±60 seconds</strong></li>
+<li>On expiry, API returns <code>401 UNAUTHENTICATED</code></li>
+<li>Clients should cache tokens and refresh when near expiry</li>
+</ul>
+<hr />
+<h2 id="3-widget-authentication-flow">3. Widget Authentication Flow</h2>
+<p>For <strong>front-end widget integrations</strong>, Arcube provides a secure, domain-bound flow:</p>
+<ol>
+<li><strong>Init Token</strong></li>
+<li>Short-lived (≈ 60s) JWT issued at widget load</li>
+<li>Bound to tenant domain via <code>Origin</code> / <code>Referer</code></li>
+<li>
+<p>Prevents unauthorized embedding</p>
+</li>
+<li>
+<p><strong>Session Token</strong></p>
+</li>
+<li>Exchanged automatically from init token</li>
+<li>Lifetime: ~15 minutes (sliding refresh supported)</li>
+<li>Used by widget for all subsequent API calls</li>
+</ol>
+<p>This ensures no secrets are exposed in the browser.</p>
+<hr />
+<h2 id="4-best-practices">4. Best Practices</h2>
+<ul>
+<li>Always use <strong>HTTPS</strong> (TLS 1.2+)</li>
+<li><strong>Do not embed</strong> client secrets in front-end code</li>
+<li>Use <strong>short-lived tokens</strong> for widgets, <strong>longer-lived tokens</strong> server-side</li>
+<li>Refresh tokens proactively before expiry</li>
+<li>Request separate credentials for <strong>sandbox</strong> and <strong>production</strong></li>
+</ul>
+<hr />
+<h2 id="5-error-responses">5. Error Responses</h2>
+<p>Authentication errors follow the <a href="../error-model/">Error Model</a>:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UNAUTHENTICATED&quot;</span><span class="p">,</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;The access token is expired or invalid.&quot;</span><span class="p">,</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">&quot;requestId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;req_abc123&quot;</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="p">}</span>
+</span></code></pre></div>
+<h3 id="common-codes">Common Codes</h3>
+<ul>
+<li><code>401 UNAUTHENTICATED</code> — token missing or expired</li>
+<li><code>403 PERMISSION_DENIED</code> — token valid but insufficient scope</li>
+</ul>
 
 
 
@@ -1058,10 +1122,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../assets/javascripts/bundle.50899def.min.js"></script>
       
     
   </body>
