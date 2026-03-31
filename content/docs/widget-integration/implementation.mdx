@@ -9,9 +9,9 @@ description: Technical steps for Widget Integration — authentication, integrat
 
 This section describes the preferred widget authentication model for airline integrations.
 
-<img src="/images/widget/widget-token-flow-diagram.jpg" alt="Secure token vending flow via airline CDN proxy" style={{width: '100%'}} />
+<img src="/images/widget/widget-token-flow-diagram.jpg" alt="Secure token vending flow via airline CDN proxy" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 1: Secure token vending flow via airline CDN proxy.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 1: Secure token vending flow via airline CDN proxy.</small>
 
 The recommended approach keeps the airline secret on the airline side, and the browser receives only a short-lived token. In the current model, the widget token is valid for 4 hours.
 
@@ -19,9 +19,9 @@ When the booking page needs the widget, the browser first asks an airline-contro
 
 The reference image below shows the same flow in a more visual way. The important point is that the airline website does not expose the secret in browser code. The secure layer signs the request, forwards it to Arcube, and returns only a token to the browser.
 
-<img src="/images/widget/widget-token-sequence.jpg" alt="Token flow sequence diagram" style={{width: '100%'}} />
+<img src="/images/widget/widget-token-sequence.jpg" alt="Token flow sequence diagram" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 2: Token flow sequence diagram.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 2: Token flow sequence diagram.</small>
 
 The signed text usually contains the tenant identifier, a timestamp, and a session ID or PNR when one already exists. Arcube rebuilds the same string on its side and checks that the signature matches. It also checks that the tenant is known and that the timestamp or nonce is still valid.
 
@@ -57,9 +57,9 @@ After the airline basket is updated successfully, the normal airline flow contin
 
 ### Journey Diagram
 
-<img src="/images/widget/widget-journey.jpg" alt="Integration flow journey diagram" style={{width: '100%'}} />
+<img src="/images/widget/widget-journey.jpg" alt="Integration flow journey diagram" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 4: Journey diagram.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 4: Journey diagram.</small>
 
 ---
 
@@ -71,57 +71,57 @@ The widget does not write into the airline basket directly. It emits cart events
 
 Listen for cart update events and extract the latest item from the cart. The following example shows how to do that in JavaScript:
 
-<img src="/images/widget/widget-add-to-cart-event.png" alt="Add-to-cart event handling code" style={{width: '100%'}} />
+<img src="/images/widget/widget-add-to-cart-event.png" alt="Add-to-cart event handling code" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 5: Add-to-cart event handling code.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 5: Add-to-cart event handling code.</small>
 
 ### eSIM Item
 
 eSIM lines carry their own plan and package identifiers. The example below shows the structure.
 
-<img src="/images/widget/widget-esim-item.png" alt="eSIM item structure" style={{width: '100%'}} />
+<img src="/images/widget/widget-esim-item.png" alt="eSIM item structure" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 6: eSIM item structure.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 6: eSIM item structure.</small>
 
 ### Car Rental Item
 
 Car rental includes the supplier reference and passenger count. The example below shows the structure.
 
-<img src="/images/widget/widget-car-rental-item.png" alt="Car rental item structure" style={{width: '100%'}} />
+<img src="/images/widget/widget-car-rental-item.png" alt="Car rental item structure" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 7: Car rental item structure.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 7: Car rental item structure.</small>
 
 ### Carbon Offset Item
 
 Carbon offset depends on the quote identifier. The example below shows the structure.
 
-<img src="/images/widget/widget-carbon-offset-item.png" alt="Carbon offset item structure" style={{width: '100%'}} />
+<img src="/images/widget/widget-carbon-offset-item.png" alt="Carbon offset item structure" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 8: Carbon offset item structure.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 8: Carbon offset item structure.</small>
 
 ### Lounge Item
 
 Lounge identifiers such as `resourceId` and `referenceId` may be present when available. Tenants can use them if they need them, but should not hard-fail if extra optional fields are added later.
 
-<img src="/images/widget/widget-lounge-item.png" alt="Lounge item structure" style={{width: '100%'}} />
+<img src="/images/widget/widget-lounge-item.png" alt="Lounge item structure" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 9: Lounge item structure.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 9: Lounge item structure.</small>
 
 ### Insurance Item
 
 Insurance uses the base basket line fields.
 
-<img src="/images/widget/widget-insurance-item.png" alt="Insurance item structure" style={{width: '100%'}} />
+<img src="/images/widget/widget-insurance-item.png" alt="Insurance item structure" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 10: Insurance item structure.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 10: Insurance item structure.</small>
 
 ### Airport Transfer Item
 
 Airport transfer has a time-limited quote. Keep the fields exactly as received. The example below shows the structure.
 
-<img src="/images/widget/widget-airport-transfer-item.png" alt="Airport transfer item structure" style={{width: '100%'}} />
+<img src="/images/widget/widget-airport-transfer-item.png" alt="Airport transfer item structure" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 11: Airport transfer item structure.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 11: Airport transfer item structure.</small>
 
 The payload format shown above reflects what is used in version 1. The list is not fixed — new fields might be added later when new ancillary partners are introduced. Tenants should follow the documented structure and use the fields they need. Any important contract change will be communicated.
 
@@ -129,9 +129,9 @@ The payload format shown above reflects what is used in version 1. The list is n
 
 The airline does not need to guess the message shape. The add-to-cart event contains a cart summary and the item that was just added.
 
-<img src="/images/widget/widget-expected-message.png" alt="Expected message from the widget" style={{width: '100%'}} />
+<img src="/images/widget/widget-expected-message.png" alt="Expected message from the widget" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 12: Expected message from the widget.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 12: Expected message from the widget.</small>
 
 ---
 
@@ -139,9 +139,9 @@ The airline does not need to guess the message shape. The add-to-cart event cont
 
 The airline can also send data and commands to the widget. In the current website integration, the airline page already loads the Arcube integration script. That script adds the embedded widget into the page. Runtime communication happens by sending a browser message to the embedded widget window.
 
-<img src="/images/widget/widget-remove-item.jpg" alt="Remove item example code" style={{width: '100%'}} />
+<img src="/images/widget/widget-remove-item.jpg" alt="Remove item example code" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 13: Remove item example code.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 13: Remove item example code.</small>
 
 ---
 
@@ -149,9 +149,9 @@ The airline can also send data and commands to the widget. In the current websit
 
 The Arcube widget dispatches events that indicate its state. Tenants must handle these events appropriately. The table below summarizes the events and the required tenant actions:
 
-<img src="/images/widget/widget-event-contract.png" alt="Tenant event contract overview" style={{width: '100%'}} />
+<img src="/images/widget/widget-event-contract.png" alt="Tenant event contract overview" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 14: Tenant event contract overview.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 14: Tenant event contract overview.</small>
 
 ---
 
@@ -178,7 +178,7 @@ The query-based theme URL supports the main color tokens as well as `fontFamily`
 
 **Example theme file:**
 
-<img src="/images/widget/widget-theme-file.png" alt="Example theme file" style={{width: '100%'}} />
+<img src="/images/widget/widget-theme-file.png" alt="Example theme file" style={{display: 'block', margin: '0 auto'}} />
 
 If the theme file cannot be fetched, is invalid, or is missing required values, the widget falls back to the default Arcube styling. For that reason, the theme file should be hosted on a stable HTTPS URL and treated as part of the production integration.
 
@@ -204,6 +204,6 @@ The widget must never block the airline booking flow. Follow these rules to hand
 
 Listen for error events and wrap your cart update logic in a try-catch block. The following example illustrates how to handle errors in JavaScript:
 
-<img src="/images/widget/widget-error-handling.png" alt="Error handling code example" style={{width: '100%'}} />
+<img src="/images/widget/widget-error-handling.png" alt="Error handling code example" style={{display: 'block', margin: '0 auto'}} />
 
-<small>Figure 15: Error handling code example.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 15: Error handling code example.</small>
