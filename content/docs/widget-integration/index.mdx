@@ -36,23 +36,6 @@ In most integrations, the widget is shown on the extras or ancillary step. A com
 
 ---
 
-## System Architecture
-
-The tenant integration has four moving parts:
-
-- the airline frontend page
-- the Arcube integration script
-- the Arcube widget
-- the airline basket API
-
-The airline page mounts the widget. The widget sends cart events back to the page, and the airline page updates its own basket.
-
-<img src="/images/widget/widget-architecture.jpg" alt="Widget architecture diagram" style={{display: 'block', margin: '0 auto'}} />
-
-<small style={{display: 'block', textAlign: 'center'}}>Figure: Architecture diagram showing the four components of the widget integration.</small>
-
----
-
 ## Customization
 
 The widget can be fully branded to match your airline experience using a hosted theme JSON file. Supported customizations include:

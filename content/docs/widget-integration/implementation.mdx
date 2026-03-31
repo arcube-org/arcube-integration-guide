@@ -19,7 +19,7 @@ When the booking page needs the widget, the browser first asks an airline-contro
 
 The reference image below shows the same flow in a more visual way. The important point is that the airline website does not expose the secret in browser code. The secure layer signs the request, forwards it to Arcube, and returns only a token to the browser.
 
-<img src="/images/widget/widget-token-sequence.jpg" alt="Token flow sequence diagram" style={{display: 'block', margin: '0 auto'}} />
+<img src="/images/widget/widget-token-sequence.jpg" alt="Token flow sequence diagram" style={{display: 'block', margin: '0 auto', width: '100%'}} />
 
 <small style={{display: 'block', textAlign: 'center'}}>Figure 2: Token flow sequence diagram.</small>
 
@@ -30,6 +30,23 @@ The airline secret and the signing logic stay on the airline secure side. The br
 If a session ID or PNR exists before the widget opens, it should be included in the signed request so the token can be tied to that booking context. If a PNR does not exist yet, a session-level identifier is enough for the first step.
 
 For this token, the safest approach is to keep it in memory and treat it as temporary. In the current model, the token is valid for 4 hours. Where possible, it should also be tied to the session or PNR.
+
+---
+
+## System Architecture
+
+The tenant integration has four moving parts:
+
+- the airline frontend page
+- the Arcube integration script
+- the Arcube widget
+- the airline basket API
+
+The airline page mounts the widget. The widget sends cart events back to the page, and the airline page updates its own basket.
+
+<img src="/images/widget/widget-architecture.jpg" alt="Architecture diagram" style={{display: 'block', margin: '0 auto'}} />
+
+<small style={{display: 'block', textAlign: 'center'}}>Figure 3: Architecture diagram.</small>
 
 ---
 
@@ -71,57 +88,135 @@ The widget does not write into the airline basket directly. It emits cart events
 
 Listen for cart update events and extract the latest item from the cart. The following example shows how to do that in JavaScript:
 
-<img src="/images/widget/widget-add-to-cart-event.png" alt="Add-to-cart event handling code" style={{display: 'block', margin: '0 auto'}} />
+```typescript
+function getLatestCartLine(detail: ArcubeCartUpdateEvent) {
+  const segment = detail.cart.segments[0];
+  const item = segment?.items[segment.items.length - 1];
+  if (!segment || !item) return null;
+  return { segment, item };
+}
 
-<small style={{display: 'block', textAlign: 'center'}}>Figure 5: Add-to-cart event handling code.</small>
+window.addEventListener("arcube:cart:updated", (event) => {
+  const detail = (event as CustomEvent<ArcubeCartUpdateEvent>).detail;
+  if (!detail || detail.messageType !== "CART_ITEM_ADDED") return;
+
+  const latest = getLatestCartLine(detail);
+
+  if (!latest) return;
+
+  console.log("Widget item added", latest.item);
+  // Pass latest.item into your own add-to-cart flow.
+});
+```
 
 ### eSIM Item
 
 eSIM lines carry their own plan and package identifiers. The example below shows the structure.
 
-<img src="/images/widget/widget-esim-item.png" alt="eSIM item structure" style={{display: 'block', margin: '0 auto'}} />
-
-<small style={{display: 'block', textAlign: 'center'}}>Figure 6: eSIM item structure.</small>
+```javascript
+const esimItem = {
+  id: "esim-1:plan-1",
+  name: "eSIM",
+  quantity: 1,
+  totalPrice: 19,
+  currency: "USD",
+  category: "esim",
+  planId: "plan-1",
+  packageId: "pkg-1",
+  bundleId: "bundle-1",
+  vendorReferenceId: "vendor-1",
+  provider: "airalo",
+  dataLabel: "3 GB",
+  daysLabel: "30 days",
+  country: "Canada",
+  countryCode: "CA",
+};
+```
 
 ### Car Rental Item
 
 Car rental includes the supplier reference and passenger count. The example below shows the structure.
 
-<img src="/images/widget/widget-car-rental-item.png" alt="Car rental item structure" style={{display: 'block', margin: '0 auto'}} />
-
-<small style={{display: 'block', textAlign: 'center'}}>Figure 7: Car rental item structure.</small>
+```javascript
+const carRentalItem = {
+  id: "car-rental-1",
+  name: "Car Rental",
+  quantity: 1,
+  passengers: 2,
+  totalPrice: 140,
+  unitPrice: 35,
+  currency: "EUR",
+  category: "car_rental",
+  vendorReferenceId: "rental-ref-1",
+};
+```
 
 ### Carbon Offset Item
 
 Carbon offset depends on the quote identifier. The example below shows the structure.
 
-<img src="/images/widget/widget-carbon-offset-item.png" alt="Carbon offset item structure" style={{display: 'block', margin: '0 auto'}} />
-
-<small style={{display: 'block', textAlign: 'center'}}>Figure 8: Carbon offset item structure.</small>
+```javascript
+const carbonOffsetItem = {
+  id: "carbon-1",
+  name: "Carbon Offset",
+  quantity: 1,
+  totalPrice: 8,
+  unitPrice: 8,
+  currency: "EUR",
+  category: "carbon_offset",
+  quoteId: "quote-1",
+};
+```
 
 ### Lounge Item
 
 Lounge identifiers such as `resourceId` and `referenceId` may be present when available. Tenants can use them if they need them, but should not hard-fail if extra optional fields are added later.
 
-<img src="/images/widget/widget-lounge-item.png" alt="Lounge item structure" style={{display: 'block', margin: '0 auto'}} />
-
-<small style={{display: 'block', textAlign: 'center'}}>Figure 9: Lounge item structure.</small>
+```javascript
+const loungeItem = {
+  id: "lounge-1",
+  name: "Lounge Access",
+  quantity: 1,
+  totalPrice: 45,
+  unitPrice: 45,
+  currency: "EUR",
+  category: "lounge",
+};
+```
 
 ### Insurance Item
 
 Insurance uses the base basket line fields.
 
-<img src="/images/widget/widget-insurance-item.png" alt="Insurance item structure" style={{display: 'block', margin: '0 auto'}} />
-
-<small style={{display: 'block', textAlign: 'center'}}>Figure 10: Insurance item structure.</small>
+```javascript
+const insuranceItem = {
+  id: "insurance-1",
+  name: "Baggage Protection",
+  quantity: 1,
+  totalPrice: 12,
+  unitPrice: 12,
+  currency: "EUR",
+  category: "insurance",
+};
+```
 
 ### Airport Transfer Item
 
 Airport transfer has a time-limited quote. Keep the fields exactly as received. The example below shows the structure.
 
-<img src="/images/widget/widget-airport-transfer-item.png" alt="Airport transfer item structure" style={{display: 'block', margin: '0 auto'}} />
-
-<small style={{display: 'block', textAlign: 'center'}}>Figure 11: Airport transfer item structure.</small>
+```javascript
+const transferItem = {
+  id: "transfer-1",
+  name: "Airport Transfer",
+  quantity: 1,
+  passengers: 2,
+  totalPrice: 84,
+  unitPrice: 84,
+  currency: "EUR",
+  category: "transfer",
+  expires_at: 1774257315,
+};
+```
 
 The payload format shown above reflects what is used in version 1. The list is not fixed — new fields might be added later when new ancillary partners are introduced. Tenants should follow the documented structure and use the fields they need. Any important contract change will be communicated.
 
@@ -129,9 +224,48 @@ The payload format shown above reflects what is used in version 1. The list is n
 
 The airline does not need to guess the message shape. The add-to-cart event contains a cart summary and the item that was just added.
 
-<img src="/images/widget/widget-expected-message.png" alt="Expected message from the widget" style={{display: 'block', margin: '0 auto'}} />
-
-<small style={{display: 'block', textAlign: 'center'}}>Figure 12: Expected message from the widget.</small>
+```json
+{
+  "source": "arcube-widget",
+  "type": "CART_ITEM_ADDED",
+  "version": "1.0",
+  "timestamp": "2026-03-25T10:15:00.000Z",
+  "payload": {
+    "itemId": "transfer-001",
+    "cart": {
+      "currency": "EUR",
+      "subtotal": 35,
+      "taxes": 0,
+      "fees": 0,
+      "total": 35,
+      "itemCount": 1,
+      "segments": [
+        {
+          "type": "departure",
+          "flight": {
+            "date": "2026-03-27",
+            "flightNumber": "BF760",
+            "departureCode": "ORY",
+            "arrivalCode": "YUL"
+          },
+          "items": [
+            {
+              "id": "transfer-001",
+              "name": "Airport Transfer",
+              "category": "transfer",
+              "provider": "mistertransfer",
+              "quantity": 1,
+              "totalPrice": 35,
+              "currency": "EUR",
+              "vendorReferenceId": "ABC123"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+```
 
 ---
 
@@ -139,9 +273,43 @@ The airline does not need to guess the message shape. The add-to-cart event cont
 
 The airline can also send data and commands to the widget. In the current website integration, the airline page already loads the Arcube integration script. That script adds the embedded widget into the page. Runtime communication happens by sending a browser message to the embedded widget window.
 
-<img src="/images/widget/widget-remove-item.jpg" alt="Remove item example code" style={{display: 'block', margin: '0 auto'}} />
+```javascript
+const widgetUrl = "use the same widget URL configured in your integration";
+const widgetOrigin = new URL(widgetUrl).origin;
 
-<small style={{display: 'block', textAlign: 'center'}}>Figure 13: Remove item example code.</small>
+function getEmbeddedWidgetWindow() {
+  const container = document.getElementById("arcube-inline-widget");
+  const frame = container?.firstElementChild;
+  return frame && "contentWindow" in frame ? frame.contentWindow : null;
+}
+
+function sendToWidget(message) {
+  const widgetWindow = getEmbeddedWidgetWindow();
+  if (!widgetWindow) return;
+
+  widgetWindow.postMessage(
+    {
+      source: "arcube-parent",
+      version: "1.0",
+      timestamp: new Date().toISOString(),
+      ...message
+    },
+    widgetOrigin
+  );
+}
+
+function removeItemFromWidget(itemId) {
+  sendToWidget({
+    type: "CART_ITEM_REMOVE_REQUEST",
+    payload: { itemId }
+  });
+}
+
+async function handleRemove(itemId) {
+  await removeFromAirlineCart(itemId);
+  removeItemFromWidget(itemId);
+}
+```
 
 ---
 
@@ -149,9 +317,12 @@ The airline can also send data and commands to the widget. In the current websit
 
 The Arcube widget dispatches events that indicate its state. Tenants must handle these events appropriately. The table below summarizes the events and the required tenant actions:
 
-<img src="/images/widget/widget-event-contract.png" alt="Tenant event contract overview" style={{display: 'block', margin: '0 auto'}} />
-
-<small style={{display: 'block', textAlign: 'center'}}>Figure 14: Tenant event contract overview.</small>
+| Event | Meaning | What the tenant should do |
+|-------|---------|--------------------------|
+| `arcube:widget:ready` | Widget is ready | Mark the widget area as live |
+| `arcube:widget:error` | Widget failed | Show fallback UI and log the error |
+| `arcube:cart:updated` + `CART_ITEM_ADDED` | User added an item | Run your add-to-cart logic |
+| `arcube:cart:updated` + `CART_ITEM_REMOVED` | User removed an item | Run your remove-from-cart logic |
 
 ---
 
@@ -178,7 +349,30 @@ The query-based theme URL supports the main color tokens as well as `fontFamily`
 
 **Example theme file:**
 
-<img src="/images/widget/widget-theme-file.png" alt="Example theme file" style={{display: 'block', margin: '0 auto'}} />
+```json
+{
+  "en": {
+    "colors": {
+      "primary": "#12ADEF",
+      "secondary": "#0A3D62",
+      "bodyBg": "#F7FAFC",
+      "neutral": "#C8D2DC",
+      "black": "#111111",
+      "white": "#FFFFFF",
+      "link": "#12ADEF",
+      "success": "#2E9E5B",
+      "warning": "#E8B949",
+      "danger": "#D75656",
+      "info": "#4AA3C7",
+      "lightnessThreshold": "50"
+    },
+    "typography": {
+      "font-family": "Airline Sans, Arial, sans-serif",
+      "font-url": "https://cdn.airline.com/fonts/airline-fonts.css"
+    }
+  }
+}
+```
 
 If the theme file cannot be fetched, is invalid, or is missing required values, the widget falls back to the default Arcube styling. For that reason, the theme file should be hosted on a stable HTTPS URL and treated as part of the production integration.
 
@@ -204,6 +398,27 @@ The widget must never block the airline booking flow. Follow these rules to hand
 
 Listen for error events and wrap your cart update logic in a try-catch block. The following example illustrates how to handle errors in JavaScript:
 
-<img src="/images/widget/widget-error-handling.png" alt="Error handling code example" style={{display: 'block', margin: '0 auto'}} />
+```typescript
+window.addEventListener("arcube:widget:error", (event) => {
+  const detail = (event as CustomEvent<{ code: string; message: string }>).detail;
+  console.error("Arcube widget error", detail);
+  // Hide the widget area or show fallback UI here.
+});
 
-<small style={{display: 'block', textAlign: 'center'}}>Figure 15: Error handling code example.</small>
+async function handleCartAdd(runCartLogic: () => Promise<void>) {
+  try {
+    await runCartLogic();
+  } catch (error) {
+    console.error("Cart update failed", error);
+    // Show a clear message to the user here.
+  }
+}
+```
+
+---
+
+## Thank You
+
+Thank you for integrating the Arcube widget into your booking flow. This guide was designed to help you get the most out of the Arcube widget and integrate it cleanly into your booking flow.
+
+If you need further assistance, contact [support@arcube.com](mailto:support@arcube.com).
