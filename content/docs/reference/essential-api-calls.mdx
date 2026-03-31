@@ -1,0 +1,354 @@
+---
+title: Essential API Calls
+description: Core API calls for interacting with Arcube's AI Recommendation Engine — ingest, serve, and confirm.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Below are the essential API calls which allow interaction with Arcube's AI Recommendation Engine. For each integration method, we indicate which API calls are required.
+
+## Bearer Token
+
+All calls require a valid **Bearer** token obtained from the authentication endpoint. The required credentials are **client_id** and **client_secret**, which will be provided by Arcube. See: [Authentication](/docs/reference/authentication).
+
+---
+
+## 6.1 Ingest Passenger Data \{#61-ingest-passenger-data\}
+
+### Description
+
+Insert trip and passenger context into Arcube to enable personalization.
+
+<Callout type="info" title="Request URL Parameter">
+  Replace `${arcube-url}` with your assigned Arcube environment URL (e.g., `https://api.arcube.com`).
+</Callout>
+
+<Callout type="info" title="HTTP Method: POST">
+  **URL:** `${arcube-url}/v1/journey-api/passenger-data`
+</Callout>
+
+<Callout title="Request Headers">
+  - `Authorization: Bearer <access_token>`
+  - `Content-Type: application/json`
+  - `Idempotency-Key: <uuid>` *(recommended)*
+</Callout>
+
+<Callout type="info" title="HTTP Response">
+  `202 Accepted` — request accepted for asynchronous processing.
+</Callout>
+
+### Notes
+
+- Include the **lead passenger's email** if you want Arcube to send transactional/marketing emails.
+- Provide **either** `pnr` **or** `sessionId` (or both) consistently across subsequent calls.
+
+### Payload Sample
+
+```json
+{
+  "pnr": "AB12CD",
+  "sessionId": "73-ara43",
+  "tenant": "6864f9f94eab200cd4765cc0",
+  "passengers": [
+    {
+      "id": "PAX1",
+      "type": "ADT",
+      "firstName": "John",
+      "lastName": "Doe",
+      "accompaniedInfant": "PAX2",
+      "email": "sample@samplemaildomain.com",
+      "isLead": true
+    },
+    {
+      "id": "PAX2",
+      "type": "INF",
+      "firstName": "Baby",
+      "lastName": "Doe",
+      "associatedAdultId": "PAX1"
+    },
+    {
+      "id": "PAX3",
+      "type": "CHD",
+      "firstName": "Anna",
+      "lastName": "Doe"
+    }
+  ],
+  "segments": [
+    {
+      "segmentId": "SEG1",
+      "flightNumber": "XY123",
+      "departure": "ATH",
+      "arrival": "FRA",
+      "departureTime": "2025-07-01T08:00:00Z",
+      "arrivalTime": "2025-07-01T10:00:00Z",
+      "operatingCarrier": "XY",
+      "passengerIds": ["PAX1", "PAX2", "PAX3"]
+    },
+    {
+      "segmentId": "SEG2",
+      "flightNumber": "XY456",
+      "departure": "FRA",
+      "arrival": "JFK",
+      "departureTime": "2025-07-01T18:00:00Z",
+      "arrivalTime": "2025-07-01T22:00:00Z",
+      "operatingCarrier": "XY",
+      "passengerIds": ["PAX1", "PAX2", "PAX3"]
+    },
+    {
+      "segmentId": "SEG3",
+      "flightNumber": "XY789",
+      "departure": "JFK",
+      "arrival": "FRA",
+      "departureTime": "2025-08-10T16:00:00Z",
+      "arrivalTime": "2025-08-11T06:00:00Z",
+      "operatingCarrier": "XY",
+      "passengerIds": ["PAX1", "PAX2"]
+    },
+    {
+      "segmentId": "SEG4",
+      "flightNumber": "XY101",
+      "departure": "FRA",
+      "arrival": "ATH",
+      "departureTime": "2025-08-11T08:00:00Z",
+      "arrivalTime": "2025-08-11T10:00:00Z",
+      "operatingCarrier": "XY",
+      "passengerIds": ["PAX1", "PAX2"]
+    }
+  ]
+}
+```
+
+### Payload JSON Schema
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["passengers", "segments", "tenant"],
+  "properties": {
+    "pnr": { "type": "string" },
+    "sessionId": { "type": "string" },
+    "passengers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string", "enum": ["ADT", "CHD", "INF"] },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "accompaniedInfant": { "type": "string" },
+          "associatedAdultId": { "type": "string" },
+          "isLead": { "type": "boolean" },
+          "email": { "type": "string", "format": "email" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "segmentId",
+          "flightNumber",
+          "departure",
+          "arrival",
+          "departureTime",
+          "arrivalTime",
+          "operatingCarrier"
+        ],
+        "properties": {
+          "segmentId": { "type": "string" },
+          "flightNumber": { "type": "string" },
+          "departure": { "type": "string" },
+          "arrival": { "type": "string" },
+          "departureTime": { "type": "string", "format": "date-time" },
+          "arrivalTime": { "type": "string", "format": "date-time" },
+          "operatingCarrier": { "type": "string" },
+          "passengerIds": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "tenant": { "type": "string" }
+  },
+  "anyOf": [
+    { "required": ["pnr"] },
+    { "required": ["sessionId"] }
+  ],
+  "additionalProperties": false
+}
+```
+
+---
+
+## 6.2 Serve Recommendations \{#62-serve-recommendations\}
+
+### Description
+
+Retrieve recommendations for a specific PNR or session and point of sale.
+
+<Callout type="info" title="Request URL Parameter">
+  Replace `${arcube-url}` with your assigned Arcube environment URL (e.g., `https://api.arcube.com`).
+</Callout>
+
+<Callout type="info" title="HTTP Method: POST">
+  **URL:** `${arcube-url}/v1/aggregation-api/servePassengerRecommendations`
+</Callout>
+
+<Callout title="Request Headers">
+  - `Authorization: Bearer <access_token>`
+  - `Content-Type: application/json`
+</Callout>
+
+<Callout type="info" title="HTTP Response">
+  `200 OK`
+</Callout>
+
+### Request Payload Sample
+
+```json
+{
+  "tenant": "6864f9f94eab200cd4765cc0",
+  "sessionId": "73-ara43",
+  "pointOfSale": "booking-flow"
+}
+```
+
+### Request Payload JSON Schema
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["pointOfSale", "tenant"],
+  "properties": {
+    "pnr": { "type": "string" },
+    "sessionId": { "type": "string" },
+    "pointOfSale": { "type": "string" },
+    "tenant": { "type": "string" }
+  },
+  "anyOf": [
+    { "required": ["pnr"] },
+    { "required": ["sessionId"] }
+  ],
+  "additionalProperties": false
+}
+```
+
+### Response Payload Sample
+
+```json
+{
+  "result": [
+    {
+      "id": "67ffb54828ea75a8690c161a",
+      "miles": 0,
+      "price": 6.6,
+      "name": "E-SIM Greece - 1 GB - 7 Days",
+      "description": "Airalo eSIM for Greece. 1 GB data valid for 7 days.",
+      "image": "https://arcube-application.s3.eu-west-1.amazonaws.com/ancillaries/images/esim.webp",
+      "price_partner": 5,
+      "price_arcube": 5.5,
+      "category": "ESIMS",
+      "metadata": {
+        "provider": "airalo",
+        "package_id": "meraki-mobile-7days-1gb",
+        "package_details": {
+          "title": "1 GB - 7 Days",
+          "data": "1 GB",
+          "days": 7,
+          "country": "Greece",
+          "country_code": "GR"
+        },
+        "source": "partner-esim",
+        "processed_at": "2025-07-30T14:14:31.418Z",
+        "pointsOfInterest": ["ATH"]
+      }
+    }
+  ]
+}
+```
+
+---
+
+## 6.3 Confirm Order \{#63-confirm-order\}
+
+### Description
+
+Confirm an order after **successful payment**. Arcube will place orders with relevant vendors and record the transaction.
+
+<Callout type="info" title="Request URL Parameter">
+  Replace `${arcube-url}` with your assigned Arcube environment URL (e.g., `https://api.arcube.com`).
+</Callout>
+
+<Callout type="info" title="HTTP Method: POST">
+  **URL:** `${arcube-url}/v1/order-api/confirmOrder`
+</Callout>
+
+<Callout title="Request Headers">
+  - `Authorization: Bearer <access_token>`
+  - `Content-Type: application/json`
+  - `Idempotency-Key: <uuid>` *(required for safe retries)*
+</Callout>
+
+<Callout type="info" title="HTTP Response">
+  `200 OK` (full success) — or `207 Multi-Status` / `200` with `status="PARTIAL-SUCCESS"` for partial fulfillment.
+</Callout>
+
+### Sample Request Payload
+
+```json
+{
+  "sessionId": "fkdsjf-f123-4567",
+  "selectedAncillaries": [
+    {
+      "vendor": "brb",
+      "id": "e9b1d12f-8f1d-4f32-9c3e-8d928c1b3ff4",
+      "price": { "amount": 35.00, "currency": "USD" }
+    },
+    {
+      "vendor": "mozio",
+      "id": "e9b1d12f-8f1d-4f32-9c3e-8d928c1b3bb5",
+      "price": { "amount": 140.00, "currency": "USD" },
+      "metadata": {
+        "result_id": "e9b1d12f-8f1d-4f32-9c3e-8d928c1b3gg5",
+        "airline": "AA",
+        "flight_number": "123",
+        "customer_special_instructions": "My doorbell is broken, please yell"
+      }
+    }
+  ]
+}
+```
+
+### Sample Response Payload
+
+```json
+{
+  "status": "PARTIAL-SUCCESS",
+  "sessionId": "user-12345",
+  "transactionId": "trx1",
+  "message": "Booking failed for some ancillaries.",
+  "failedAncillaries": [
+    { "id": "e9b1d12f-8f1d-4f32-9c3e-8d928c1b3cc6", "reasonCode": "NOT_AVAILABLE" }
+  ],
+  "successfulAncillaries": [
+    { "id": "e9b1d12f-8f1d-4f32-9c3e-8d928c1b3bb5", "reasonCode": "SUCCESS" },
+    { "id": "e9b1d12f-8f1d-4f32-9c3e-8d928c1b3dd7", "reasonCode": "SUCCESS" }
+  ],
+  "totalRefundAmount": { "amount": 35.00, "currency": "USD" },
+  "errorDetails": ["Extra baggage is not available for booking at the moment."]
+}
+```
+
+---
+
+<Callout type="info" title="Error Handling">
+  All endpoints follow the unified structure described in [Error Model](/docs/reference/error-model).
+</Callout>

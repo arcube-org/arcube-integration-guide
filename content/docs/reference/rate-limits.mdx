@@ -1,0 +1,27 @@
+---
+title: Rate Limits & SLA
+description: Rate limit thresholds, retry strategy, and platform SLA targets for Arcube APIs.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+## Rate Limits (per tenant)
+
+- Baseline: **600 requests/minute** (burst up to **60 rps**)
+- Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After`
+
+## Retries
+
+- Use **exponential backoff** on `429` or retryable `5xx` (start at 250ms, cap at 5s, max 6 tries).
+- For non-idempotent endpoints: always include `Idempotency-Key`.
+
+## SLA (Platform targets)
+
+- **Availability:** 99.5% monthly (standard tier)
+- **RTO:** ≤ 4 hours
+- **RPO:** ≤ 15 minutes (MongoDB Atlas backups + PITR)
+- Incident comms via status page & email.
+
+<Callout type="info">
+  Higher tiers can be agreed commercially. Contact Arcube for tenant-specific SLAs.
+</Callout>
