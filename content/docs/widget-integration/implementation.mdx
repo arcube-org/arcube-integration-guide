@@ -1,6 +1,6 @@
 ---
 title: Implementation
-description: Technical steps for Widget Integration — authentication, integration flow, cart events, styling, and error handling.
+description: Technical steps for Widget Integration - authentication, integration flow, cart events, styling, and error handling.
 ---
 
 ## Authentication and Token Flow
@@ -15,7 +15,7 @@ This section describes the preferred widget authentication model for airline int
 
 The recommended approach keeps the airline secret on the airline side, and the browser receives only a short-lived token. In the current model, the widget token is valid for 4 hours.
 
-When the booking page needs the widget, the browser first asks an airline-controlled endpoint for a widget token. That request stays inside the airline environment. The airline secure layer — such as a backend service, CDN worker, or edge layer — builds a canonical string and signs it with HMAC using the airline secret. Arcube receives that signed request, verifies it, and returns a short-lived token. The browser then passes the token to the widget, and the widget uses it for later Arcube API calls.
+When the booking page needs the widget, the browser first asks an airline-controlled endpoint for a widget token. That request stays inside the airline environment. The airline secure layer - such as a backend service, CDN worker, or edge layer - builds a canonical string and signs it with HMAC using the airline secret. Arcube receives that signed request, verifies it, and returns a short-lived token. The browser then passes the token to the widget, and the widget uses it for later Arcube API calls.
 
 The reference image below shows the same flow in a more visual way. The important point is that the airline website does not expose the secret in browser code. The secure layer signs the request, forwards it to Arcube, and returns only a token to the browser.
 
@@ -58,7 +58,7 @@ The airline renders the widget component when the user reaches the extras step. 
 
 ### 2. User Searches for Services
 
-The widget uses the session and flight context from the airline page. For some ancillaries, the passenger also enters extra product-specific details — for example, pickup and drop-off addresses or driver age.
+The widget uses the session and flight context from the airline page. For some ancillaries, the passenger also enters extra product-specific details - for example, pickup and drop-off addresses or driver age.
 
 ### 3. User Selects an Option
 
@@ -218,7 +218,7 @@ const transferItem = {
 };
 ```
 
-The payload format shown above reflects what is used in version 1. The list is not fixed — new fields might be added later when new ancillary partners are introduced. Tenants should follow the documented structure and use the fields they need. Any important contract change will be communicated.
+The payload format shown above reflects what is used in version 1. The list is not fixed - new fields might be added later when new ancillary partners are introduced. Tenants should follow the documented structure and use the fields they need. Any important contract change will be communicated.
 
 ### Expected Message from Widget
 
@@ -330,14 +330,14 @@ The Arcube widget dispatches events that indicate its state. Tenants must handle
 
 The widget can be branded to match the airline experience. The current styling contract is based on a hosted theme file. The airline hosts a theme JSON file on an HTTPS URL and passes that URL to the widget as `themeJsonUrl` when the widget is opened.
 
-The widget reads that theme file, applies the color and typography tokens internally, and keeps the styling scoped to the widget itself. If the airline wants to use a custom font, the theme file can also include a `font-url` value — an HTTPS stylesheet link such as a hosted font stylesheet or a Google Fonts URL. The widget loads that stylesheet automatically and uses the declared `font-family`.
+The widget reads that theme file, applies the color and typography tokens internally, and keeps the styling scoped to the widget itself. If the airline wants to use a custom font, the theme file can also include a `font-url` value - an HTTPS stylesheet link such as a hosted font stylesheet or a Google Fonts URL. The widget loads that stylesheet automatically and uses the declared `font-family`.
 
 The theme file should include an `en` block with a colors section and a typography section. At minimum, the widget expects:
 
 - `primary`, `secondary`, `bodyBg`, `neutral`, `black`, `white`, `link`
 - `typography.font-family`
 
-Optional color values — `success`, `warning`, `danger`, `info`, and `lightnessThreshold` — may also be provided.
+Optional color values - `success`, `warning`, `danger`, `info`, and `lightnessThreshold` - may also be provided.
 
 When opening the widget, pass a `themeJsonUrl` pointing to the hosted theme file:
 

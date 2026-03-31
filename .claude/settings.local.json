@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(find /Users/hassanamjad/Documents/GitHub/arcube-integration-guide/node_modules/fumadocs-ui -maxdepth 2 \\\\\\(-name tailwind* -o -name *theme* \\\\\\))",
-      "Bash(sed 's/\"\"\"\"$//')"
+      "Bash(sed 's/\"\"\"\"$//')",
+      "Bash(xargs sed:*)"
     ]
   }
 }

@@ -34,7 +34,7 @@ export default function HomePage() {
 
         <p className="text-lg text-fd-muted-foreground leading-relaxed">
           The AI-powered ancillary platform for airlines, TMCs, and travel
-          agencies — integrate once, personalize at every touchpoint.
+          agencies - integrate once, personalize at every touchpoint.
         </p>
 
         <div className="flex items-center gap-4 mt-2">

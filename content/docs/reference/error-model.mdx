@@ -23,12 +23,12 @@ Use the `code` to branch logic, `message` for operators, and `details[]` for fie
 
 ### Fields
 
-- **code** *(string, required)* — Stable, machine-readable error identifier.
-- **message** *(string, required)* — Human-readable description (English).
-- **details** *(array, optional)* — Fine-grained context (e.g., invalid fields, constraints).
-  - `field` *(string, optional)* — JSONPath-like reference to the problematic field.
-  - `reason` *(string, optional)* — Brief reason tag (e.g., `PAST_DATE`, `MISSING`, `OUT_OF_RANGE`).
-- **requestId** *(string, required)* — ID for support/debug; also returned as the `X-Request-Id` header.
+- **code** *(string, required)* - Stable, machine-readable error identifier.
+- **message** *(string, required)* - Human-readable description (English).
+- **details** *(array, optional)* - Fine-grained context (e.g., invalid fields, constraints).
+  - `field` *(string, optional)* - JSONPath-like reference to the problematic field.
+  - `reason` *(string, optional)* - Brief reason tag (e.g., `PAST_DATE`, `MISSING`, `OUT_OF_RANGE`).
+- **requestId** *(string, required)* - ID for support/debug; also returned as the `X-Request-Id` header.
 
 ---
 
