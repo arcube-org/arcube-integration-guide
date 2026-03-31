@@ -44,12 +44,6 @@ export default function HomePage() {
           >
             Get Started →
           </Link>
-          <Link
-            href="/docs"
-            className="rounded-lg border border-fd-border px-6 py-2.5 text-sm font-semibold text-fd-foreground transition-colors hover:bg-(--color-fd-accent)"
-          >
-            View Docs
-          </Link>
         </div>
       </div>
 
