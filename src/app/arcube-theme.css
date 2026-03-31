@@ -18,13 +18,13 @@
   --color-fd-foreground:           hsl(0, 0%, 9%);
   --color-fd-primary:              hsl(284, 95%, 47%);   /* #A107EA */
   --color-fd-primary-foreground:   hsl(0, 0%, 100%);
-  --color-fd-secondary:            hsl(273, 100%, 95%);  /* #F2E9FF */
-  --color-fd-secondary-foreground: hsl(284, 94%, 36%);   /* #7C05B5 */
-  --color-fd-muted:                hsl(273, 60%, 96%);
-  --color-fd-muted-foreground:     hsl(284, 30%, 45%);
-  --color-fd-accent:               hsl(273, 100%, 95%);  /* #F2E9FF */
-  --color-fd-accent-foreground:    hsl(284, 94%, 36%);   /* #7C05B5 */
-  --color-fd-border:               hsla(284, 60%, 80%, 0.4);
+  --color-fd-secondary:            hsl(270, 55%, 94%);   /* soft blue-purple tint */
+  --color-fd-secondary-foreground: hsl(275, 80%, 32%);   /* deep blue-purple */
+  --color-fd-muted:                hsl(270, 35%, 95%);
+  --color-fd-muted-foreground:     hsl(272, 25%, 44%);
+  --color-fd-accent:               hsl(270, 55%, 94%);   /* soft blue-purple tint */
+  --color-fd-accent-foreground:    hsl(275, 80%, 32%);   /* deep blue-purple */
+  --color-fd-border:               hsla(272, 45%, 75%, 0.4);
   --color-fd-ring:                 hsl(284, 95%, 47%);
   --color-fd-card:                 hsl(0, 0%, 100%);
   --color-fd-card-foreground:      hsl(0, 0%, 9%);
@@ -34,22 +34,22 @@
 
 /* ── Dark mode colors ─────────────────────────── */
 .dark {
-  --color-fd-background:           hsl(284, 20%, 6%);
-  --color-fd-foreground:           hsl(273, 60%, 94%);
-  --color-fd-primary:              hsl(284, 95%, 72%);   /* lighter purple */
-  --color-fd-primary-foreground:   hsl(284, 20%, 6%);
-  --color-fd-secondary:            hsl(284, 23%, 18%);
-  --color-fd-secondary-foreground: hsl(273, 60%, 90%);
-  --color-fd-muted:                hsl(284, 20%, 10%);
-  --color-fd-muted-foreground:     hsl(273, 40%, 65%);
-  --color-fd-accent:               hsl(284, 30%, 20%);
-  --color-fd-accent-foreground:    hsl(273, 80%, 85%);
-  --color-fd-border:               hsla(284, 50%, 35%, 0.35);
-  --color-fd-ring:                 hsl(284, 95%, 72%);
-  --color-fd-card:                 hsl(284, 20%, 8%);
-  --color-fd-card-foreground:      hsl(273, 60%, 94%);
-  --color-fd-popover:              hsl(284, 20%, 6%);
-  --color-fd-popover-foreground:   hsl(273, 60%, 94%);
+  --color-fd-background:           hsl(272, 20%, 6%);
+  --color-fd-foreground:           hsl(270, 40%, 92%);
+  --color-fd-primary:              hsl(275, 70%, 68%);   /* blue-purple, not pink */
+  --color-fd-primary-foreground:   hsl(272, 20%, 6%);
+  --color-fd-secondary:            hsl(272, 22%, 18%);
+  --color-fd-secondary-foreground: hsl(270, 45%, 86%);
+  --color-fd-muted:                hsl(272, 20%, 10%);
+  --color-fd-muted-foreground:     hsl(270, 28%, 60%);
+  --color-fd-accent:               hsl(272, 25%, 19%);
+  --color-fd-accent-foreground:    hsl(270, 55%, 80%);
+  --color-fd-border:               hsla(272, 40%, 32%, 0.35);
+  --color-fd-ring:                 hsl(275, 70%, 68%);
+  --color-fd-card:                 hsl(272, 20%, 8%);
+  --color-fd-card-foreground:      hsl(270, 40%, 92%);
+  --color-fd-popover:              hsl(272, 20%, 6%);
+  --color-fd-popover-foreground:   hsl(270, 40%, 92%);
 }
 
 /* ── Typography scale ─────────────────────────── */

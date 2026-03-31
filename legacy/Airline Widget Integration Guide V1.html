@@ -1,0 +1,776 @@
+<html>
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=utf-8">
+<meta name=Generator content="Microsoft Word 15 (filtered)">
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:Courier;
+	panose-1:2 7 4 9 2 2 5 2 4 4;}
+@font-face
+	{font-family:Wingdings;
+	panose-1:5 0 0 0 0 0 0 0 0 0;}
+@font-face
+	{font-family:"MS Mincho";
+	panose-1:2 2 6 9 4 2 5 8 3 4;}
+@font-face
+	{font-family:"MS Gothic";
+	panose-1:2 11 6 9 7 2 5 8 2 4;}
+@font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+@font-face
+	{font-family:Calibri;
+	panose-1:2 15 5 2 2 2 4 3 2 4;}
+@font-face
+	{font-family:"\@MS Gothic";
+	panose-1:2 11 6 9 7 2 5 8 2 4;}
+@font-face
+	{font-family:"\@MS Mincho";
+	panose-1:2 2 6 9 4 2 5 8 3 4;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:10.0pt;
+	margin-left:0in;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Arial",sans-serif;}
+h1
+	{mso-style-link:"Heading 1 Char";
+	margin-top:24.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	line-height:115%;
+	page-break-after:avoid;
+	font-size:14.0pt;
+	font-family:"Calibri",sans-serif;
+	color:#365F91;
+	font-weight:bold;}
+h2
+	{mso-style-link:"Heading 2 Char";
+	margin-top:10.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	line-height:115%;
+	page-break-after:avoid;
+	font-size:13.0pt;
+	font-family:"Calibri",sans-serif;
+	color:#4F81BD;
+	font-weight:bold;}
+p.MsoCaption, li.MsoCaption, div.MsoCaption
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:10.0pt;
+	margin-left:0in;
+	line-height:normal;
+	font-size:9.0pt;
+	font-family:"Arial",sans-serif;
+	color:#4F81BD;
+	font-weight:bold;}
+p.MsoListBullet, li.MsoListBullet, div.MsoListBullet
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:10.0pt;
+	margin-left:.25in;
+	text-indent:-.25in;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Arial",sans-serif;}
+p.MsoListBulletCxSpFirst, li.MsoListBulletCxSpFirst, div.MsoListBulletCxSpFirst
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.25in;
+	text-indent:-.25in;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Arial",sans-serif;}
+p.MsoListBulletCxSpMiddle, li.MsoListBulletCxSpMiddle, div.MsoListBulletCxSpMiddle
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.25in;
+	text-indent:-.25in;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Arial",sans-serif;}
+p.MsoListBulletCxSpLast, li.MsoListBulletCxSpLast, div.MsoListBulletCxSpLast
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:10.0pt;
+	margin-left:.25in;
+	text-indent:-.25in;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Arial",sans-serif;}
+p.MsoTitle, li.MsoTitle, div.MsoTitle
+	{mso-style-link:"Title Char";
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:15.0pt;
+	margin-left:0in;
+	line-height:normal;
+	border:none;
+	padding:0in;
+	font-size:26.0pt;
+	font-family:"Calibri",sans-serif;
+	color:#17365D;
+	letter-spacing:.25pt;}
+p.MsoTitleCxSpFirst, li.MsoTitleCxSpFirst, div.MsoTitleCxSpFirst
+	{mso-style-link:"Title Char";
+	margin:0in;
+	line-height:normal;
+	border:none;
+	padding:0in;
+	font-size:26.0pt;
+	font-family:"Calibri",sans-serif;
+	color:#17365D;
+	letter-spacing:.25pt;}
+p.MsoTitleCxSpMiddle, li.MsoTitleCxSpMiddle, div.MsoTitleCxSpMiddle
+	{mso-style-link:"Title Char";
+	margin:0in;
+	line-height:normal;
+	border:none;
+	padding:0in;
+	font-size:26.0pt;
+	font-family:"Calibri",sans-serif;
+	color:#17365D;
+	letter-spacing:.25pt;}
+p.MsoTitleCxSpLast, li.MsoTitleCxSpLast, div.MsoTitleCxSpLast
+	{mso-style-link:"Title Char";
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:15.0pt;
+	margin-left:0in;
+	line-height:normal;
+	border:none;
+	padding:0in;
+	font-size:26.0pt;
+	font-family:"Calibri",sans-serif;
+	color:#17365D;
+	letter-spacing:.25pt;}
+p.MsoSubtitle, li.MsoSubtitle, div.MsoSubtitle
+	{mso-style-link:"Subtitle Char";
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:10.0pt;
+	margin-left:0in;
+	line-height:115%;
+	font-size:12.0pt;
+	font-family:"Calibri",sans-serif;
+	color:#4F81BD;
+	letter-spacing:.75pt;
+	font-style:italic;}
+span.Heading1Char
+	{mso-style-name:"Heading 1 Char";
+	mso-style-link:"Heading 1";
+	font-family:"Calibri",sans-serif;
+	color:#365F91;
+	font-weight:bold;}
+span.Heading2Char
+	{mso-style-name:"Heading 2 Char";
+	mso-style-link:"Heading 2";
+	font-family:"Calibri",sans-serif;
+	color:#4F81BD;
+	font-weight:bold;}
+span.TitleChar
+	{mso-style-name:"Title Char";
+	mso-style-link:Title;
+	font-family:"Calibri",sans-serif;
+	color:#17365D;
+	letter-spacing:.25pt;}
+span.SubtitleChar
+	{mso-style-name:"Subtitle Char";
+	mso-style-link:Subtitle;
+	font-family:"Calibri",sans-serif;
+	color:#4F81BD;
+	letter-spacing:.75pt;
+	font-style:italic;}
+.MsoChpDefault
+	{font-family:"Cambria",serif;}
+.MsoPapDefault
+	{margin-bottom:10.0pt;
+	line-height:115%;}
+ /* Page Definitions */
+ @page WordSection1
+	{size:8.5in 11.0in;
+	margin:1.0in 1.0in 1.0in 1.0in;}
+div.WordSection1
+	{page:WordSection1;}
+ /* List Definitions */
+ ol
+	{margin-bottom:0in;}
+ul
+	{margin-bottom:0in;}
+-->
+</style>
+
+</head>
+
+<body lang=EN-US style='word-wrap:break-word'>
+
+<div class=WordSection1>
+
+<div style='border:none;border-bottom:solid #4F81BD 1.0pt;padding:0in 0in 4.0pt 0in'>
+
+<p class=MsoTitle align=center style='text-align:center'><b>Airline Widget
+Integration Guide</b></p>
+
+</div>
+
+<p class=MsoSubtitle align=center style='text-align:center'>Version 1.0.0</p>
+
+<h1>Summary</h1>
+
+<p class=MsoNormal>This guide explains how to add the Arcube booking widget to
+your airline platform. It shows where to place the widget in the booking flow
+and what parts of the flow remain under your control. It outlines the system
+architecture and lists each step in the integration. It gives examples of cart
+events for different ancillaries and includes new examples for lounge and
+insurance items. It also provides guidance on expected messages from the
+widget.</p>
+
+<h1>Overview</h1>
+
+<p class=MsoNormal>This guide explains how to integrate the Arcube booking
+widget into an airline booking platform. The widget is an embedded ancillary
+experience that appears inside the airline booking flow. It helps passengers
+discover and select additional services such as airport transfers, car rental,
+lounge access, eSIMs, carbon offset, insurance and other ancillary products.</p>
+
+<p class=MsoNormal>The widget does not replace the airline booking engine. The
+airline still owns:</p>
+
+<p class=MsoListBulletCxSpFirst><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>the booking session</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>the flight selection</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>the basket</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>the checkout</p>
+
+<p class=MsoListBulletCxSpLast><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>the final order</p>
+
+<p class=MsoNormal>The widget adds a passenger‑facing ancillary layer on top of
+the airline booking journey.</p>
+
+<p class=MsoNormal>In most integrations, the widget is shown on the extras or
+ancillary step. A common pattern includes:</p>
+
+<p class=MsoListBulletCxSpFirst><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Loading the Arcube integration script on the booking site</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Waiting until the correct booking step and booking data are
+available</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Sending the booking context to Arcube</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Opening the widget inside the airline page</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Fetching offers and showing them to the passenger</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Letting the passenger select services</p>
+
+<p class=MsoListBulletCxSpLast><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Handing selected items back to the airline basket flow</p>
+
+<h2>Operating model:</h2>
+
+<p class=MsoListBulletCxSpFirst><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Prepare recommendations as soon as there is a stable booking
+session</p>
+
+<p class=MsoListBulletCxSpLast><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Render the widget on the extras step where the passenger is
+expected to buy ancillaries</p>
+
+<h1>Authentication and Token Flow</h1>
+
+<h2>Token Flow</h2>
+
+<p class=MsoListBulletCxSpFirst>This section describes the preferred widget
+authentication model for airline integrations.</p>
+
+<p class=MsoListBulletCxSpMiddle>&nbsp;</p>
+
+<p class=MsoListBulletCxSpLast><img width=624 height=416
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image001.jpg"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 1: Secure
+token vending flow via airline CDN proxy</p>
+
+<p class=MsoListBulletCxSpFirst style='margin-left:0in;text-indent:0in'>The
+recommended approach keeps the airline secret on the airline side, and the
+browser receives only a short-lived token. the signed flow below is the
+preferred tenant-facing model. In the current model, the widget token is valid
+for 4 hours.</p>
+
+<p class=MsoListBulletCxSpMiddle style='margin-left:0in;text-indent:0in'>&nbsp;</p>
+
+<p class=MsoListBulletCxSpMiddle style='margin-left:0in;text-indent:0in'>When
+the booking page needs the widget, the browser first asks an airline-controlled
+endpoint for a widget token. That request stays inside the airline environment.
+The airline secure layer, such as a backend service, CDN worker, or edge layer,
+builds a canonical string and signs it with HMAC using the airline secret.
+Arcube receives that signed request, verifies it, and returns a short-lived
+token. The browser then passes the token to the widget, and the widget uses it
+for later Arcube API calls.</p>
+
+<p class=MsoListBulletCxSpMiddle style='margin-left:0in;text-indent:0in'>&nbsp;</p>
+
+<p class=MsoListBulletCxSpMiddle style='margin-left:0in;text-indent:0in'>The
+reference image below shows the same flow in a more visual way. The important
+point is that the airline website does not expose the secret in browser code.
+The secure layer signs the request, forwards it to Arcube, and returns only a
+token to the browser.</p>
+
+<p class=MsoListBulletCxSpMiddle>&nbsp;</p>
+
+<p class=MsoListBulletCxSpMiddle style='margin-left:0in;text-indent:0in'>&nbsp;</p>
+
+<p class=MsoListBulletCxSpLast align=center style='text-align:center'><img
+width=624 height=279
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image002.jpg"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 2: Token flow
+sequence diagram</p>
+
+<p class=MsoListBulletCxSpFirst style='margin-left:0in;text-indent:0in'>The
+signed text usually contains the tenant identifier, a timestamp, and a session
+ID or PNR when one already exists. Arcube rebuilds the same string on its side
+and checks that the signature matches. It also checks that the tenant is known
+and that the timestamp or nonce is still valid.</p>
+
+<p class=MsoListBulletCxSpMiddle style='margin-left:0in;text-indent:0in'>&nbsp;</p>
+
+<p class=MsoListBulletCxSpMiddle style='margin-left:0in;text-indent:0in'>The
+airline secret and the signing logic stay on the airline secure side. The
+browser must never receive them. The browser should receive only the
+short-lived widget token and the booking context it already owns.</p>
+
+<p class=MsoListBulletCxSpMiddle style='margin-left:0in;text-indent:0in'>&nbsp;</p>
+
+<p class=MsoListBulletCxSpMiddle style='margin-left:0in;text-indent:0in'>If a session
+ID or PNR exists before the widget opens, it should be included in the signed
+request so the token can be tied to that booking context. If a PNR does not
+exist yet, a session-level identifier is enough for the first step.</p>
+
+<p class=MsoListBulletCxSpMiddle style='margin-left:0in;text-indent:0in'>&nbsp;</p>
+
+<p class=MsoListBulletCxSpLast style='margin-left:0in;text-indent:0in'>For this
+token, the safest approach is to keep it in memory and treat it as temporary.
+In the current model, the token is valid for 4 hours. Where possible, it should
+also be tied to the session or PNR.</p>
+
+<h1>System Architecture</h1>
+
+<p class=MsoNormal>The tenant integration has four moving parts:</p>
+
+<p class=MsoListBulletCxSpFirst><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>the airline frontend page</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>the Arcube integration script</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>the Arcube widget</p>
+
+<p class=MsoListBulletCxSpLast><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>the airline basket API</p>
+
+<p class=MsoNormal>The airline page mounts the widget. The widget sends cart
+events back to the page, and the airline page updates its own basket.</p>
+
+<h2>Architecture diagram:</h2>
+
+<p class=MsoNormal align=center style='text-align:center'><img width=528
+height=607 src="Airline%20Widget%20Integration%20Guide%20V1_files/image003.jpg"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 3: Architecture
+diagram</p>
+
+<h1>Integration Flow</h1>
+
+<h2>1. User opens the widget</h2>
+
+<p class=MsoNormal>The airline renders the widget component when the user
+reaches the extras step. Mount the widget when the extras route is active and
+destroy it when that view unmounts.</p>
+
+<h2>2. User searches for services</h2>
+
+<p class=MsoNormal>The widget uses the session and flight context from the
+airline page. For some ancillaries, the passenger also enters extra
+product‑specific details. Examples include pickup and drop‑off addresses or
+driver age.</p>
+
+<h2>3. User selects an option</h2>
+
+<p class=MsoNormal>The widget keeps the passenger inside the airline page and
+lets them select the ancillary product.</p>
+
+<h2>4. Add to cart</h2>
+
+<p class=MsoNormal>When the passenger adds an item, the widget emits a cart
+event to the parent page. The airline frontend receives that event and calls
+its own basket API.</p>
+
+<h2>5. Continue to checkout</h2>
+
+<p class=MsoNormal>After the airline basket is updated successfully, the normal
+airline flow continues.</p>
+
+<h2>Journey diagram:</h2>
+
+<p class=MsoNormal align=center style='text-align:center'><img width=528
+height=300 id="Picture 2"
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image004.jpg"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 4: Journey
+diagram</p>
+
+<h1>Add to Cart Functionality</h1>
+
+<p class=MsoNormal>The widget does not write into the airline basket directly.
+It emits cart events. The airline frontend must listen to those events and run
+its own add‑to‑cart logic. Each widget event contains a cart snapshot. For
+add‑to‑cart, the tenant should catch the widget event, read the newest line
+item and pass that data into its own basket logic.</p>
+
+<h2>Catch the add event</h2>
+
+<p class=MsoNormal>Listen for cart update events and extract the latest item
+from the cart. The following example shows how to do that in JavaScript:</p>
+
+<p class=MsoNormal align=center style='text-align:center'><img width=528
+height=319 id="Picture 3"
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image005.png"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 5:
+Add-to-cart event handling code</p>
+
+<h2>eSIM item</h2>
+
+<p class=MsoNormal>eSIM lines carry their own plan and package identifiers. The
+example below shows the structure.</p>
+
+<p class=MsoNormal align=center style='text-align:center'><img width=528
+height=318 id="Picture 4"
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image006.png"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 6: eSIM item
+structure</p>
+
+<h2>Car rental item</h2>
+
+<p class=MsoNormal>Car rental includes the supplier reference and passenger
+count. The example below shows the structure.</p>
+
+<p class=MsoNormal align=center style='text-align:center'><img width=528
+height=234 id="Picture 5"
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image007.png"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 7: Car rental
+item structure</p>
+
+<h2>Carbon offset item</h2>
+
+<p class=MsoNormal>Carbon offset depends on the quote identifier. The example
+below shows the structure.</p>
+
+<p class=MsoNormal align=center style='text-align:center'><img width=528
+height=217 id="Picture 6"
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image008.png"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 8: Carbon
+offset item structure</p>
+
+<h2>Lounge item</h2>
+
+<p class=MsoNormal>Lounge identifiers such as resourceId and referenceId may be
+present when available. Tenants can use them if they need them, but should not
+hard-fail if extra optional fields are added later.</p>
+
+<p class=MsoNormal align=center style='text-align:center'><img width=528
+height=200 id="Picture 7"
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image009.png"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 9: Lounge
+item structure</p>
+
+<h2>Insurance item</h2>
+
+<p class=MsoNormal>Insurance uses the base basket line fields.</p>
+
+<p class=MsoNormal align=center style='text-align:center'><img width=528
+height=199 id="Picture 8"
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image010.png"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 10: Insurance
+item structure</p>
+
+<h2>Airport transfer item</h2>
+
+<p class=MsoNormal>Airport transfer has a time‑limited quote. Keep the fields
+exactly as received. The example below shows the structure.</p>
+
+<p class=MsoNormal align=center style='text-align:center'><img width=528
+height=231 id="Picture 9"
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image011.png"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 11: Airport
+transfer item structure</p>
+
+<p class=MsoNormal>This document shows the current cart event format for
+version 1. The payload format shown above reflects what is used right now. The
+list is not fixed, and new fields might be added later when new ancillary
+partners are introduced. Tenants should follow the documented structure and use
+the fields they need. Any important contract change will be communicated.</p>
+
+<h2>Expected message from the widget</h2>
+
+<p class=MsoNormal>The airline does not need to guess the message shape. The
+add to cart event contains a cart summary and the item that was just added.</p>
+
+<p class=MsoNormal align=center style='text-align:center'><img width=528
+height=653 id="Picture 10"
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image012.png"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 12: Expected
+message from the widget</p>
+
+<h1>Sending Updates to the Widget</h1>
+
+<p class=MsoNormal>Yes. The airline can also send data and commands to the
+widget</p>
+
+<p class=MsoNormal>In the current website integration, the airline page already
+loads the Arcube integration script. That script adds the embedded widget into
+the page. Runtime communication happens by sending a browser message to the
+embedded widget window.</p>
+
+<p class=MsoNormal>Example:</p>
+
+<p class=MsoNormal><img width=624 height=690
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image013.jpg"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 13: Remove
+item example code</p>
+
+<h1>Tenant Event Contract</h1>
+
+<p class=MsoNormal>The Arcube widget dispatches events that indicate its state.
+Tenants must handle these events appropriately. The table below summarizes the
+events and the required tenant actions:</p>
+
+<p class=MsoNormal align=center style='text-align:center'><img width=528
+height=144 id="Picture 12"
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image014.png"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 14: Tenant
+event contract overview</p>
+
+<h1>Styling and Branding:</h1>
+
+<p class=MsoNormal>The widget can be branded to match the airline experience.
+The current styling contract is based on a hosted theme file, not a full custom
+stylesheet for the whole widget. The airline hosts a theme JSON file on an
+HTTPS URL and passes that URL to the widget as <b><span style='color:#EE0000'>themeJsonUrl</span></b><span
+style='color:#EE0000'> </span>when the widget is opened.</p>
+
+<p class=MsoNormal>The widget reads that theme file, applies the color and
+typography tokens internally, and keeps the styling scoped to the widget
+itself. If the airline wants to use a custom font, the theme file can also
+include a <b><span style='color:#EE0000'>font-url</span></b><span
+style='color:#EE0000'> </span>value. This is an HTTPS stylesheet link, such as
+a hosted font stylesheet or a Google Fonts URL. The widget loads that
+stylesheet automatically and uses the declared <b><span style='color:#EE0000'>font-family</span></b>.</p>
+
+<p class=MsoNormal>In practice, the theme file should include an <b><span
+style='color:#EE0000'>en</span></b><span style='color:#EE0000'> </span>block
+indicating the language with a colors section and a typography section. At
+minimum, the widget expects <b><span style='color:#EE0000'>primary</span></b>, <b><span
+style='color:#EE0000'>secondary</span></b>, <b><span style='color:#EE0000'>bodyBg</span></b>,
+<b><span style='color:#EE0000'>neutral</span></b>, <b><span style='color:#EE0000'>black</span></b>,
+<b><span style='color:#EE0000'>white</span></b>, <b><span style='color:#EE0000'>link</span></b>,
+and <b><span style='color:#EE0000'>typography.font-family</span></b>. Optional
+color values such as <b><span style='color:#EE0000'>success</span></b>, <b><span
+style='color:#EE0000'>warning</span></b>, <b><span style='color:#EE0000'>danger</span></b>,
+<b><span style='color:#EE0000'>info</span></b>, and <b><span style='color:#EE0000'>lightnessThreshold</span></b><span
+style='color:#EE0000'> </span>may also be provided.</p>
+
+<p class=MsoNormal>When the airline opens the widget, it should pass a
+themeJsonUrl value that points to its hosted theme file. In a typical
+integration, that value looks like this:</p>
+
+<p class=MsoNormal><b><i>themeJsonUrl=https://cdn.airline.com/arcube/widget-theme.json</i></b></p>
+
+<p class=MsoNormal>In the current implementation, the query-based theme URL
+supports the main color tokens such as primary, secondary, bodyBg, neutral,
+black, white, link, success, warning, danger, info, and lightnessThreshold, as
+well as fontFamily and fontUrl. This makes it useful for quick branding
+changes. For long-term production control, a hosted theme JSON file is still
+the cleaner option.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>Example theme file:</p>
+
+<p class=MsoNormal><img width=624 height=471 id="Picture 1"
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image015.png"></p>
+
+<p class=MsoNormal>If the theme file cannot be fetched, is invalid, or is missing
+required values, the widget falls back to the default Arcube styling. For that
+reason, the theme file should be hosted on a stable HTTPS URL and treated as
+part of the production integration.</p>
+
+<h1>Frontend Integration Lifecycle Rules</h1>
+
+<p class=MsoListBulletCxSpFirst><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Load the widget only on the route where it is needed</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Destroy the widget when the route unmounts</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Re‑initialize the widget when the booking session changes</p>
+
+<p class=MsoListBulletCxSpLast><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Keep the mount container stable</p>
+
+<h1>Error Handling</h1>
+
+<p class=MsoNormal>The widget must never block the airline booking flow. Follow
+these rules to handle errors:</p>
+
+<p class=MsoListBulletCxSpFirst><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>If the widget is not available, hide the widget area</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>If the widget emits an “arcube:widget:error” event, log it and
+keep the airline flow usable</p>
+
+<p class=MsoListBulletCxSpMiddle><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>If your cart update fails, show a clear message and do not assume
+the ancillary was saved</p>
+
+<p class=MsoListBulletCxSpLast><span style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>If session data is missing, do not mount the widget</p>
+
+<h2>Error handling code example</h2>
+
+<p class=MsoNormal>Listen for error events and wrap your cart update logic in a
+try‑catch block. The following example illustrates how to handle errors in
+JavaScript:</p>
+
+<p class=MsoNormal align=center style='text-align:center'><img width=469
+height=241 id="Picture 13"
+src="Airline%20Widget%20Integration%20Guide%20V1_files/image016.png"></p>
+
+<p class=MsoCaption align=center style='text-align:center'>Figure 15: Error
+handling code example<br>
+<br>
+</p>
+
+<h1>Thank You</h1>
+
+<p class=MsoNormal>Thank you for integrating the Arcube widget into your
+booking flow.</p>
+
+<p class=MsoNormal>You’re now ready to manage your widget integration.</p>
+
+<p class=MsoNormal>This guide was designed to help you get the most out of the
+Arcube widget and integrate it cleanly into your booking flow.</p>
+
+<p class=MsoNormal>If you need further assistance, contact support@arcube.com.</p>
+
+<p class=MsoNormal>We’re glad to have you on board and look forward to
+supporting your success.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal align=center style='text-align:center'>&nbsp;</p>
+
+<p class=MsoNormal align=center style='text-align:center'>&nbsp;</p>
+
+<p class=MsoNormal align=center style='text-align:center'>&nbsp;</p>
+
+<p class=MsoNormal align=center style='text-align:center'>&nbsp;</p>
+
+<p class=MsoNormal align=center style='text-align:center'>&nbsp;</p>
+
+<p class=MsoNormal align=center style='text-align:center'>&nbsp;</p>
+
+<p class=MsoNormal align=center style='text-align:center'>&nbsp;</p>
+
+<p class=MsoNormal align=center style='text-align:center'>&nbsp;</p>
+
+<p class=MsoNormal align=center style='text-align:center'>&nbsp;</p>
+
+<p class=MsoNormal align=center style='text-align:center'>&nbsp;</p>
+
+<p class=MsoNormal align=center style='text-align:center'>Copyright ©️ 2026
+Arcube. This document contains proprietary and confidential information and may
+not be disclosed without written consent.</p>
+
+</div>
+
+</body>
+
+</html>

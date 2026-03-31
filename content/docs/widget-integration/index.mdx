@@ -1,37 +1,73 @@
 ---
 title: Overview
-description: Embed Arcube's ancillary services directly into the booking flow via widget or NPM package.
+description: Embed Arcube's ancillary booking widget directly into your airline's booking flow.
 ---
 
-The Widget Integration allows Arcube's ancillary services to be embedded directly into the airline's or TMC's booking flow, providing passengers with personalized ancillary offers during the booking process. The widget is dynamically injected into the booking page and presents a seamless experience for passengers as they browse and select relevant ancillaries. The typical insertion point is after collecting passenger information and before payment selection in the booking flow.
+This guide explains how to integrate the Arcube booking widget into an airline booking platform. The widget is an embedded ancillary experience that appears inside the airline booking flow. It helps passengers discover and select additional services such as airport transfers, car rental, lounge access, eSIMs, carbon offset, insurance, and other ancillary products.
 
-If the tenant's technology allows it, Arcube can also provide an **NPM package** which gives the tenant more control and transparency instead of the widget.
+The widget does not replace the airline booking engine. The airline still owns:
+
+- the booking session
+- the flight selection
+- the basket
+- the checkout
+- the final order
+
+The widget adds a passenger-facing ancillary layer on top of the airline booking journey.
 
 ---
 
 ## How It Works
 
-1. Your back end sends anonymized trip data to Arcube via API.
-2. Your front-end dynamically loads the Arcube Widget after a specific booking step.
-3. Arcube responds with a signed Widget.
-4. Display the Widget to the passenger.
-5. Track selections and confirm orders.
+In most integrations, the widget is shown on the extras or ancillary step. A common pattern includes:
+
+- Loading the Arcube integration script on the booking site
+- Waiting until the correct booking step and booking data are available
+- Sending the booking context to Arcube
+- Opening the widget inside the airline page
+- Fetching offers and showing them to the passenger
+- Letting the passenger select services
+- Handing selected items back to the airline basket flow
+
+### Operating Model
+
+- Prepare recommendations as soon as there is a stable booking session
+- Render the widget on the extras step where the passenger is expected to buy ancillaries
+
+---
+
+## System Architecture
+
+The tenant integration has four moving parts:
+
+- the airline frontend page
+- the Arcube integration script
+- the Arcube widget
+- the airline basket API
+
+The airline page mounts the widget. The widget sends cart events back to the page, and the airline page updates its own basket.
+
+<img src="/images/widget/widget-architecture.jpg" alt="Widget architecture diagram" style={{width: '100%'}} />
+
+<small>Figure: Architecture diagram showing the four components of the widget integration.</small>
 
 ---
 
 ## Customization
 
-- Colors
-- Fonts
+The widget can be fully branded to match your airline experience using a hosted theme JSON file. Supported customizations include:
+
+- Colors (primary, secondary, background, neutral, and more)
+- Typography and fonts
 - Logo
 
 ---
 
 ## Benefits
 
-- Seamless user experience
-- Real-time personalization
-- Fully branded
+- Seamless user experience embedded in the booking flow
+- Real-time personalization based on booking context
+- Fully branded to match your airline's design
 
 ---
 
@@ -43,5 +79,6 @@ You process payments; Arcube invoices for ancillaries.
 
 ## Security
 
-- HTTPS encryption
-- JWT/HMAC request validation
+- The airline secret never reaches the browser — only a short-lived token is passed to the widget
+- HMAC-signed requests for token vending
+- HTTPS encryption for all API and widget communication

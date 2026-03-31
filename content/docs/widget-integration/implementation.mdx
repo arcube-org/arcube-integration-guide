@@ -1,204 +1,209 @@
 ---
 title: Implementation
-description: Technical steps for Widget Integration — authentication, ancillary selection, payment, and order confirmation.
+description: Technical steps for Widget Integration — authentication, integration flow, cart events, styling, and error handling.
 ---
 
-Depending on whether the airline's IBE (Internet Booking Engine) uses an NPM-compatible framework or not, Arcube provides two integration methods:
+## Authentication and Token Flow
 
-- **NPM Package**
-- **JavaScript Script Injection**
+### Token Flow
 
-### Sample Sequence Diagram
+This section describes the preferred widget authentication model for airline integrations.
 
-<img src="/images/ArcubeiFrame-Widget-Drawio.png" alt="Widget Integration sequence diagram" style={{width: '100%'}} />
+<img src="/images/widget/widget-token-flow-diagram.jpg" alt="Secure token vending flow via airline CDN proxy" style={{width: '100%'}} />
 
-<small>Figure: Example process and required calls for integrating with Arcube using the widget integration method.</small>
+<small>Figure 1: Secure token vending flow via airline CDN proxy.</small>
+
+The recommended approach keeps the airline secret on the airline side, and the browser receives only a short-lived token. In the current model, the widget token is valid for 4 hours.
+
+When the booking page needs the widget, the browser first asks an airline-controlled endpoint for a widget token. That request stays inside the airline environment. The airline secure layer — such as a backend service, CDN worker, or edge layer — builds a canonical string and signs it with HMAC using the airline secret. Arcube receives that signed request, verifies it, and returns a short-lived token. The browser then passes the token to the widget, and the widget uses it for later Arcube API calls.
+
+The reference image below shows the same flow in a more visual way. The important point is that the airline website does not expose the secret in browser code. The secure layer signs the request, forwards it to Arcube, and returns only a token to the browser.
+
+<img src="/images/widget/widget-token-sequence.jpg" alt="Token flow sequence diagram" style={{width: '100%'}} />
+
+<small>Figure 2: Token flow sequence diagram.</small>
+
+The signed text usually contains the tenant identifier, a timestamp, and a session ID or PNR when one already exists. Arcube rebuilds the same string on its side and checks that the signature matches. It also checks that the tenant is known and that the timestamp or nonce is still valid.
+
+The airline secret and the signing logic stay on the airline secure side. The browser must never receive them. The browser should receive only the short-lived widget token and the booking context it already owns.
+
+If a session ID or PNR exists before the widget opens, it should be included in the signed request so the token can be tied to that booking context. If a PNR does not exist yet, a session-level identifier is enough for the first step.
+
+For this token, the safest approach is to keep it in memory and treat it as temporary. In the current model, the token is valid for 4 hours. Where possible, it should also be tied to the session or PNR.
 
 ---
 
-## 1. Collect Passenger Contextual Data
+## Integration Flow
 
-The front-end collects contextual data such as:
+### 1. User Opens the Widget
 
-- Trip details
-- Passenger type
-- Loyalty status
+The airline renders the widget component when the user reaches the extras step. Mount the widget when the extras route is active and destroy it when that view unmounts.
 
-This data is passed to the **tenant's back-end**, which must call the [Ingest Passenger Data](/docs/reference/essential-api-calls#61-ingest-passenger-data) API.
+### 2. User Searches for Services
+
+The widget uses the session and flight context from the airline page. For some ancillaries, the passenger also enters extra product-specific details — for example, pickup and drop-off addresses or driver age.
+
+### 3. User Selects an Option
+
+The widget keeps the passenger inside the airline page and lets them select the ancillary product.
+
+### 4. Add to Cart
+
+When the passenger adds an item, the widget emits a cart event to the parent page. The airline frontend receives that event and calls its own basket API.
+
+### 5. Continue to Checkout
+
+After the airline basket is updated successfully, the normal airline flow continues.
+
+### Journey Diagram
+
+<img src="/images/widget/widget-journey.jpg" alt="Integration flow journey diagram" style={{width: '100%'}} />
+
+<small>Figure 4: Journey diagram.</small>
 
 ---
 
-## 2. Widget Activation, Authentication & Rendering
+## Add to Cart Functionality
 
-### Widget Authentication
+The widget does not write into the airline basket directly. It emits cart events. The airline frontend must listen to those events and run its own add-to-cart logic. Each widget event contains a cart snapshot. For add-to-cart, the tenant should catch the widget event, read the newest line item, and pass that data into its own basket logic.
 
-Arcube widgets are designed to be embedded directly into tenant (e.g., airline) websites without requiring any backend integration from the partner side. To ensure secure communication and prevent unauthorized use, the following authentication flow is used.
+### Catching the Add Event
 
-### Authentication Flow
+Listen for cart update events and extract the latest item from the cart. The following example shows how to do that in JavaScript:
 
-When the airline embeds the widget, they reference a dynamic bootstrap script:
+<img src="/images/widget/widget-add-to-cart-event.png" alt="Add-to-cart event handling code" style={{width: '100%'}} />
 
-```jsx
-<script src="https://tenantx.arcube.com/widget-loader.js"></script>
+<small>Figure 5: Add-to-cart event handling code.</small>
+
+### eSIM Item
+
+eSIM lines carry their own plan and package identifiers. The example below shows the structure.
+
+<img src="/images/widget/widget-esim-item.png" alt="eSIM item structure" style={{width: '100%'}} />
+
+<small>Figure 6: eSIM item structure.</small>
+
+### Car Rental Item
+
+Car rental includes the supplier reference and passenger count. The example below shows the structure.
+
+<img src="/images/widget/widget-car-rental-item.png" alt="Car rental item structure" style={{width: '100%'}} />
+
+<small>Figure 7: Car rental item structure.</small>
+
+### Carbon Offset Item
+
+Carbon offset depends on the quote identifier. The example below shows the structure.
+
+<img src="/images/widget/widget-carbon-offset-item.png" alt="Carbon offset item structure" style={{width: '100%'}} />
+
+<small>Figure 8: Carbon offset item structure.</small>
+
+### Lounge Item
+
+Lounge identifiers such as `resourceId` and `referenceId` may be present when available. Tenants can use them if they need them, but should not hard-fail if extra optional fields are added later.
+
+<img src="/images/widget/widget-lounge-item.png" alt="Lounge item structure" style={{width: '100%'}} />
+
+<small>Figure 9: Lounge item structure.</small>
+
+### Insurance Item
+
+Insurance uses the base basket line fields.
+
+<img src="/images/widget/widget-insurance-item.png" alt="Insurance item structure" style={{width: '100%'}} />
+
+<small>Figure 10: Insurance item structure.</small>
+
+### Airport Transfer Item
+
+Airport transfer has a time-limited quote. Keep the fields exactly as received. The example below shows the structure.
+
+<img src="/images/widget/widget-airport-transfer-item.png" alt="Airport transfer item structure" style={{width: '100%'}} />
+
+<small>Figure 11: Airport transfer item structure.</small>
+
+The payload format shown above reflects what is used in version 1. The list is not fixed — new fields might be added later when new ancillary partners are introduced. Tenants should follow the documented structure and use the fields they need. Any important contract change will be communicated.
+
+### Expected Message from Widget
+
+The airline does not need to guess the message shape. The add-to-cart event contains a cart summary and the item that was just added.
+
+<img src="/images/widget/widget-expected-message.png" alt="Expected message from the widget" style={{width: '100%'}} />
+
+<small>Figure 12: Expected message from the widget.</small>
+
+---
+
+## Sending Updates to the Widget
+
+The airline can also send data and commands to the widget. In the current website integration, the airline page already loads the Arcube integration script. That script adds the embedded widget into the page. Runtime communication happens by sending a browser message to the embedded widget window.
+
+<img src="/images/widget/widget-remove-item.jpg" alt="Remove item example code" style={{width: '100%'}} />
+
+<small>Figure 13: Remove item example code.</small>
+
+---
+
+## Tenant Event Contract
+
+The Arcube widget dispatches events that indicate its state. Tenants must handle these events appropriately. The table below summarizes the events and the required tenant actions:
+
+<img src="/images/widget/widget-event-contract.png" alt="Tenant event contract overview" style={{width: '100%'}} />
+
+<small>Figure 14: Tenant event contract overview.</small>
+
+---
+
+## Styling and Branding
+
+The widget can be branded to match the airline experience. The current styling contract is based on a hosted theme file. The airline hosts a theme JSON file on an HTTPS URL and passes that URL to the widget as `themeJsonUrl` when the widget is opened.
+
+The widget reads that theme file, applies the color and typography tokens internally, and keeps the styling scoped to the widget itself. If the airline wants to use a custom font, the theme file can also include a `font-url` value — an HTTPS stylesheet link such as a hosted font stylesheet or a Google Fonts URL. The widget loads that stylesheet automatically and uses the declared `font-family`.
+
+The theme file should include an `en` block with a colors section and a typography section. At minimum, the widget expects:
+
+- `primary`, `secondary`, `bodyBg`, `neutral`, `black`, `white`, `link`
+- `typography.font-family`
+
+Optional color values — `success`, `warning`, `danger`, `info`, and `lightnessThreshold` — may also be provided.
+
+When opening the widget, pass a `themeJsonUrl` pointing to the hosted theme file:
+
+```
+themeJsonUrl=https://cdn.airline.com/arcube/widget-theme.json
 ```
 
-This script:
+The query-based theme URL supports the main color tokens as well as `fontFamily` and `fontUrl`, making it useful for quick branding changes. For long-term production control, a hosted theme JSON file is the cleaner option.
 
-- Validates the request origin (via `Origin` or `Referer` headers).
-- Generates a short-lived, signed JWT initialization token (`initToken`) specific to the client and request.
-- Uses the token to make all subsequent calls to Arcube's backend.
+**Example theme file:**
 
-Upon initialization, the widget:
+<img src="/images/widget/widget-theme-file.png" alt="Example theme file" style={{width: '100%'}} />
 
-- Sends the `initToken` and `clientId` to the Arcube backend to request a short-lived session token.
-- If the `initToken` is valid (signature, expiration, origin match), the session token is issued.
-- The session token is then used to authenticate subsequent API calls (e.g., order creation).
+If the theme file cannot be fetched, is invalid, or is missing required values, the widget falls back to the default Arcube styling. For that reason, the theme file should be hosted on a stable HTTPS URL and treated as part of the production integration.
 
 ---
 
-## 3. Ancillary Selection Event
+## Frontend Integration Lifecycle Rules
 
-When a user selects an ancillary product in the widget, the widget emits an event to the parent window. The front-end listens and handles this event.
-
-```json
-{
-  "sessionId": "fkdsjf-f123-4567",
-  "event": "addToCart",
-  "selectedAncillaries": [
-    {
-      "vendor": "brb",
-      "id": "e9b1d12f-8f1d-4f32-9c3e-8d928c1b3ff4",
-      "price": {
-        "amount": 35.00,
-        "currency": "USD"
-      }
-    }
-  ]
-}
-```
+- Load the widget only on the route where it is needed
+- Destroy the widget when the route unmounts
+- Re-initialize the widget when the booking session changes
+- Keep the mount container stable
 
 ---
 
-## 4. Proceed to Payment (Optional)
+## Error Handling
 
-When the user proceeds to payment, the IBE may:
+The widget must never block the airline booking flow. Follow these rules to handle errors:
 
-- Close the widget, or
-- Emit a message to the widget using `postMessage()` to retrieve a summary.
+- If the widget is not available, hide the widget area
+- If the widget emits an `arcube:widget:error` event, log it and keep the airline flow usable
+- If your cart update fails, show a clear message and do not assume the ancillary was saved
+- If session data is missing, do not mount the widget
 
-#### IBE Emit: Proceed to Payment
+Listen for error events and wrap your cart update logic in a try-catch block. The following example illustrates how to handle errors in JavaScript:
 
-```json
-{
-  "event": "proceedToPayment",
-  "data": {
-    "sessionId": "user-12345"
-  }
-}
-```
+<img src="/images/widget/widget-error-handling.png" alt="Error handling code example" style={{width: '100%'}} />
 
-#### Widget Responds with Summary
-
-```json
-{
-  "sessionId": "user-12345",
-  "totalPrice": {
-    "amount": 85.00,
-    "currency": "USD"
-  },
-  "selectedAncillaries": [
-    {
-      "vendor": "brb",
-      "id": "e9b1d12f-8f1d-4f32-9c3e-8d928c1b3ff4",
-      "price": {
-        "amount": 35.00,
-        "currency": "USD"
-      }
-    },
-    {
-      "vendor": "mozio",
-      "id": "e9b1d12f-8f1d-4f32-9c3e-8d564c1b3ff4",
-      "price": {
-        "amount": 50.00,
-        "currency": "USD"
-      }
-    }
-  ]
-}
-```
-
----
-
-## 5. Tenant Confirms Payment to Arcube
-
-Once the payment is captured, the tenant must notify Arcube to finalize booking with the vendors.
-
-#### Request Payload
-
-```json
-{
-  "sessionId": "user-12345",
-  "transactionId": "trx1",
-  "totalAmountPaid": 85.00,
-  "ancillaryIds": [
-    "ancillary-id-001",
-    "ancillary-id-002"
-  ],
-  "paymentStatus": "success"
-}
-```
-
-#### Arcube Response Payload
-
-```json
-{
-  "status": "PARTIAL-SUCCESS",
-  "sessionId": "user-12345",
-  "transactionId": "trx1",
-  "message": "Booking failed for some ancillaries.",
-  "failedAncillaries": [
-    {
-      "id": "e9b1d12f-8f1d-4f32-9c3e-8d928c1b3cc6",
-      "reasonCode": "NOT_AVAILABLE"
-    }
-  ],
-  "successfulAncillaries": [
-    {
-      "id": "e9b1d12f-8f1d-4f32-9c3e-8d928c1b3bb5",
-      "reasonCode": "SUCCESS"
-    },
-    {
-      "id": "e9b1d12f-8f1d-4f32-9c3e-8d928c1b3dd7",
-      "reasonCode": "SUCCESS"
-    }
-  ],
-  "totalRefundAmount": {
-    "amount": 35.00,
-    "currency": "USD"
-  },
-  "errorDetails": [
-    "Extra baggage is not available for booking at the moment."
-  ]
-}
-```
-
----
-
-## Customization of Look and Feel
-
-Arcube offers full visual customization of the widget to match the partner's branding. This includes:
-
-- Colors
-- Fonts
-- Logos
-- Overall layout
-
-This ensures the widget feels like a native part of the partner's IBE.
-
----
-
-## Security Considerations
-
-- **JWT Tokens or HMAC Signatures** — Used to validate authenticity and prevent tampering.
-- **HTTPS Encryption** — All API and widget communication is encrypted over HTTPS.
-- **No Sensitive Data in Front-End** — Only signed widget URLs are passed to the browser — no PII or raw session data.
+<small>Figure 15: Error handling code example.</small>
