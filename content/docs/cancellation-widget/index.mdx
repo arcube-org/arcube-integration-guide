@@ -1,0 +1,40 @@
+---
+title: Cancellation Widget
+description: Embed a self-service cancellation experience for ancillary orders into your post-booking pages.
+---
+
+The Cancellation Widget is a lightweight, iframe-embeddable interface that allows passengers to view and manage their ancillary service orders after booking. It handles order display, cancellation policy enforcement, and refund initiation - all within a branded experience that matches the airline's look and feel.
+
+Airlines embed the widget on their "Manage My Trip" or order management pages. The passenger's PNR is passed via URL parameter, and the widget takes care of the rest.
+
+---
+
+## How It Works
+
+The cancellation flow follows these steps:
+
+1. The airline embeds the widget as an iframe on their post-booking page, passing the passenger's PNR as a URL parameter.
+2. The widget authenticates automatically using the iframe's origin subdomain to resolve the airline tenant.
+3. The widget fetches all transactions associated with the PNR and displays them grouped by booking.
+4. The passenger can expand any order item to view service details and the cancellation policy.
+5. If the item is eligible for cancellation (confirmed/completed status and a refundable policy), the passenger can submit a cancellation request.
+6. The widget displays the result - either a successful cancellation with refund timeline, or a "needs review" status for manual processing.
+
+<img src="/images/cancellation-widget/cancellation-flow.svg" alt="Cancellation widget flow from embed to refund confirmation" style={{display: 'block', margin: '0 auto', width: '100%'}} />
+
+<small style={{display: 'block', textAlign: 'center'}}>Figure 1: Cancellation widget flow.</small>
+
+---
+
+## Customization
+
+The widget supports full visual customization through a theming system. Airlines can override colors, typography, border styles, and spacing to match their brand identity. See the [Implementation](/docs/cancellation-widget/implementation) guide for the full list of theme tokens.
+
+---
+
+## Security
+
+- Passenger sessions are scoped to a single PNR and expire automatically
+- Tenant identity is resolved from the widget's origin subdomain - no tenant ID or secret is exposed client-side
+- All communication is over HTTPS
+- Duplicate cancellation submissions are prevented automatically

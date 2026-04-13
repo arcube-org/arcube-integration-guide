@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 330" width="960" height="330" font-family="'IBM Plex Sans', 'Inter', system-ui, -apple-system, sans-serif">
+  <rect width="960" height="330" fill="#FAFAF8"/>
+
+  <!-- Title -->
+  <text x="480" y="34" text-anchor="middle" font-size="18" font-weight="600" fill="#111110">Cancellation Widget Flow</text>
+  <text x="480" y="54" text-anchor="middle" font-size="13" fill="#6B6966">Four steps from embed to refund</text>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9B9896"/>
+    </marker>
+  </defs>
+
+  <!-- Flow arrows between cards -->
+  <line x1="235" y1="195" x2="265" y2="195" stroke="#9B9896" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="465" y1="195" x2="495" y2="195" stroke="#9B9896" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="695" y1="195" x2="725" y2="195" stroke="#9B9896" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Card 1: Embed (Airline) -->
+  <g>
+    <rect x="40" y="85" width="190" height="220" rx="10" fill="#FFFFFF" stroke="#E6E4DF"/>
+    <circle cx="65" cy="110" r="13" fill="#111110"/>
+    <text x="65" y="114" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">1</text>
+    <g transform="translate(135, 145)">
+      <circle r="30" fill="#F5F4F1"/>
+      <path d="M -10 -7 L -18 0 L -10 7 M 10 -7 L 18 0 L 10 7 M -4 10 L 4 -10" stroke="#111110" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <text x="135" y="210" text-anchor="middle" font-size="15" font-weight="600" fill="#111110">Embed</text>
+    <text x="135" y="232" text-anchor="middle" font-size="12" fill="#6B6966">Airline mounts the</text>
+    <text x="135" y="248" text-anchor="middle" font-size="12" fill="#6B6966">iframe with the PNR</text>
+    <rect x="80" y="270" width="110" height="22" rx="11" fill="#111110"/>
+    <text x="135" y="285" text-anchor="middle" font-size="11" font-weight="500" fill="#FFFFFF">Airline Site</text>
+  </g>
+
+  <!-- Card 2: Display (Widget) -->
+  <g>
+    <rect x="270" y="85" width="190" height="220" rx="10" fill="#FFFFFF" stroke="#E6E4DF"/>
+    <circle cx="295" cy="110" r="13" fill="#2563EB"/>
+    <text x="295" y="114" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">2</text>
+    <g transform="translate(365, 145)">
+      <circle r="30" fill="#EEF2FF"/>
+      <rect x="-15" y="-11" width="30" height="4" rx="2" fill="#2563EB"/>
+      <rect x="-15" y="-2" width="30" height="4" rx="2" fill="#2563EB"/>
+      <rect x="-15" y="7" width="30" height="4" rx="2" fill="#2563EB"/>
+    </g>
+    <text x="365" y="210" text-anchor="middle" font-size="15" font-weight="600" fill="#111110">Display</text>
+    <text x="365" y="232" text-anchor="middle" font-size="12" fill="#6B6966">Widget shows the</text>
+    <text x="365" y="248" text-anchor="middle" font-size="12" fill="#6B6966">passenger's orders</text>
+    <rect x="300" y="270" width="130" height="22" rx="11" fill="#2563EB"/>
+    <text x="365" y="285" text-anchor="middle" font-size="11" font-weight="500" fill="#FFFFFF">Arcube Widget</text>
+  </g>
+
+  <!-- Card 3: Cancel (Passenger) -->
+  <g>
+    <rect x="500" y="85" width="190" height="220" rx="10" fill="#FFFFFF" stroke="#E6E4DF"/>
+    <circle cx="525" cy="110" r="13" fill="#6B6966"/>
+    <text x="525" y="114" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">3</text>
+    <g transform="translate(595, 145)">
+      <circle r="30" fill="#F5F4F1"/>
+      <circle r="16" fill="none" stroke="#6B6966" stroke-width="2"/>
+      <path d="M -8 -8 L 8 8 M 8 -8 L -8 8" stroke="#6B6966" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
+    <text x="595" y="210" text-anchor="middle" font-size="15" font-weight="600" fill="#111110">Cancel</text>
+    <text x="595" y="232" text-anchor="middle" font-size="12" fill="#6B6966">Passenger reviews policy</text>
+    <text x="595" y="248" text-anchor="middle" font-size="12" fill="#6B6966">and cancels an item</text>
+    <rect x="540" y="270" width="110" height="22" rx="11" fill="#6B6966"/>
+    <text x="595" y="285" text-anchor="middle" font-size="11" font-weight="500" fill="#FFFFFF">Passenger</text>
+  </g>
+
+  <!-- Card 4: Result (Widget) -->
+  <g>
+    <rect x="730" y="85" width="190" height="220" rx="10" fill="#FFFFFF" stroke="#E6E4DF"/>
+    <circle cx="755" cy="110" r="13" fill="#2563EB"/>
+    <text x="755" y="114" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">4</text>
+    <g transform="translate(825, 145)">
+      <circle r="30" fill="#EEF2FF"/>
+      <path d="M -12 1 L -3 10 L 13 -8" stroke="#2563EB" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <text x="825" y="210" text-anchor="middle" font-size="15" font-weight="600" fill="#111110">Result</text>
+    <text x="825" y="232" text-anchor="middle" font-size="12" fill="#6B6966">Refund confirmed or</text>
+    <text x="825" y="248" text-anchor="middle" font-size="12" fill="#6B6966">marked for review</text>
+    <rect x="760" y="270" width="130" height="22" rx="11" fill="#2563EB"/>
+    <text x="825" y="285" text-anchor="middle" font-size="11" font-weight="500" fill="#FFFFFF">Arcube Widget</text>
+  </g>
+</svg>
