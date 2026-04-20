@@ -1,0 +1,134 @@
+---
+title: Implementation
+description: Technical guide for embedding and configuring the Arcube Cancellation Widget.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+## Embedding the Widget
+
+The cancellation widget is embedded as an iframe. The PNR is passed as a URL query parameter.
+
+```html
+<iframe
+  src="https://<tenant>.arcube.com?pnr=ABC123"
+  style="width: 100%; min-height: 500px; border: none;"
+  title="Order Management"
+></iframe>
+```
+
+Replace `<tenant>` with the airline's assigned subdomain (e.g., `airline` for `airline.arcube.com`).
+
+The `pnr` parameter is required. Without it, the widget will not display real data.
+
+<Callout type="info" title="Tenant Resolution">
+  The iframe's origin domain determines which airline tenant is used. Each airline is assigned a dedicated subdomain by Arcube during onboarding.
+</Callout>
+
+---
+
+## Order Item Statuses
+
+The widget displays items differently based on their status:
+
+| Status | Display | Cancel Eligible |
+|--------|---------|-----------------|
+| `PENDING` | Orange "Pending" badge | No |
+| `CONFIRMED` | Green "Confirmed" badge | Yes (if policy allows) |
+| `COMPLETED` | Green "Completed" badge | Yes (if policy allows) |
+| `DELIVERED` | Blue "Delivered" badge | No |
+| `CANCELLED` | Gray "Cancelled" badge with message | No |
+| `FAILED` | Red "Failed" badge with auto-refund notice | No |
+| `REFUNDED` | Purple "Refunded" badge with confirmation | No |
+| `REFUND_MANUAL_REVIEW` | Orange "Under Review" badge | No |
+| `CANCELLATION_INITIATED` | Orange "Cancelling" badge | No |
+
+---
+
+## Cancellation Eligibility
+
+An item's "Cancel Booking" button appears only when both conditions are met:
+
+1. The item status is `CONFIRMED` or `COMPLETED`
+2. The item's cancellation policy is refundable
+
+If either condition is not met, the widget shows a "Not eligible for cancellation" message instead.
+
+---
+
+## Theming
+
+The widget accepts an optional theme configuration to match the airline's brand. Theme tokens are applied as CSS custom properties on the widget container.
+
+| Token | CSS Variable | Default | Description |
+|-------|-------------|---------|-------------|
+| `background` | `--w-bg` | `#FAFAF8` | Widget background |
+| `surface` | `--w-surface` | `#FFFFFF` | Card/header backgrounds |
+| `border` | `--w-border` | `#E6E4DF` | Outer borders |
+| `divider` | `--w-divider` | `#EDECEA` | Inner dividers |
+| `textPrimary` | `--w-text-primary` | `#111110` | Primary text |
+| `textSecondary` | `--w-text-secondary` | `#6B6966` | Secondary text |
+| `textMuted` | `--w-text-muted` | `#9B9896` | Muted/label text |
+| `accentColor` | `--w-blue` | `#2563EB` | Links and accents |
+| `rowHover` | `--w-row-hover` | `#F5F4F1` | Row hover background |
+| `expandedBg` | `--w-expanded-bg` | `#F5F4F1` | Expanded row background |
+| `fontFamily` | `--font-sans` | `IBM Plex Sans` | Body font |
+| `fontMono` | `--font-mono` | `IBM Plex Mono` | Monospace font (prices, IDs) |
+| `borderRadius` | `--w-radius` | `6px` | Border radius |
+
+To apply a custom theme, the airline provides a theme configuration that maps to these tokens. The default theme uses a warm, neutral palette that works well as a baseline.
+
+---
+
+## Error Handling
+
+The widget handles errors gracefully at each stage:
+
+- **Invalid or unrecognized PNR:** The widget displays a clear error message explaining the specific reason (e.g., "PNR is not registered").
+- **Data fetch failures:** If transactions cannot be loaded, the widget shows a "Failed to fetch transactions" message and allows the passenger to retry.
+- **Cancellation failures:** If a cancellation request fails, the error message is shown inline within the expanded row. The passenger can retry or go back to order details.
+- **No data:** If the PNR has no associated transactions, the widget shows "No data found".
+
+Session expiry and recovery are handled transparently - the passenger will not see any interruption during normal use.
+
+---
+
+## Local Development Setup
+
+For local development, the widget requires a subdomain to resolve the tenant. Use a `*.localarcube.com` domain that points to `127.0.0.1`.
+
+### 1. Add DNS entry
+
+Add to `/etc/hosts`:
+
+```
+127.0.0.1   airline.localarcube.com
+```
+
+Replace `airline` with the airline's assigned tenant subdomain.
+
+### 2. Access the widget
+
+The widget runs on port `3000` by default:
+
+```
+http://airline.localarcube.com:3000?pnr=DEV394
+```
+
+### 3. Embed in a local airline app
+
+If testing the iframe embedding from a separate local app (e.g., on port 4000):
+
+```html
+<iframe
+  src="http://airline.localarcube.com:3000?pnr=DEV394"
+  style="width: 100%; min-height: 500px; border: none;"
+  title="Order Management"
+></iframe>
+```
+
+---
+
+## Support
+
+If you need further assistance, contact [support@arcube.com](mailto:support@arcube.com).

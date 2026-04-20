@@ -1,4 +1,4 @@
 {
   "title": "Arcube Integration Guide",
-  "pages": ["index", "product-overview", "widget-integration", "email-integration", "api-integration", "white-label-pos", "reference"]
+  "pages": ["index", "product-overview", "widget-integration", "cancellation-widget", "email-integration", "api-integration", "white-label-pos", "reference"]
 }
