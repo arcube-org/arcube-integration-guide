@@ -1,0 +1,232 @@
+---
+title: OfferPriceRQ
+description: Multi-session offer pricing — how to consolidate shopping sessions, validate compatibility, and produce a priced result ready for order creation.
+---
+
+## Multi-Session OfferPrice
+
+### Overview
+
+Arcube's NDC-like API supports a **multi-session pricing model**, allowing the client to combine offers that originate from multiple shopping sessions into a single `OfferPriceRQ`, followed by a single `OrderCreateRQ`.
+
+This is particularly important because shopping may occur across different ancillary domains, for example:
+
+- a general shopping session
+- an airport transfer shopping session
+- a car rental shopping session
+
+Each of these may generate its own `ShoppingSessionID`. At pricing time, the client may select offers from one or more of these sessions and submit them together for pricing and validation.
+
+### Supported Flow
+
+1. The client performs one or more `AirShoppingRQ` calls
+2. Each `AirShoppingRS` returns its own `ShoppingSessionID`
+3. The client selects offers from one or more shopping sessions
+4. The client submits a single `OfferPriceRQ` containing:
+   - the selected offers
+   - the originating `ShoppingSessionID` for each selected offer
+   - any required `ProductInputs`
+5. Arcube loads the referenced shopping sessions, validates compatibility, and constructs a merged pricing context
+6. Arcube performs internal revalidation and pricing
+7. Arcube returns a new priced session
+8. The client calls `OrderCreateRQ` using the priced result
+
+### Why OfferPrice Must Perform the Merge
+
+Arcube's aggregation is the single source of truth for merging multiple offers, doing the validations and returning a single valid priced order.
+
+This makes `OfferPriceRQ` the canonical point where:
+
+- selected offers from multiple sessions are consolidated
+- product-specific validations are executed
+- final public priceable offers are produced for ordering
+
+### Shopping Session Persistence
+
+Each successful `AirShoppingRQ` produces and returns a unique `ShoppingSessionID`.
+
+Internally, the shopping session retains enough context to support later pricing and order creation, including:
+
+- original request
+- original public response
+- normalized catalog
+- tenant, owner, point of sale
+- passenger context
+- itinerary or search context
+
+### Session Compatibility Validation
+
+Before pricing selected offers from multiple sessions, Arcube validates that the referenced sessions are commercially and contextually compatible.
+
+At minimum, validation covers:
+
+- same tenant
+- same owner or commercial context
+- same point of sale
+- compatible passenger context
+- compatible journey or search context, where applicable
+
+For example:
+
+- a general ancillary offer and an airport transfer offer may be compatible if they relate to the same customer journey
+- a car rental offer may require compatibility with the same tenant and commercial context even if its search was initiated independently from flight segment shopping
+
+If compatibility validation fails, `OfferPriceRQ` returns a validation error and no priced session is created.
+
+---
+
+## OfferPriceRQ
+
+### Purpose
+
+`OfferPriceRQ` confirms the client's selected offers and transforms shopping results into a priced, revalidated selection that is ready for order creation.
+
+This step is especially important for dynamic ancillary categories, where the public shopping response may not contain all booking-time inputs or where pricing may need to be confirmed again prior to purchase.
+
+### Example Request
+
+```json
+{
+  "OfferPriceRQ": {
+    "Document": {
+      "Name": "OfferPrice (chained from AirShopping)",
+      "ReferenceVersion": "1.0"
+    },
+    "Party": {
+      "Sender": {
+        "AgentUser": {
+          "Name": "Arcube API"
+        }
+      }
+    },
+    "Query": {
+      "SelectedOffers": [
+        {
+          "OfferID": "OFR-AUTO",
+          "ShoppingSessionID": "<shopping-session-id>",
+          "Owner": "OWNER_FROM_AIRSHOPPING",
+          "OfferItems": [
+            {
+              "OfferItemID": "<offer-item-id>",
+              "Quantity": 1,
+              "Currency": "USD",
+              "Price": 15,
+              "ServiceDefinitionRef": "<service-definition-ref>"
+            }
+          ]
+        }
+      ]
+    },
+    "Metadata": {
+      "SessionID": "<correlation-id-from-shopping-or-client-session>",
+      "Tenant": "6941cc3502a186f72ba55226"
+    },
+    "ProductInputs": [
+      {
+        "ServiceDefinitionRef": "<service-definition-ref>",
+        "Input": {
+          "metadata": {
+            "passengers": [
+              {
+                "firstName": "John",
+                "lastName": "Doe",
+                "email": "john@example.com"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
+```
+
+### OfferPriceRQ Fields
+
+| Field | Description |
+| --- | --- |
+| `Query.SelectedOffers[]` | Collection of offers selected by the client for repricing. Each entry should include `OfferID`, `ShoppingSessionID`, `Owner`, and `OfferItems[]`. |
+| `ShoppingSessionID` | Identifies the shopping session from which the selected offer originated. Critical in a multi-session flow for resolving the correct persisted shopping context. |
+| `OfferItems[].OfferItemID` | Identifier of the selected item. |
+| `OfferItems[].Quantity` | Requested quantity. |
+| `OfferItems[].Currency` | Client-selected or expected currency context for pricing. |
+| `OfferItems[].Price` | Client-side price echo. May be used for validation or mismatch detection; authoritative price is determined by Arcube. |
+| `OfferItems[].ServiceDefinitionRef` | Reference to the selected service definition. Bridge to any product-specific input payload in `ProductInputs`. |
+
+### ProductInputs in OfferPriceRQ
+
+`ProductInputs` allows the client to provide additional product-specific data required at pricing time. Each entry should contain `ServiceDefinitionRef` and `Input`.
+
+#### Airport Transfer
+
+Required fields:
+
+- passenger metadata
+- flight details
+- amenity selections
+- pickup refinements
+
+#### Car Rental
+
+Required fields:
+
+- confirmed driver details
+- pickup/drop-off confirmation
+- residency confirmation
+- any provider-specific validation inputs
+
+#### eSIM or other digital products
+
+Required fields:
+
+- recipient email
+- delivery email
+- activation-related metadata
+
+### Internal OfferPrice Processing
+
+Once received, `OfferPriceRQ` performs the following steps:
+
+1. Load all referenced shopping sessions
+2. Load each session's normalized catalog
+3. Validate tenant and commercial context
+4. Validate selected offer and item references
+5. Resolve any private downstream metadata linked to the selected `ServiceDefinitionRef`
+6. Merge selected items into one internal pricing context
+7. Run product-specific revalidation
+8. Compute final priced offers
+9. Persist a priced session for `OrderCreateRQ`
+
+For car rental specifically, the private catalog layer is essential because booking-critical provider identifiers are not exposed in the public shopping response but are persisted internally for later revalidation and fulfillment.
+
+### Product-Specific Pricing Behavior
+
+#### Static or mostly static products
+
+Some products can reuse shopping-time catalog pricing, subject to validity and availability checks. Examples: lounge access, baggage protection, carbon offset, some eSIM products.
+
+#### Dynamic products
+
+Some products require explicit revalidation during `OfferPriceRQ`.
+
+**Airport Transfer** — Transfer pricing may depend on: pickup timing, route, selected vehicle, passenger details, optional amenities, and provider requirements such as flight information.
+
+**Car Rental** — Car rental pricing may depend on: pickup/drop-off timestamps, pickup/drop-off locations, driver age, driver residence, provider quote identifiers, rate identifiers, and upstream product IDs. This is precisely why the car rental shopping flow must persist a hidden private catalog context rather than exposing everything in the public NDC-like response.
+
+### OfferPrice Output
+
+The `OfferPriceRS` should return a priced result suitable for downstream order creation. At minimum it should contain:
+
+- priced offers and priced offer items
+- authoritative price summary
+- metadata needed for `OrderCreateRQ`
+
+A recommended response model:
+
+| Field | Description |
+| --- | --- |
+| `PricedOffers[].OfferID` | Priced offer identifier |
+| `PricedOffers[].OfferItems[]` | Priced items |
+| `PricedOffers[].PriceSummary` | Final authoritative price |
+| `Metadata.CorrelationID` | Trace ID |
+| `Metadata.PricedSessionID` | Session reference consumed by `OrderCreateRQ` |

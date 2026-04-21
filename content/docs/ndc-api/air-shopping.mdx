@@ -1,0 +1,406 @@
+---
+title: AirShoppingRQ
+description: Request and response structure for the AirShoppingRQ, including General, Airport Transfer, and Car Rental variants.
+---
+
+## Request Structure (AirShoppingRQ)
+
+The request is structured into **five logical sections**:
+
+### Document
+
+Defines the request metadata and schema version.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| Name | string | Identifier of the request type. Typically constant for tracing/debugging. |
+| ReferenceVersion | string | Version of the Arcube NDC-like schema being used. |
+
+### Party
+
+Defines the **message participants**, aligned with NDC sender/recipient semantics.
+
+#### Sender → AgentUser
+
+| Field | Description |
+| --- | --- |
+| Name | Logical name of the calling system |
+| IATA_Number | Airline/TMC identifier |
+| PseudoCity | PCC or tenant-specific identifier used for routing |
+
+#### Recipient
+
+| Field | Description |
+| --- | --- |
+| SystemID | Target Arcube system (typically `ArcubeAggregationEngine`) |
+
+### CoreQuery
+
+Represents the **travel context**, which is the primary driver for ancillary recommendations.
+
+#### Segments\[\]
+
+Each segment represents a leg of the journey.
+
+| Field | Description |
+| --- | --- |
+| SegmentKey | Unique identifier for the segment |
+| Departure.AirportCode | IATA airport code (e.g., ATH, FRA) |
+| Departure.DateTime | ISO-8601 timestamp (UTC recommended) |
+| Arrival.AirportCode | Destination airport |
+| Arrival.DateTime | Arrival timestamp |
+| MarketingCarrier | Airline marketing the flight |
+| OperatingCarrier | Airline operating the flight |
+| PassengerRefs | List of passenger IDs associated with this segment |
+
+**Implementation Notes:**
+
+- Multi-leg and long-haul itineraries are fully supported
+- Passenger segmentation per leg enables precise targeting (e.g., partial journeys)
+
+### DataLists → PassengerList
+
+Defines all passengers referenced in the request.
+
+#### Passenger Object
+
+| Field | Description |
+| --- | --- |
+| PassengerID | Unique identifier (referenced in segments) |
+| PTC | Passenger Type Code (`ADT`, `CHD`, `INF`) |
+| Individual | Basic identity (GivenName, Surname) |
+| Associations | Links between passengers (e.g., infant ↔ adult) |
+| LoyaltyProgram | Optional loyalty enrichment (program + tier) |
+
+**Why this matters:**
+Passenger-level granularity enables personalization (e.g., premium lounge for GOLD tier) and eligibility filtering (e.g., infant restrictions).
+
+### Metadata
+
+Provides **contextual and routing information**.
+
+| Field | Description |
+| --- | --- |
+| PointOfSale | Channel identifier (e.g., `AIRLINE-WEBSITE`, `MOBILE-APP`) |
+| Tenant | Arcube tenant identifier |
+| SessionID | Client-generated session reference |
+
+---
+
+## Response Structure (Offer Response)
+
+The response follows an **Offer + DataLists pattern**, similar to NDC but adapted for ancillary aggregation.
+
+### OtherOffers
+
+This is the **core commercial response**, containing all available ancillary offers.
+
+#### Offer Level
+
+| Field | Description |
+| --- | --- |
+| OtherOfferID | Unique identifier for the offer (used in downstream selection/order flows) |
+| Owner | Always `"Arcube"` |
+| OfferItems\[\] | One or more purchasable components |
+| PriceDetail | Aggregated price for the full offer |
+
+#### OfferItem
+
+Each offer can contain one or more **OfferItems**, representing atomic services.
+
+| Field | Description |
+| --- | --- |
+| OfferItemID | Unique identifier of the item |
+| ServiceDefinitionRef | Reference to the service metadata (see DataLists) |
+| PriceDetail | Price of the individual item |
+
+#### Price Model
+
+Arcube uses a normalized pricing structure:
+
+| Field | Description |
+| --- | --- |
+| amount | Integer representation of price |
+| decimal | Number of decimal places |
+| currency | ISO currency code |
+
+**Example:** `amount: 43750, decimal: 3` → €43.750
+
+### DataLists → ServiceDefinitionList
+
+This section contains the **descriptive layer** of all services referenced in offers.
+
+**Key principle:** Offers contain pricing and references → ServiceDefinitions contain **content and metadata**.
+
+#### ServiceDefinition
+
+| Field | Description |
+| --- | --- |
+| ServiceDefinitionID | Unique ID referenced by OfferItems |
+| Name | Commercial name of the service |
+| Description | Human-readable description |
+| MediaLink | URL to image or media asset |
+| ServiceTypeCode | Classification (e.g., `LOUNGE_ACCESS`, `ESIMS`, `CAR_RENTAL`) |
+| OtherServiceInformation | Domain-specific metadata |
+
+#### Service Type Examples
+
+**Lounge Access:** Terminal, gate proximity, access conditions
+
+**Airport Transfer:** Pickup/drop-off airport, vehicle type (if applicable)
+
+**eSIM:** Data bundle ID, duration (days), coverage region
+
+**Car Rental:** Pickup location, rental duration
+
+**Carbon Offset:** Project name, country of impact
+
+### Metadata (Response)
+
+| Field | Description |
+| --- | --- |
+| CorrelationID | Unique request-response trace ID (for observability/debugging) |
+| ShoppingSessionID | Arcube-generated session identifier (used in subsequent calls) |
+
+---
+
+## Product-Specific AirShopping Variants
+
+### Overview
+
+In Arcube's NDC-like API, every shopping flow begins with an `AirShoppingRQ`. Depending on the ancillary domain being queried, Arcube supports multiple AirShoppingRQ variants:
+
+- General AirShopping
+- Airport Transfer AirShopping
+- Car Rental AirShopping
+
+This distinction is required because some ancillary categories can be derived directly from itinerary and passenger context, while others require explicit product search parameters in order to return meaningful and bookable results.
+
+In particular:
+
+- Airport transfers require origin, destination, pickup timing, passenger count, and geospatial context
+- Car rental requires rental timing, driver details, and pickup/drop-off location details
+
+For this reason, product-specific shopping requests use the `ProductSearchInputs` collection instead of the itinerary-based `CoreQuery` model used in general shopping.
+
+---
+
+## Airport Transfer AirShopping
+
+### Purpose
+
+The airport transfer shopping flow is used when the client wants to request transfer offers for a specific route and pickup time, independently of the standard flight segment shopping context.
+
+This variant is appropriate for point-to-point transfer discovery where the client already knows:
+
+- the pickup point
+- the drop-off point
+- the desired pickup time
+- the number of passengers
+- any commercial/provider constraints
+
+### Example Request
+
+```json
+{
+  "AirShoppingRQ": {
+    "Document": {
+      "Name": "Arcube Aggregation API NDC-like Request",
+      "ReferenceVersion": "1.0"
+    },
+    "Party": {
+      "Sender": {
+        "AgentUser": {
+          "Name": "Arcube API Client",
+          "IATA_Number": "00000000",
+          "PseudoCity": "ARC123"
+        }
+      },
+      "Recipient": {
+        "SystemID": "ArcubeAggregationEngine"
+      }
+    },
+    "ProductSearchInputs": [
+      {
+        "ProductType": "AIRPORT_TRANSFER",
+        "Input": {
+          "airline_id": "6941cc3502a186f72ba55226",
+          "mode": "one_way",
+          "num_passengers": 2,
+          "start_address": "Paris Charles de Gaulle Airport (CDG), Roissy-en-France, France",
+          "end_address": "Place de la Concorde, Paris, France",
+          "pickup_datetime": "2026-04-03 11:00",
+          "currency": "USD",
+          "start_coordinates": {
+            "lat": 49.0078827,
+            "lng": 2.5507855
+          },
+          "end_coordinates": {
+            "lat": 48.8655842,
+            "lng": 2.3205491
+          },
+          "fromCountryCode": "FR",
+          "toCountryCode": "FR"
+        }
+      }
+    ],
+    "Metadata": {
+      "PointOfSale": "AIRLINE-WEBSITE",
+      "Tenant": "6941cc3502a186f72ba55226",
+      "SessionID": "Q7F902"
+    }
+  }
+}
+```
+
+### Airport Transfer Request Fields
+
+**`ProductSearchInputs`** — Collection of product-specific search requests. For airport transfer shopping, `ProductType` must be `AIRPORT_TRANSFER`.
+
+| Field | Description |
+| --- | --- |
+| `Input.airline_id` | Tenant or airline identifier used for routing, eligibility, or commercial configuration. |
+| `Input.mode` | Transfer journey type. Typical values: `one_way`, `round_trip`. |
+| `Input.num_passengers` | Number of passengers to be transported. Used for capacity filtering and vehicle eligibility. |
+| `Input.start_address` | Human-readable pickup location. |
+| `Input.end_address` | Human-readable drop-off location. |
+| `Input.pickup_datetime` | Requested pickup date/time for the transfer service. |
+| `Input.currency` | Preferred shopping currency for the returned offers. |
+| `Input.providers` | Optional list of providers to constrain the shopping result set. |
+| `Input.campaign` | Optional commercial tracking or merchandising context. |
+| `Input.branch` | Optional experiment, routing, or configuration branch identifier. |
+| `Input.start_coordinates` | Latitude/longitude for the pickup location. |
+| `Input.end_coordinates` | Latitude/longitude for the drop-off location. |
+| `Input.fromCountryCode` | Origin country code. |
+| `Input.toCountryCode` | Destination country code. |
+| `Metadata` | Standard routing metadata (point of sale, tenant, client session reference). |
+
+### Response Structure
+
+Airport transfer shopping returns the same high-level response pattern used across Arcube's NDC-like shopping flows: `OtherOffers`, `DataLists.ServiceDefinitionList`, and `Metadata`.
+
+Each returned transfer option is exposed as one `OtherOffer` containing one `OfferItem` linked to one `ServiceDefinition`. This provides a clean separation between commercial offer data (price, identifiers) and descriptive service data (vehicle, pickup/drop-off, capacity, amenities).
+
+#### Airport Transfer Response Fields
+
+| Field | Description |
+| --- | --- |
+| `OtherOffers[].OtherOfferID` | Unique offer identifier |
+| `OtherOffers[].OfferItems[].OfferItemID` | Unique identifier for the selected transfer item |
+| `OtherOffers[].OfferItems[].ServiceDefinitionRef` | Reference to the matching entry in `DataLists.ServiceDefinitionList` |
+| `OtherOffers[].PriceDetail.TotalAmount` | Public total price in normalized minor-unit format (amount, decimal, currency) |
+
+#### Airport Transfer ServiceDefinition
+
+Each `ServiceDefinition` describes the public characteristics of a transfer option. Common `OtherServiceInformation` fields include:
+
+| Field | Description |
+| --- | --- |
+| `pickupAddress` | Pickup location |
+| `dropoffAddress` | Drop-off location |
+| `pickupTimeIso` | Pickup time in ISO format |
+| `vehicleType` | Vehicle category |
+| `providerName` | Transfer provider |
+| `maxPassengers` | Maximum passenger capacity |
+| `maxBags` | Maximum luggage capacity |
+| `flightInfoRequired` | Whether flight details must be provided at pricing time |
+| `amenities` | Optional purchasable or configurable add-ons (e.g., child seats) |
+
+**Amenities** may expose: internal key, display name, description, image references, input type, inclusion flag, selected flag, and incremental price. Some airport transfer products may require additional input or selection detail during later pricing or ordering steps.
+
+---
+
+## Car Rental AirShopping
+
+### Purpose
+
+The car rental shopping flow is used when the client wants to retrieve car rental offers based on a dedicated rental search context rather than flight segments.
+
+This search mode is required because car rental pricing and availability depend on inputs not derivable from itinerary alone, including:
+
+- pickup/drop-off timing
+- driver eligibility
+- pickup/drop-off location
+- country context
+
+### Example Request
+
+```json
+{
+  "AirShoppingRQ": {
+    "Document": {
+      "Name": "Arcube Aggregation API NDC-like Request",
+      "ReferenceVersion": "1.0"
+    },
+    "Party": {
+      "Sender": {
+        "AgentUser": {
+          "Name": "Arcube API Client",
+          "IATA_Number": "00000000",
+          "PseudoCity": "ARC123"
+        }
+      },
+      "Recipient": {
+        "SystemID": "ArcubeAggregationEngine"
+      }
+    },
+    "ProductSearchInputs": [
+      {
+        "ProductType": "CAR_RENTAL",
+        "Input": {
+          "fromCountryCode": "GR",
+          "toCountryCode": "GR",
+          "driver": {
+            "age": 31,
+            "residence": "GR"
+          },
+          "pickup_at": "2026-03-31T21:00:00",
+          "dropoff_at": "2026-04-09T21:00:00",
+          "pickup_location": {
+            "iata": "ATH"
+          },
+          "dropoff_location": {
+            "id": "Nafplio, Nafplion, Greece"
+          }
+        }
+      }
+    ],
+    "Metadata": {
+      "PointOfSale": "AIRLINE-WEBSITE",
+      "Tenant": "6941cc3502a186f72ba55226",
+      "SessionID": "Q7F902"
+    }
+  }
+}
+```
+
+### Car Rental Request Fields
+
+| Field | Description |
+| --- | --- |
+| `ProductType` | Must be `CAR_RENTAL`. |
+| `Input.fromCountryCode` | Origin country context for the search. |
+| `Input.toCountryCode` | Destination country context for the search. |
+| `Input.driver.age` | Driver age. Used for eligibility, rate filtering, and provider restrictions. |
+| `Input.driver.residence` | Driver residence country. May be required for rate availability or insurance rules. |
+| `Input.pickup_at` | Rental pickup date/time. |
+| `Input.dropoff_at` | Rental return date/time. |
+| `Input.pickup_location` | Rental pickup location (identified by IATA code in the example). |
+| `Input.dropoff_location` | Rental drop-off location (may use a location identifier string). |
+
+### Response Model
+
+The response follows the same normalized shopping structure as other ancillary categories: `OtherOffers`, `DataLists.ServiceDefinitionList`, and `Metadata.ShoppingSessionID`.
+
+The car rental response contains one public `OtherOffer` per rental option, one `OfferItem` per offer, and one `ServiceDefinition` per rental product.
+
+#### Car Rental Offer Shape
+
+| Field | Description |
+| --- | --- |
+| `OtherOfferID` | Unique offer identifier |
+| `OfferItems[].OfferItemID` | Generated as `CAR-{idPart}` |
+| `OfferItems[].ServiceDefinitionRef` | References a `ServiceDefinition` with ID `SVC-CAR-{idPart}` |
+| `OfferItems[].PriceDetail.TotalAmount` | Normalized price (amount, decimal, currency) |
+
+The service definition exposes a normalized public structure containing at minimum: `ServiceDefinitionID`, `Name`, `Description`, `MediaLink`, `ServiceTypeCode: "CAR_RENTAL"`, and `OtherServiceInformation`.

@@ -1,0 +1,58 @@
+---
+title: NDC-like API Overview
+description: Overview of Arcube's NDC-inspired ancillary API workflow — AirShopping, OfferPrice, and OrderCreate.
+---
+
+## AirShoppingRQ (NDC-like)
+
+### Initial Offer Request
+
+The **AirShoppingRQ** is the mandatory entry point for every session in Arcube's NDC-inspired workflow. It is conceptually aligned with the shopping phase defined by IATA NDC, but extended to support third-party ancillary aggregation.
+
+Arcube supports **three variants** of the AirShoppingRQ:
+
+1. **General** – Standard ancillary discovery (lounges, eSIMs, insurance, etc.)
+2. **Airport Transfer** – Requires additional location and timing granularity
+3. **Car Rental** – Requires pickup/drop-off parameters and rental constraints
+
+The specialization exists because certain ancillary domains (e.g., transfers, car rental) require **domain-specific attributes** to produce meaningful and bookable offers.
+
+### End-to-End Booking Flow Overview
+
+The diagram below illustrates the complete lifecycle of an ancillary booking within the NDC-like API, from initial product discovery to final order creation.
+
+It shows how the system transitions through three distinct session states:
+
+- **ShoppingSessionID** — created during **AirShopping**, representing a single search context
+- **PricedSessionID** — generated during **OfferPrice**, representing validated and re-priced selections (potentially merged from multiple sessions)
+- **OrderID** — created during **OrderCreate**, representing the final persisted booking
+
+Each step builds on the previous one, ensuring that selected offers are consistently tracked, validated, and transformed into a final order through a controlled, session-based flow.
+
+The key idea is that **pricing and merging logic are centralized in the OfferPrice step**, enabling the system to combine offers from multiple independent searches into a single, coherent booking transaction.
+
+<img src="/images/ndc-api/booking-flow.png" alt="End-to-End Ancillary Booking Flow" style={{display: 'block', margin: '0 auto'}} />
+
+## Key Architectural Concepts
+
+### Offer Decoupling
+
+- Pricing and availability → `OtherOffers`
+- Content and attributes → `ServiceDefinitionList`
+
+This avoids duplication and enables efficient caching.
+
+### Multi-Provider Aggregation
+
+Offers may originate from:
+
+- Airline-native services
+- Third-party providers
+- Global aggregators
+
+All normalized into a single response model.
+
+### Stateless but Correlated Flow
+
+- Each request is stateless
+- `ShoppingSessionID` enables continuity across offer selection and order creation

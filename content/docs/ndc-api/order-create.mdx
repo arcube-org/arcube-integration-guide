@@ -1,0 +1,186 @@
+---
+title: OrderCreateRQ
+description: Finalizing an ancillary purchase — request structure, fields, processing model, and response shape for OrderCreateRQ.
+---
+
+## Purpose
+
+`OrderCreateRQ` finalizes the selected and priced ancillary purchase.
+
+This request must operate on the result of `OfferPriceRQ`, not directly on raw shopping selections.
+
+- `AirShoppingRQ` discovers offers
+- `OfferPriceRQ` confirms and prices them
+- `OrderCreateRQ` creates the order using the priced result
+
+## Example Request
+
+```json
+{
+  "OrderCreateRQ": {
+    "Document": {
+      "Name": "OrderCreate Test",
+      "ReferenceVersion": "1.0"
+    },
+    "PointOfSale": {
+      "SalesChannel": "AIRLINE_WEBSITE",
+      "Seller": "AIRLINE",
+      "Owner": "A3",
+      "CountryCode": "GR"
+    },
+    "Customer": {
+      "PrimaryContact": {
+        "GivenName": "Jane",
+        "Surname": "Doe",
+        "Email": "jane.doe@example.com",
+        "Phone": {
+          "CountryCode": "+30",
+          "Number": "2100000000"
+        },
+        "Address": {
+          "Line1": "1 Example Street",
+          "City": "Athens",
+          "PostalCode": "10558",
+          "CountryCode": "GR"
+        }
+      }
+    },
+    "Passengers": [
+      {
+        "PassengerID": "PAX1",
+        "PTC": "ADT",
+        "Individual": {
+          "GivenName": "Jane",
+          "Surname": "Doe"
+        },
+        "ContactRef": "PRIMARY"
+      }
+    ],
+    "Query": {
+      "PricedOfferRef": {
+        "OfferID": "<priced-offer-id>",
+        "Owner": "Arcube"
+      },
+      "OfferItems": [
+        {
+          "OfferItemID": "<priced-offer-item-id>",
+          "ServiceDefinitionRef": "<service-definition-ref>",
+          "Quantity": 1
+        }
+      ]
+    },
+    "Payments": [
+      {
+        "Mode": "AIRLINE_CAPTURED",
+        "Currency": "USD",
+        "Amount": 15000,
+        "decimal": 3,
+        "airlineCaptureRef": "ALN-TRX-TEST-OC-LR"
+      }
+    ],
+    "ProductInputs": [
+      {
+        "ServiceDefinitionRef": "<service-definition-ref>",
+        "Input": {
+          "email": "esim.recipient@example.com",
+          "delivery_email": "esim.recipient@example.com"
+        }
+      }
+    ],
+    "Metadata": {
+      "SessionID": "<offer-price-correlation-or-priced-session-context>",
+      "Tenant": "66c89890dbbb61d3b420f78e"
+    }
+  }
+}
+```
+
+## OrderCreateRQ Fields
+
+| Field | Description |
+| --- | --- |
+| `PointOfSale` | Commercial and sales-channel context of the final order. |
+| `Customer.PrimaryContact` | Primary purchaser/contact record. |
+| `Passengers[]` | Passenger records associated with the order. |
+| `Query.PricedOfferRef` | Reference to the priced offer returned by `OfferPriceRQ`. |
+| `Query.OfferItems[]` | The exact priced items to be ordered. |
+| `Payments[]` | Payment declaration for the order. |
+| `ProductInputs[]` | Any booking-time product inputs still required for fulfillment. |
+| `Metadata` | Tenant and session correlation context. |
+
+### Payments
+
+In the example, payment mode is `AIRLINE_CAPTURED`, meaning the airline or seller captures payment externally and passes the payment result into Arcube for order finalization.
+
+### ProductInputs
+
+Examples of booking-time product inputs include:
+
+- digital delivery email for eSIM
+- passenger/contact metadata
+- provider-required supplemental fields
+- flight information for transfer products
+- driver or renter data for car rental, where needed
+
+## OrderCreate Processing Model
+
+The `OrderCreateRQ` implementation returns a public `OrderCreateRS` containing:
+
+- `Document`
+- `Order`
+- `Metadata`
+
+The returned order includes:
+
+- `OrderID`
+- `Status`
+- `Owner`
+- `Items[]`
+- `PriceSummary`
+
+The response metadata contains:
+
+- `CorrelationID`
+- `PricedSessionID`
+- `OrderKey`
+
+This confirms that order creation is driven from a priced-session context and that the public response is intentionally normalized into an NDC-like structure rather than exposing raw provider booking data.
+
+## OrderCreateRS Shape
+
+```json
+{
+  "OrderCreateRS": {
+    "Document": {
+      "Name": "Arcube NDC-like OrderCreate Response",
+      "ReferenceVersion": "1.0"
+    },
+    "Order": {
+      "OrderID": "<order-id>",
+      "Status": "PENDING",
+      "Owner": "Arcube",
+      "Items": [
+        {
+          "OrderItemID": "ORDI-1",
+          "OfferItemRef": "<offer-item-id>",
+          "ServiceDefinitionRef": "<service-definition-ref>",
+          "PriceDetail": {
+            "TotalAmount": {
+              "...": "..."
+            }
+          }
+        }
+      ],
+      "PriceSummary": {
+        "Currency": "<currency>",
+        "GrandTotal": "<grand-total>"
+      }
+    },
+    "Metadata": {
+      "CorrelationID": "<correlation-id>",
+      "PricedSessionID": "<priced-session-id>",
+      "OrderKey": "<internal-order-key>"
+    }
+  }
+}
+```
