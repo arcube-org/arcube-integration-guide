@@ -13,8 +13,15 @@ import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { gitConfig } from '@/lib/shared';
 
+const HIDDEN_SECTIONS = ['api-integration'];
+
+function isHidden(slug: string[] | undefined) {
+  return slug && HIDDEN_SECTIONS.includes(slug[0]);
+}
+
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
+  if (isHidden(params.slug)) notFound();
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
@@ -45,7 +52,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
 }
 
 export async function generateStaticParams() {
-  return source.generateParams();
+  return source.generateParams().filter((p) => !isHidden(p.slug));
 }
 
 export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): Promise<Metadata> {
