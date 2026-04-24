@@ -17,6 +17,24 @@ The widget adds a passenger-facing ancillary layer on top of the airline booking
 
 ---
 
+## End-to-End Flow
+
+The diagram below shows the full integration at a glance - from the moment the passenger lands on the airline website through search, trip selection, passenger details, widget rendering, ancillary selection, and the final payment handled by the airline.
+
+<img src="/images/widget/widget-general-flow.png" alt="End-to-end widget integration flow" style={{display: 'block', margin: '0 auto', width: '100%'}} />
+
+<small style={{display: 'block', textAlign: 'center'}}>End-to-end widget integration flow.</small>
+
+A few things to notice:
+
+- The **airline IBE** owns the booking session, the search, the trip selection, and the passenger details.
+- The **Airline CDN/EDGE** is the secure layer that requests a widget token on behalf of the browser, so the airline secret never reaches the passenger's device.
+- The **Arcube Backend** issues the short-lived token and powers the widget's ancillary catalog and offers.
+- Once the widget is rendered with a valid token and the PNR context, all ancillary interactions (view extras, add eSIM, etc.) happen inside the widget and are emitted back to the airline page as cart events.
+- Payment and final order processing remain entirely on the airline side.
+
+---
+
 ## How It Works
 
 In most integrations, the widget is shown on the extras or ancillary step. A common pattern includes:

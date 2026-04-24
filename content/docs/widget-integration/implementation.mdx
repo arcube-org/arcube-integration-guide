@@ -3,6 +3,18 @@ title: Implementation
 description: Technical steps for Widget Integration - authentication, integration flow, cart events, styling, and error handling.
 ---
 
+## End-to-End Flow
+
+Before diving into the individual building blocks, the diagram below shows how the widget fits into the full airline booking journey - from search and trip selection, through token vending and widget rendering, to the airline's own payment and order confirmation.
+
+<img src="/images/widget/widget-general-flow.png" alt="End-to-end widget integration flow" style={{display: 'block', margin: '0 auto', width: '100%'}} />
+
+<small style={{display: 'block', textAlign: 'center'}}>End-to-end widget integration flow.</small>
+
+The diagram above intentionally treats the `getToken` step as a single call to keep the overall picture readable. The exact token-generation steps - including the headers the Airline CDN/EDGE must add and the HMAC signature it must produce - are shown in the dedicated diagram in the [Token Flow](#token-flow) section below.
+
+---
+
 ## Authentication and Token Flow
 
 ### Token Flow
@@ -22,6 +34,12 @@ The reference image below shows the same flow in a more visual way. The importan
 <img src="/images/widget/widget-token-sequence.jpg" alt="Token flow sequence diagram" style={{display: 'block', margin: '0 auto', width: '100%'}} />
 
 <small style={{display: 'block', textAlign: 'center'}}>Figure 2: Token flow sequence diagram.</small>
+
+The diagram below zooms in on the exact token-generation steps that the Airline CDN/EDGE performs before calling Arcube. The secure layer fetches the airline secret, attaches the required headers (`X-Tenant-Id`, `X-Key-Id`, `X-Timestamp`, `X-Nonce`), prepares the canonical string, signs it, and sends the request with the `X-Arcube-Signature` header. Arcube validates the signature and returns a short-lived token, which the IBE then uses to render the widget.
+
+<img src="/images/widget/widget-token-generation.png" alt="Detailed token generation and HMAC signing steps" style={{display: 'block', margin: '0 auto', width: '100%'}} />
+
+<small style={{display: 'block', textAlign: 'center'}}>Figure 3: Detailed token generation and HMAC signing steps.</small>
 
 The signed text usually contains the tenant identifier, a timestamp, and a session ID or PNR when one already exists. Arcube rebuilds the same string on its side and checks that the signature matches. It also checks that the tenant is known and that the timestamp or nonce is still valid.
 
@@ -46,7 +64,7 @@ The airline page mounts the widget. The widget sends cart events back to the pag
 
 <img src="/images/widget/widget-architecture.jpg" alt="Architecture diagram" style={{display: 'block', margin: '0 auto'}} />
 
-<small style={{display: 'block', textAlign: 'center'}}>Figure 3: Architecture diagram.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 4: Architecture diagram.</small>
 
 ---
 
@@ -76,7 +94,7 @@ After the airline basket is updated successfully, the normal airline flow contin
 
 <img src="/images/widget/widget-journey.jpg" alt="Integration flow journey diagram" style={{display: 'block', margin: '0 auto'}} />
 
-<small style={{display: 'block', textAlign: 'center'}}>Figure 4: Journey diagram.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 5: Journey diagram.</small>
 
 ---
 
