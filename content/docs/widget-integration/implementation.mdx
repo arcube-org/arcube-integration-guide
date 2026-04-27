@@ -207,14 +207,36 @@ Carbon offset depends on the quote identifier. The example below shows the struc
 
 ```javascript
 const carbonOffsetItem = {
-  id: "carbon-1",
+  id: "carbon-offset-001",
+  quoteId: "quote-001",
   name: "Carbon Offset",
+  description: "Origin → Stopover → Destination",
   quantity: 1,
-  totalPrice: 8,
-  unitPrice: 8,
-  currency: "EUR",
+  unitPrice: 33.83,
+  totalPrice: 33.83,
+  currency: "USD",
   category: "carbon_offset",
-  quoteId: "quote-1",
+  customer: {
+    firstName: "First name",
+    lastName: "Last name",
+    email: "customer@example.com",
+  },
+  vendorReferenceId: "vendor-reference-001",
+  provider: "provider-name",
+  metadata: {
+    carbonEstimate: {
+      co2Footprint: {
+        unit: "KG",
+        value: 1421.26,
+      },
+      offsetPrice: {
+        currency: "USD",
+        value: 29.87,
+        zeroDecimalCurrency: false,
+      },
+      quoteId: "quote-001",
+    },
+  },
 };
 ```
 
