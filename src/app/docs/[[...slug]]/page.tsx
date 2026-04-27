@@ -11,7 +11,7 @@ import { getMDXComponents } from '@/components/mdx';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 
-const HIDDEN_SECTIONS = ['api-integration'];
+const HIDDEN_SECTIONS = ['ndc-api'];
 
 function isHidden(slug: string[] | undefined) {
   return slug && HIDDEN_SECTIONS.includes(slug[0]);
