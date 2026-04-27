@@ -348,6 +348,146 @@ async function handleRemove(itemId) {
 
 ---
 
+## Order API
+
+Confirm an order after successful payment. Arcube places the ancillary order with the relevant provider and records the transaction.
+
+| | |
+|---|---|
+| **HTTP Method** | `POST` |
+| **URL** | `${arcube-url}/api/aggregation-api/order-api/confirmOrder` |
+| **Content-Type** | `application/json` |
+
+Replace `${arcube-url}` with your assigned Arcube environment URL.
+
+**Sample Request Payload**
+
+The example below shows an order request for baggage protection.
+
+```javascript
+const orderRequest = {
+  sessionId: "SESSION_OR_PNR",
+  tenantId: "YOUR_TENANT_ID",
+  locale: "en",
+  correlationId: "LATEST_WIDGET_CORRELATION_ID",
+  cart: {
+    pnr: "SESSION_OR_PNR",
+    currency: "USD",
+    pointOfSale: "WIDGET",
+    touchPoint: "WIDGET",
+    merchantOfRecord: "ARCUBE",
+    customer: {
+      firstName: "FIRST_NAME",
+      lastName: "LAST_NAME",
+      email: "customer@example.com"
+    },
+    segments: [
+      {
+        type: "departure",
+        flight: {
+          date: "2026-04-30",
+          flightNumber: "XX123",
+          departureTime: "10:30",
+          arrivalTime: "14:45",
+          departureCode: "AAA",
+          arrivalCode: "BBB"
+        },
+        items: [
+          {
+            id: "item-001",
+            name: "Baggage Protection",
+            description: "Ancillary description",
+            quantity: 1,
+            unitPrice: 5.41,
+            totalPrice: 5.41,
+            currency: "USD",
+            category: "insurance",
+            customer: {
+              firstName: "FIRST_NAME",
+              lastName: "LAST_NAME",
+              email: "customer@example.com"
+            },
+            vendorReferenceId: "PLAN_CODE",
+            provider: "brb",
+            metadata: {
+              passengers: [
+                {
+                  firstName: "PASSENGER_FIRST_NAME",
+                  lastName: "PASSENGER_LAST_NAME",
+                  email: "passenger@example.com"
+                }
+              ],
+              coveragePerBag: 1000
+            }
+          }
+        ],
+        subtotal: 5.41
+      }
+    ],
+    subtotal: 5.41,
+    taxes: 0,
+    fees: 0,
+    total: 5.41,
+    itemCount: 1,
+    lastUpdated: "2026-04-26T13:02:05.198Z"
+  }
+};
+
+const response = await fetch("https://your-api-domain/api/aggregation-api/order-api/confirmOrder", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(orderRequest)
+});
+```
+
+**Sample Response Payload**
+
+```json
+{
+  "success": true,
+  "orderId": "ORDER_ID",
+  "transactionId": "TRANSCATION_ID",
+  "pnr": "SESSION_OR_PNR",
+  "confirmed": 1,
+  "failed": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "itemId": "item-001-1",
+      "provider": "brb",
+      "vendorCode": "brb",
+      "title": "Baggage Protection",
+      "success": true,
+      "data": {
+        "ServiceNumber": "SERVICE_REFERENCE",
+        "TotalPrice": 5,
+        "TotalCharge": 5
+      },
+      "error": null,
+      "quantity": 1,
+      "passenger": "PASSENGER_NAME",
+      "pricePerItem": 5.41,
+      "totalPrice": 5.41,
+      "timestamp": "2026-04-27T12:35:27.598Z",
+      "status": "CONFIRMED",
+      "amounts": {
+        "total_price": 5.41,
+        "currency": "USD",
+        "charged": 5.41,
+        "refunded": 0,
+        "price_per_item": 5.41
+      },
+      "vendor_price": 5.41,
+      "vendor_currency": "USD"
+    }
+  ]
+}
+```
+
+---
+
 ## Tenant Event Contract
 
 The Arcube widget dispatches events that indicate its state. Tenants must handle these events appropriately. The table below summarizes the events and the required tenant actions:
