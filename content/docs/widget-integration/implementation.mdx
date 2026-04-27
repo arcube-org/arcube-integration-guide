@@ -51,6 +51,23 @@ For this token, the safest approach is to keep it in memory and treat it as temp
 
 ---
 
+## Rendering the Widget
+
+Once the airline has authenticated itself and acquired a token and the PNR details are sent to Arcube, the airline is ready to render the widget by initializing the script with the tenant ID, the session ID or PNR, and the optional theme JSON URL. The authentication flow should already be in place before this step. In the current public integration layer, token handling remains internal to the Arcube proxy flow, so the render command itself uses the booking context and styling inputs rather than a direct browser token field.
+
+```javascript
+window.Widget.init({
+  widgetUrl: "https://your-arcube-widget-domain",
+  tenantId: "YOUR_TENANT_ID",
+  sessionId: "YOUR_PNR",
+  currency: "USD",
+  language: "en-US",
+  themeJsonUrl: "https://cdn.airline.com/arcube/widget-theme.json"
+});
+```
+
+---
+
 ## System Architecture
 
 The tenant integration has four moving parts:
