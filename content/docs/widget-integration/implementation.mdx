@@ -368,14 +368,13 @@ The example below shows an order request for baggage protection.
 const orderRequest = {
   sessionId: "SESSION_OR_PNR",
   tenantId: "YOUR_TENANT_ID",
-  locale: "en",
-  correlationId: "LATEST_WIDGET_CORRELATION_ID",
+  locale: "en-US",
   cart: {
-    pnr: "SESSION_OR_PNR",
+    pnr: "SESSION_OR_PNR_001",
     currency: "USD",
     pointOfSale: "WIDGET",
     touchPoint: "WIDGET",
-    merchantOfRecord: "ARCUBE",
+    merchantOfRecord: "AIRLINE",
     customer: {
       firstName: "FIRST_NAME",
       lastName: "LAST_NAME",
@@ -436,7 +435,8 @@ const orderRequest = {
 const response = await fetch("https://your-api-domain/api/aggregation-api/order-api/confirmOrder", {
   method: "POST",
   headers: {
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
+    "X-Correlation-ID": latestWidgetCorrelationId
   },
   body: JSON.stringify(orderRequest)
 });
