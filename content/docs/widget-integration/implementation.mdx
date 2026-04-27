@@ -150,21 +150,36 @@ eSIM lines carry their own plan and package identifiers. The example below shows
 
 ```javascript
 const esimItem = {
-  id: "esim-1:plan-1",
+  id: "esim-001",
   name: "eSIM",
+  description: "1024MB - 7 days",
   quantity: 1,
-  totalPrice: 19,
+  totalPrice: 1.91,
   currency: "USD",
   category: "esim",
-  planId: "plan-1",
-  packageId: "pkg-1",
-  bundleId: "bundle-1",
-  vendorReferenceId: "vendor-1",
-  provider: "airalo",
-  dataLabel: "3 GB",
-  daysLabel: "30 days",
-  country: "Canada",
-  countryCode: "CA",
+  customer: {
+    firstName: "First name",
+    lastName: "Last name",
+    email: "customer@example.com",
+  },
+  planId: "plan-001",
+  packageId: "package-001",
+  bundleId: "bundle-001",
+  vendorReferenceId: "vendor-reference-001",
+  provider: "provider-name",
+  dataLabel: "1024MB",
+  daysLabel: "7 days",
+  country: "DE",
+  countryCode: "DE",
+  metadata: {
+    passengers: [
+      {
+        firstName: "First name",
+        lastName: "Last name",
+        email: "customer@example.com",
+      },
+    ],
+  },
 };
 ```
 
@@ -209,13 +224,35 @@ Lounge identifiers such as `resourceId` and `referenceId` may be present when av
 
 ```javascript
 const loungeItem = {
-  id: "lounge-1",
-  name: "Lounge Access",
-  quantity: 1,
-  totalPrice: 45,
-  unitPrice: 45,
-  currency: "EUR",
+  id: "lounge-001",
+  name: "Lounge Name",
+  description: "Airport name - Lounge location",
+  quantity: 2,
+  unitPrice: 44.28,
+  totalPrice: 88.56,
+  currency: "USD",
   category: "lounge",
+  customer: {
+    firstName: "First name",
+    lastName: "Last name",
+    email: "customer@example.com",
+  },
+  vendorReferenceId: "vendor-reference-001",
+  provider: "provider-name",
+  metadata: {
+    passengers: [
+      {
+        firstName: "First name",
+        lastName: "Last name",
+        email: "customer@example.com",
+      },
+      {
+        firstName: "First name",
+        lastName: "Last name",
+        email: "customer@example.com",
+      },
+    ],
+  },
 };
 ```
 
@@ -225,13 +262,31 @@ Insurance uses the base basket line fields.
 
 ```javascript
 const insuranceItem = {
-  id: "insurance-1",
-  name: "Baggage Protection",
+  id: "insurance-001",
+  name: "Insurance Product",
+  description: "Insurance description",
   quantity: 1,
-  totalPrice: 12,
-  unitPrice: 12,
-  currency: "EUR",
+  unitPrice: 5.41,
+  totalPrice: 5.41,
+  currency: "USD",
   category: "insurance",
+  customer: {
+    firstName: "First name",
+    lastName: "Last name",
+    email: "customer@example.com",
+  },
+  vendorReferenceId: "vendor-reference-001",
+  provider: "provider-name",
+  metadata: {
+    passengers: [
+      {
+        firstName: "First name",
+        lastName: "Last name",
+        email: "customer@example.com",
+      },
+    ],
+    coveragePerBag: 1000,
+  },
 };
 ```
 
@@ -241,15 +296,47 @@ Airport transfer has a time-limited quote. Keep the fields exactly as received. 
 
 ```javascript
 const transferItem = {
-  id: "transfer-1",
-  name: "Airport Transfer",
+  id: "transfer-001",
+  quoteId: "quote-001",
+  name: "Transfer Provider",
+  description: "Pickup location -> Dropoff location",
   quantity: 1,
   passengers: 2,
-  totalPrice: 84,
-  unitPrice: 84,
-  currency: "EUR",
+  unitPrice: 57.25,
+  totalPrice: 57.25,
+  currency: "USD",
   category: "transfer",
-  expires_at: 1774257315,
+  customer: {
+    firstName: "First name",
+    lastName: "Last name",
+    email: "customer@example.com",
+    phoneNumber: "+00000000000",
+  },
+  vendorReferenceId: "vendor-reference-001",
+  vendorSecondaryId: "vendor-secondary-001",
+  provider: "provider-name",
+  pickupDatetime: "YYYY-MM-DD HH:mm",
+  mode: "one_way",
+  optionalAmenities: [],
+  startCoordinates: {
+    lat: 0,
+    lng: 0,
+    countryCode: "GB",
+  },
+  endCoordinates: {
+    lat: 0,
+    lng: 0,
+    countryCode: "GB",
+  },
+  metadata: {
+    extra_pax_required: true,
+    passengers: [
+      {
+        firstName: "First name",
+        lastName: "Last name",
+      },
+    ],
+  },
 };
 ```
 
@@ -265,6 +352,7 @@ The airline does not need to guess the message shape. The add-to-cart event cont
   "type": "CART_ITEM_ADDED",
   "version": "1.0",
   "timestamp": "2026-03-25T10:15:00.000Z",
+  "correlationId": "uuid-from-api",
   "payload": {
     "itemId": "transfer-001",
     "cart": {
@@ -362,7 +450,7 @@ Confirm an order after successful payment. Arcube places the ancillary order wit
 
 <Callout title="Request Headers">
   - `Content-Type: application/json`
-  - `X-Correlation-ID: <latest_widget_correlation_id>`
+  - `X-Correlation-ID: <correlation_id>`
 </Callout>
 
 ### Request Payload Sample
@@ -441,7 +529,7 @@ const response = await fetch("${arcube-url}/api/aggregation-api/order-api/confir
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "X-Correlation-ID": latestWidgetCorrelationId
+    "X-Correlation-ID": WidgetCorrelationId
   },
   body: JSON.stringify(orderRequest)
 });
