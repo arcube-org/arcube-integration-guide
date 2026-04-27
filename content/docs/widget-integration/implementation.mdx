@@ -100,7 +100,7 @@ After the airline basket is updated successfully, the normal airline flow contin
 
 ## Rendering the Widget
 
-Once the airline has authenticated itself and acquired a token and the PNR details are sent to Arcube, the airline is ready to render the widget by initializing the script with the tenant ID, the session ID or PNR, and the optional theme JSON URL. The authentication flow should already be in place before this step. In the current public integration layer, token handling remains internal to the Arcube proxy flow, so the render command itself uses the booking context and styling inputs rather than a direct browser token field.
+Once the airline has authenticated itself and acquired a token and the PNR details are sent to Arcube, the airline is ready to render the widget by initializing the script with the tenant ID, the session ID or PNR, and the optional theme JSON URL.
 
 ```javascript
 window.Widget.init({
@@ -352,15 +352,20 @@ async function handleRemove(itemId) {
 
 Confirm an order after successful payment. Arcube places the ancillary order with the relevant provider and records the transaction.
 
-| | |
-|---|---|
-| **HTTP Method** | `POST` |
-| **URL** | `${arcube-url}/api/aggregation-api/order-api/confirmOrder` |
-| **Content-Type** | `application/json` |
+<Callout type="info" title="Request URL Parameter">
+  Replace `${arcube-url}` with your assigned Arcube environment URL (e.g., `https://api.arcube.com`).
+</Callout>
 
-Replace `${arcube-url}` with your assigned Arcube environment URL.
+<Callout type="info" title="HTTP Method: POST">
+  **URL:** `${arcube-url}/api/aggregation-api/order-api/confirmOrder`
+</Callout>
 
-**Sample Request Payload**
+<Callout title="Request Headers">
+  - `Content-Type: application/json`
+  - `X-Correlation-ID: <latest_widget_correlation_id>`
+</Callout>
+
+### Request Payload Sample
 
 The example below shows an order request for baggage protection.
 
@@ -432,7 +437,7 @@ const orderRequest = {
   }
 };
 
-const response = await fetch("https://your-api-domain/api/aggregation-api/order-api/confirmOrder", {
+const response = await fetch("${arcube-url}/api/aggregation-api/order-api/confirmOrder", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -442,7 +447,7 @@ const response = await fetch("https://your-api-domain/api/aggregation-api/order-
 });
 ```
 
-**Sample Response Payload**
+### Response Payload Sample
 
 ```json
 {
