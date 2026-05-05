@@ -100,273 +100,230 @@ After the airline basket is updated successfully, the normal airline flow contin
 
 ## Rendering the Widget
 
-Once the airline has authenticated itself and acquired a token and the PNR details are sent to Arcube, the airline is ready to render the widget by initializing the script with the tenant ID, the session ID or PNR, and the optional theme JSON URL.
+Once the airline has authenticated itself and acquired a short-lived widget token, the airline page can render the widget. The page needs a stable mount element, the Arcube widget bridge script, and a call to `window.Widget.init`.
+
+```html
+<div id="arcube-widget"></div>
+<script src="PATH_TO_ARCUBE_WIDGET_SCRIPT"></script>
+```
+
+Register widget event listeners before initialization when possible, so the parent page can catch early ready, error, and cart events.
 
 ```javascript
-window.Widget.init({
-  widgetUrl: "https://your-arcube-widget-domain",
+const widgetConfig = {
+  widgetUrl: "ARCUBE_WIDGET_URL",
   tenantId: "YOUR_TENANT_ID",
   sessionId: "YOUR_PNR",
   currency: "USD",
   language: "en-US",
+  token: widgetToken,
   themeJsonUrl: "https://cdn.airline.com/arcube/widget-theme.json"
+};
+
+window.addEventListener("arcube:widget:ready", (event) => {
+  console.log("Arcube widget ready", event.detail);
 });
+
+window.addEventListener("arcube:widget:error", (event) => {
+  console.error("Arcube widget error", event.detail);
+});
+
+window.addEventListener("arcube:cart:updated", (event) => {
+  const { cart, correlationId, messageType } = event.detail;
+  console.log("Arcube widget cart updated", messageType, correlationId, cart);
+});
+
+window.Widget.init(widgetConfig);
 ```
 
 ---
 
 ## Add to Cart Functionality
 
-The widget does not write into the airline basket directly. It emits cart events. The airline frontend must listen to those events and run its own add-to-cart logic. Each widget event contains a cart snapshot. For add-to-cart, the tenant should catch the widget event, read the newest line item, and pass that data into its own basket logic.
+The widget does not write into the airline basket directly. It emits cart events. The airline frontend must listen to those events and run its own add-to-cart logic. Each widget event contains a cart snapshot with the root `customer` and a flat `selectedAncillaries` array. For add-to-cart, the tenant should catch the widget event, read the newest selected ancillary, and pass that data into its own basket logic.
 
 ### Catching the Add Event
 
-Listen for cart update events and extract the latest item from the cart. The following example shows how to do that in JavaScript:
+Listen for cart update events and extract the latest selected ancillary from the cart. The following example shows how to do that in JavaScript:
 
 ```typescript
-function getLatestCartLine(detail: ArcubeCartUpdateEvent) {
-  const segment = detail.cart.segments[0];
-  const item = segment?.items[segment.items.length - 1];
-  if (!segment || !item) return null;
-  return { segment, item };
+function getLatestSelectedAncillary(detail: ArcubeCartUpdateEvent) {
+  const items = detail.cart.selectedAncillaries;
+  return items[items.length - 1] ?? null;
 }
 
 window.addEventListener("arcube:cart:updated", (event) => {
   const detail = (event as CustomEvent<ArcubeCartUpdateEvent>).detail;
   if (!detail || detail.messageType !== "CART_ITEM_ADDED") return;
 
-  const latest = getLatestCartLine(detail);
+  const latest = getLatestSelectedAncillary(detail);
 
   if (!latest) return;
 
-  console.log("Widget item added", latest.item);
-  // Pass latest.item into your own add-to-cart flow.
+  console.log("Widget item added", latest);
+  // Pass latest into your own add-to-cart flow.
 });
 ```
 
-### eSIM Item
+### selectedAncillaries Example
 
-eSIM lines carry their own plan and package identifiers. The example below shows the structure.
+`selectedAncillaries` is a flat array. Each entry represents one selected ancillary and should be passed through unchanged when creating the widget order. The root `customer` is not stored inside each selected ancillary. If an ancillary has additional passengers, `metadata.passengers` contains only those additional passengers, not the root customer.
 
-```javascript
-const esimItem = {
-  id: "esim-001",
-  name: "eSIM",
-  description: "1024MB - 7 days",
-  quantity: 1,
-  totalPrice: 1.91,
-  currency: "USD",
-  category: "esim",
-  customer: {
-    firstName: "First name",
-    lastName: "Last name",
-    email: "customer@example.com",
+The eSIM item is a selected ancillary entry. It carries provider, price, quantity, description, the vendor reference, and service details such as region, country code, data amount, and validity.
+
+```json
+[
+  {
+    "id": "tellisim-plan-001",
+    "ancillaryId": "ANCILLARY_ESIM_ID",
+    "vendor": "tellisim",
+    "price": 1.91,
+    "currency": "USD",
+    "quantity": 1,
+    "description": "1024MB - 7 days eSIM",
+    "vendorReferenceId": "ESIM_VENDOR_REFERENCE",
+    "serviceDetails": {
+      "Region": "DE",
+      "CountryCode": "DE",
+      "Data Amount": "1024MB",
+      "Validity": "7 days"
+    }
   },
-  planId: "plan-001",
-  packageId: "package-001",
-  bundleId: "bundle-001",
-  vendorReferenceId: "vendor-reference-001",
-  provider: "provider-name",
-  dataLabel: "1024MB",
-  daysLabel: "7 days",
-  country: "DE",
-  countryCode: "DE",
-  metadata: {
-    passengers: [
-      {
-        firstName: "First name",
-        lastName: "Last name",
-        email: "customer@example.com",
-      },
-    ],
-  },
-};
-```
-
-### Car Rental Item
-
-Car rental includes the supplier reference and passenger count. The example below shows the structure.
-
-```javascript
-const carRentalItem = {
-  id: "car-rental-1",
-  name: "Car Rental",
-  quantity: 1,
-  passengers: 2,
-  totalPrice: 140,
-  unitPrice: 35,
-  currency: "EUR",
-  category: "car_rental",
-  vendorReferenceId: "rental-ref-1",
-};
-```
-
-### Carbon Offset Item
-
-Carbon offset depends on the quote identifier. The example below shows the structure.
-
-```javascript
-const carbonOffsetItem = {
-  id: "carbon-offset-001",
-  quoteId: "quote-001",
-  name: "Carbon Offset",
-  description: "Origin → Stopover → Destination",
-  quantity: 1,
-  unitPrice: 33.83,
-  totalPrice: 33.83,
-  currency: "USD",
-  category: "carbon_offset",
-  customer: {
-    firstName: "First name",
-    lastName: "Last name",
-    email: "customer@example.com",
-  },
-  vendorReferenceId: "vendor-reference-001",
-  provider: "provider-name",
-  metadata: {
-    carbonEstimate: {
-      co2Footprint: {
-        unit: "KG",
-        value: 1421.26,
-      },
-      offsetPrice: {
-        currency: "USD",
-        value: 29.87,
-        zeroDecimalCurrency: false,
-      },
-      quoteId: "quote-001",
+  {
+    "id": "baggage-protection-gold",
+    "ancillaryId": "ANCILLARY_BAGGAGE_PROTECTION_ID",
+    "vendor": "brb",
+    "price": 5.41,
+    "currency": "USD",
+    "quantity": 1,
+    "description": "Baggage Protection - Gold Service",
+    "vendorReferenceId": "GOLD",
+    "serviceDetails": {
+      "Coverage Level": "Gold Service",
+      "Coverage Amount": "$1000"
     },
+    "metadata": {
+      "productCode": "GOLD",
+      "ProductCode": "GOLD",
+      "PassengerList": [],
+      "productId": "baggage-protection-gold"
+    }
   },
-};
+  {
+    "id": "carbon-offset-001",
+    "ancillaryId": "ANCILLARY_CARBON_OFFSET_ID",
+    "vendor": "carbonclick",
+    "price": 33.38,
+    "currency": "USD",
+    "quantity": 1,
+    "description": "Carbon offset - CO2 per passenger",
+    "vendorReferenceId": "CARBON_QUOTE_REFERENCE",
+    "serviceDetails": {
+      "Project Name": "Carbon offset",
+      "CO2 Offset Per Passenger": "1404.76 KG",
+      "Route": "AAA -> BBB -> CCC",
+      "Passengers": "1"
+    },
+    "metadata": {
+      "perPassengerPrice": 33.38,
+      "perPassengerCO2": 1404.76,
+      "co2Unit": "KG",
+      "passengersInQuote": 1
+    }
+  },
+  {
+    "id": "lounge-001",
+    "ancillaryId": "ANCILLARY_LOUNGE_ID",
+    "vendor": "collinson-lounge",
+    "price": 44.06,
+    "currency": "USD",
+    "quantity": 1,
+    "description": "Airport Lounge - Terminal, Airport",
+    "vendorReferenceId": "LOUNGE_REFERENCE",
+    "serviceDetails": {
+      "Lounge Name": "Airport Lounge",
+      "Terminal": "Terminal",
+      "Airport Code": "AAA",
+      "Airport Name": "Airport Name",
+      "Location": "Lounge location details"
+    }
+  },
+  {
+    "id": "transfer-quote-001",
+    "ancillaryId": "ANCILLARY_TRANSFER_ID",
+    "vendor": "mozio",
+    "price": 67.21,
+    "currency": "USD",
+    "quantity": 1,
+    "description": "Pickup location -> Dropoff location - Vehicle",
+    "vendorReferenceId": "TRANSFER_SEARCH_REFERENCE",
+    "serviceDetails": {
+      "From": "Pickup location",
+      "To": "Dropoff location",
+      "Vehicle": "Vehicle",
+      "Passengers": "2",
+      "Trip Type": "One Way",
+      "Pickup Date": "YYYY-MM-DD",
+      "Pickup Time": "HH:mm"
+    },
+    "vendorSecondaryId": "TRANSFER_QUOTE_REFERENCE",
+    "pickupDatetime": "YYYY-MM-DD HH:mm",
+    "mode": "one_way",
+    "numPassengers": 2,
+    "start_coordinates": {
+      "lat": 0,
+      "lng": 0,
+      "countryCode": "GB"
+    },
+    "end_coordinates": {
+      "lat": 0,
+      "lng": 0,
+      "countryCode": "GB"
+    },
+    "optionalAmenities": [],
+    "expires_at": 1777985943,
+    "metadata": {
+      "extra_pax_required": true,
+      "passengers": [
+        {
+          "title": "Mr",
+          "firstName": "Additional",
+          "lastName": "Passenger"
+        }
+      ]
+    }
+  },
+  {
+    "id": "car-rental-offer-001",
+    "vendor": "discovercars",
+    "price": 538.95,
+    "currency": "USD",
+    "quantity": 1,
+    "description": "Compact car",
+    "vendorReferenceId": "CAR_RENTAL_VENDOR_REFERENCE",
+    "metadata": {
+      "passengersCount": 2,
+      "driverDateOfBirth": "YYYY-MM-DD",
+      "driverPhoneCountry": "+000",
+      "driverPhoneNumber": "000000000",
+      "driverResidence": "US",
+      "passengers": [
+        {
+          "title": "Mrs",
+          "firstName": "Additional",
+          "lastName": "Passenger"
+        }
+      ]
+    }
+  }
+]
 ```
 
-### Lounge Item
-
-Lounge identifiers such as `resourceId` and `referenceId` may be present when available. Tenants can use them if they need them, but should not hard-fail if extra optional fields are added later.
-
-```javascript
-const loungeItem = {
-  id: "lounge-001",
-  name: "Lounge Name",
-  description: "Airport name - Lounge location",
-  quantity: 2,
-  unitPrice: 44.28,
-  totalPrice: 88.56,
-  currency: "USD",
-  category: "lounge",
-  customer: {
-    firstName: "First name",
-    lastName: "Last name",
-    email: "customer@example.com",
-  },
-  vendorReferenceId: "vendor-reference-001",
-  provider: "provider-name",
-  metadata: {
-    passengers: [
-      {
-        firstName: "First name",
-        lastName: "Last name",
-        email: "customer@example.com",
-      },
-      {
-        firstName: "First name",
-        lastName: "Last name",
-        email: "customer@example.com",
-      },
-    ],
-  },
-};
-```
-
-### Insurance Item
-
-Insurance uses the base basket line fields.
-
-```javascript
-const insuranceItem = {
-  id: "insurance-001",
-  name: "Insurance Product",
-  description: "Insurance description",
-  quantity: 1,
-  unitPrice: 5.41,
-  totalPrice: 5.41,
-  currency: "USD",
-  category: "insurance",
-  customer: {
-    firstName: "First name",
-    lastName: "Last name",
-    email: "customer@example.com",
-  },
-  vendorReferenceId: "vendor-reference-001",
-  provider: "provider-name",
-  metadata: {
-    passengers: [
-      {
-        firstName: "First name",
-        lastName: "Last name",
-        email: "customer@example.com",
-      },
-    ],
-    coveragePerBag: 1000,
-  },
-};
-```
-
-### Airport Transfer Item
-
-Airport transfer has a time-limited quote. Keep the fields exactly as received. The example below shows the structure.
-
-```javascript
-const transferItem = {
-  id: "transfer-001",
-  quoteId: "quote-001",
-  name: "Transfer Provider",
-  description: "Pickup location -> Dropoff location",
-  quantity: 1,
-  passengers: 2,
-  unitPrice: 57.25,
-  totalPrice: 57.25,
-  currency: "USD",
-  category: "transfer",
-  customer: {
-    firstName: "First name",
-    lastName: "Last name",
-    email: "customer@example.com",
-    phoneNumber: "+00000000000",
-  },
-  vendorReferenceId: "vendor-reference-001",
-  vendorSecondaryId: "vendor-secondary-001",
-  provider: "provider-name",
-  pickupDatetime: "YYYY-MM-DD HH:mm",
-  mode: "one_way",
-  optionalAmenities: [],
-  startCoordinates: {
-    lat: 0,
-    lng: 0,
-    countryCode: "GB",
-  },
-  endCoordinates: {
-    lat: 0,
-    lng: 0,
-    countryCode: "GB",
-  },
-  metadata: {
-    extra_pax_required: true,
-    passengers: [
-      {
-        firstName: "First name",
-        lastName: "Last name",
-      },
-    ],
-  },
-};
-```
-
-The payload format shown above reflects what is used in version 1. The list is not fixed - new fields might be added later when new ancillary partners are introduced. Tenants should follow the documented structure and use the fields they need. Any important contract change will be communicated.
+The payload format shown above reflects what is used in version 1. The list is not fixed - new fields might be added later when new ancillary partners are introduced. Tenants should pass `selectedAncillaries` through verbatim and use the fields they need. Any important contract change will be communicated.
 
 ### Expected Message from Widget
 
-The airline does not need to guess the message shape. The add-to-cart event contains a cart summary and the item that was just added.
+The airline does not need to guess the message shape. The add-to-cart event contains the current cart snapshot. The cart includes a root `customer` and a flat `selectedAncillaries` array.
 
 ```json
 {
@@ -376,37 +333,64 @@ The airline does not need to guess the message shape. The add-to-cart event cont
   "timestamp": "2026-03-25T10:15:00.000Z",
   "correlationId": "uuid-from-api",
   "payload": {
-    "itemId": "transfer-001",
     "cart": {
-      "currency": "EUR",
-      "subtotal": 35,
-      "taxes": 0,
-      "fees": 0,
-      "total": 35,
-      "itemCount": 1,
-      "segments": [
+      "correlationId": "uuid-from-api",
+      "customer": {
+        "id": "cust_timestamp",
+        "title": "Mr",
+        "firstName": "First",
+        "lastName": "Last",
+        "email": "customer@example.com",
+        "day_of_birth": "1990-01-01",
+        "callingCode": "+000",
+        "phone": "000000000",
+        "country_code_name": "US"
+      },
+      "selectedAncillaries": [
         {
-          "type": "departure",
-          "flight": {
-            "date": "2026-03-27",
-            "flightNumber": "BF760",
-            "departureCode": "ORY",
-            "arrivalCode": "YUL"
-          },
-          "items": [
-            {
-              "id": "transfer-001",
-              "name": "Airport Transfer",
-              "category": "transfer",
-              "provider": "mistertransfer",
-              "quantity": 1,
-              "totalPrice": 35,
-              "currency": "EUR",
-              "vendorReferenceId": "ABC123"
-            }
-          ]
+          "id": "tellisim-plan-001",
+          "ancillaryId": "ANCILLARY_ESIM_ID",
+          "vendor": "tellisim",
+          "price": 1.91,
+          "currency": "USD",
+          "quantity": 1,
+          "description": "1024MB - 7 days eSIM",
+          "vendorReferenceId": "ESIM_VENDOR_REFERENCE",
+          "serviceDetails": {
+            "Region": "DE",
+            "CountryCode": "DE",
+            "Data Amount": "1024MB",
+            "Validity": "7 days"
+          }
+        },
+        {
+          "id": "transfer-quote-001",
+          "ancillaryId": "ANCILLARY_TRANSFER_ID",
+          "vendor": "mozio",
+          "price": 67.21,
+          "currency": "USD",
+          "quantity": 1,
+          "description": "Pickup location -> Dropoff location - Vehicle",
+          "vendorReferenceId": "TRANSFER_SEARCH_REFERENCE",
+          "vendorSecondaryId": "TRANSFER_QUOTE_REFERENCE",
+          "pickupDatetime": "YYYY-MM-DD HH:mm",
+          "mode": "one_way",
+          "numPassengers": 2,
+          "metadata": {
+            "extra_pax_required": true,
+            "passengers": [
+              {
+                "title": "Mr",
+                "firstName": "Additional",
+                "lastName": "Passenger"
+              }
+            ]
+          }
         }
-      ]
+      ],
+      "createdAt": "2026-03-25T10:15:00.000Z",
+      "updatedAt": "2026-03-25T10:15:00.000Z",
+      "expiresAt": "2026-03-25T10:45:00.000Z"
     }
   }
 }
@@ -460,18 +444,19 @@ async function handleRemove(itemId) {
 
 ## Order API
 
-Confirm an order after successful payment. Arcube places the ancillary order with the relevant provider and records the transaction.
+Create the widget order after checkout. Arcube places the ancillary order with the relevant provider and records the transaction.
 
 <Callout type="info" title="Request URL Parameter">
   Replace `${arcube-url}` with your assigned Arcube environment URL (e.g., `https://api.arcube.com`).
 </Callout>
 
 <Callout type="info" title="HTTP Method: POST">
-  **URL:** `${arcube-url}/api/aggregation-api/order-api/confirmOrder`
+  **URL:** `${arcube-url}/transactions/widget-order-create`
 </Callout>
 
 <Callout title="Request Headers">
   - `Content-Type: application/json`
+  - `Authorization: Bearer <widget_token>`
   - `X-Correlation-ID: <correlation_id>`
 </Callout>
 
@@ -479,126 +464,57 @@ Confirm an order after successful payment. Arcube places the ancillary order wit
 
 The example below shows an order request for baggage protection.
 
-```javascript
-const orderRequest = {
-  sessionId: "SESSION_OR_PNR",
-  tenantId: "YOUR_TENANT_ID",
-  locale: "en-US",
-  cart: {
-    pnr: "SESSION_OR_PNR_001",
-    currency: "USD",
-    pointOfSale: "WIDGET",
-    touchPoint: "WIDGET",
-    merchantOfRecord: "AIRLINE",
-    customer: {
-      firstName: "FIRST_NAME",
-      lastName: "LAST_NAME",
-      email: "customer@example.com"
-    },
-    segments: [
+```bash
+curl --location "${arcube-url}/transactions/widget-order-create" \
+  --header "Content-Type: application/json" \
+  --header "Authorization: Bearer <widget_token>" \
+  --header "x-correlation-id: <correlation_id>" \
+  --data-raw '{
+    "selectedAncillaries": [
       {
-        type: "departure",
-        flight: {
-          date: "2026-04-30",
-          flightNumber: "XX123",
-          departureTime: "10:30",
-          arrivalTime: "14:45",
-          departureCode: "AAA",
-          arrivalCode: "BBB"
+        "id": "baggage-protection-gold",
+        "ancillaryId": "ANCILLARY_BAGGAGE_PROTECTION_ID",
+        "vendor": "brb",
+        "price": 5.41,
+        "currency": "USD",
+        "quantity": 1,
+        "description": "Baggage Protection - Gold Service",
+        "vendorReferenceId": "GOLD",
+        "serviceDetails": {
+          "Coverage Level": "Gold Service",
+          "Coverage Amount": "$1000"
         },
-        items: [
-          {
-            id: "item-001",
-            name: "Baggage Protection",
-            description: "Ancillary description",
-            quantity: 1,
-            unitPrice: 5.41,
-            totalPrice: 5.41,
-            currency: "USD",
-            category: "insurance",
-            customer: {
-              firstName: "FIRST_NAME",
-              lastName: "LAST_NAME",
-              email: "customer@example.com"
-            },
-            vendorReferenceId: "PLAN_CODE",
-            provider: "brb",
-            metadata: {
-              passengers: [
-                {
-                  firstName: "PASSENGER_FIRST_NAME",
-                  lastName: "PASSENGER_LAST_NAME",
-                  email: "passenger@example.com"
-                }
-              ],
-              coveragePerBag: 1000
-            }
-          }
-        ],
-        subtotal: 5.41
+        "metadata": {
+          "productCode": "GOLD",
+          "ProductCode": "GOLD",
+          "PassengerList": [],
+          "productId": "baggage-protection-gold"
+        }
       }
     ],
-    subtotal: 5.41,
-    taxes: 0,
-    fees: 0,
-    total: 5.41,
-    itemCount: 1,
-    lastUpdated: "2026-04-26T13:02:05.198Z"
-  }
-};
-
-const response = await fetch("${arcube-url}/api/aggregation-api/order-api/confirmOrder", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "X-Correlation-ID": WidgetCorrelationId
-  },
-  body: JSON.stringify(orderRequest)
-});
-```
-
-### Response Payload Sample
-
-```json
-{
-  "success": true,
-  "orderId": "ORDER_ID",
-  "transactionId": "TRANSCATION_ID",
-  "pnr": "SESSION_OR_PNR",
-  "confirmed": 1,
-  "failed": 0,
-  "skipped": 0,
-  "results": [
-    {
-      "itemId": "item-001-1",
-      "provider": "brb",
-      "vendorCode": "brb",
-      "title": "Baggage Protection",
-      "success": true,
-      "data": {
-        "ServiceNumber": "SERVICE_REFERENCE",
-        "TotalPrice": 5,
-        "TotalCharge": 5
-      },
-      "error": null,
-      "quantity": 1,
-      "passenger": "PASSENGER_NAME",
-      "pricePerItem": 5.41,
-      "totalPrice": 5.41,
-      "timestamp": "2026-04-27T12:35:27.598Z",
-      "status": "CONFIRMED",
-      "amounts": {
-        "total_price": 5.41,
-        "currency": "USD",
-        "charged": 5.41,
-        "refunded": 0,
-        "price_per_item": 5.41
-      },
-      "vendor_price": 5.41,
-      "vendor_currency": "USD"
-    }
-  ]
-}
+    "tenant": "YOUR_TENANT_ID",
+    "pnr": "YOUR_PNR",
+    "pointOfSale": "AIRLINE_WEBSITE",
+    "requestedCurrency": "USD",
+    "customer": {
+      "id": "cust_timestamp",
+      "title": "Mr",
+      "email": "customer@example.com",
+      "callingCode": "+000",
+      "phone": "000000000",
+      "firstName": "First",
+      "lastName": "Last",
+      "day_of_birth": "1990-01-01",
+      "country_code_name": "US"
+    },
+    "passengers": [
+      {
+        "firstName": "Additional",
+        "lastName": "Passenger",
+        "email": "additional.passenger@example.com"
+      }
+    ]
+  }'
 ```
 
 ---
@@ -627,7 +543,7 @@ The theme file should include an `en` block with a colors section and a typograp
 - `primary`, `secondary`, `bodyBg`, `neutral`, `black`, `white`, `link`
 - `typography.font-family`
 
-Optional color values - `success`, `warning`, `danger`, `info`, and `lightnessThreshold` - may also be provided.
+Optional color values - `success`, `warning`, `danger`, and `info` - may also be provided.
 
 When opening the widget, pass a `themeJsonUrl` pointing to the hosted theme file:
 
@@ -653,8 +569,7 @@ The query-based theme URL supports the main color tokens as well as `fontFamily`
       "success": "#2E9E5B",
       "warning": "#E8B949",
       "danger": "#D75656",
-      "info": "#4AA3C7",
-      "lightnessThreshold": "50"
+      "info": "#4AA3C7"
     },
     "typography": {
       "font-family": "Airline Sans, Arial, sans-serif",
