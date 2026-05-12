@@ -37,18 +37,24 @@ Insert trip and passenger context into Arcube to enable personalization.
   `202 Accepted` - request accepted for asynchronous processing.
 </Callout>
 
+<Callout type="warn" title="Behavior by pointOfSale">
+  `pointOfSale` is **required**. When it is `API`, Arcube treats the call as **PNR ingestion only** - no recommendations are generated and the data is stored for later retrieval via [6.2 Serve Recommendations](#62-serve-recommendations). For any other value (`AIRLINE_WEBSITE`, `EMAIL`, `WIDGET`, `MOBILE_APP`, ...) Arcube precomputes recommendations against the ingested context.
+</Callout>
+
 ### Notes
 
-- Include the **lead passenger's email** if you want Arcube to send transactional/marketing emails.
-- Provide **either** `pnr` **or** `sessionId` (or both) consistently across subsequent calls.
+- `pointOfSale` is **required**. See the callout above for how it changes the call's behavior.
+- **Only `id` and `type` are essential per passenger.** All other passenger fields - `firstName`, `lastName`, `email`, `accompaniedInfant`, `associatedAdultId`, `isLead` - are optional. Send them only if you want richer personalization or transactional/marketing emails. This removes any sensitive-data restriction on the call.
+- **`passengers` and `segments` are required only on the first ingest for a PNR.** Subsequent calls for the same PNR may omit them, or send only the fields that changed.
+- Include the **lead passenger's email** (`isLead: true` + `email`) if you want Arcube to send transactional/marketing emails.
+- `tenant` is **optional** - your tenant is resolved from the Bearer token. Send it only when you need to override.
 
 ### Payload Sample
 
 ```json
 {
   "pnr": "AB12CD",
-  "sessionId": "73-ara43",
-  "tenant": "6864f9f94eab200cd4765cc0",
+  "pointOfSale": "AIRLINE_WEBSITE",
   "passengers": [
     {
       "id": "PAX1",
@@ -124,10 +130,11 @@ Insert trip and passenger context into Arcube to enable personalization.
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["passengers", "segments", "tenant"],
+  "required": ["pnr", "pointOfSale"],
   "properties": {
     "pnr": { "type": "string" },
-    "sessionId": { "type": "string" },
+    "pointOfSale": { "type": "string" },
+    "tenant": { "type": "string" },
     "passengers": {
       "type": "array",
       "items": {
@@ -174,13 +181,8 @@ Insert trip and passenger context into Arcube to enable personalization.
         },
         "additionalProperties": false
       }
-    },
-    "tenant": { "type": "string" }
+    }
   },
-  "anyOf": [
-    { "required": ["pnr"] },
-    { "required": ["sessionId"] }
-  ],
   "additionalProperties": false
 }
 ```
@@ -191,7 +193,7 @@ Insert trip and passenger context into Arcube to enable personalization.
 
 ### Description
 
-Retrieve recommendations for a specific PNR or session and point of sale.
+Retrieve recommendations for a specific PNR, point of sale, and touch point.
 
 <Callout type="info" title="Request URL Parameter">
   Replace `${arcube-url}` with your assigned Arcube environment URL (e.g., `https://api.arcube.com`).
@@ -214,11 +216,13 @@ Retrieve recommendations for a specific PNR or session and point of sale.
 
 ```json
 {
-  "tenant": "6864f9f94eab200cd4765cc0",
-  "sessionId": "73-ara43",
-  "pointOfSale": "booking-flow"
+  "touchPoint": "EMAIL",
+  "pointOfSale": "AIRLINE_WEBSITE",
+  "pnr": "3MIN12"
 }
 ```
+
+`touchPoint` is a free-text string identifying where the recommendation will be surfaced (e.g. `EMAIL`, `AIRLINE_WEBSITE`, `WIDGET`, `MOBILE_APP`). New touch points may be introduced without breaking the contract. Your tenant is resolved from the Bearer token, so it is not part of the payload.
 
 ### Request Payload JSON Schema
 
@@ -226,17 +230,12 @@ Retrieve recommendations for a specific PNR or session and point of sale.
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["pointOfSale", "tenant"],
+  "required": ["pnr", "pointOfSale", "touchPoint"],
   "properties": {
     "pnr": { "type": "string" },
-    "sessionId": { "type": "string" },
     "pointOfSale": { "type": "string" },
-    "tenant": { "type": "string" }
+    "touchPoint": { "type": "string" }
   },
-  "anyOf": [
-    { "required": ["pnr"] },
-    { "required": ["sessionId"] }
-  ],
   "additionalProperties": false
 }
 ```
