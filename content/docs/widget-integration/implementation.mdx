@@ -441,6 +441,54 @@ async function handleRemove(itemId) {
 }
 ```
 
+### Passenger Details Prefill
+
+The parent page can pass passenger details to the widget so customer and passenger forms are prefilled. Send the data after the widget emits `arcube:widget:ready`, and send it again if the booking passenger data changes.
+
+```javascript
+const passengerDetails = {
+  customer: {
+    id: "pax_1",
+    title: "Mr",
+    firstName: "Adam",
+    lastName: "Smith",
+    email: "adam.smith@example.com",
+    dateOfBirth: "1990-04-12",
+    phoneNumber: "+12025550147",
+    callingCode: "+1",
+    phone: "2025550147",
+    country_code_name: "US",
+    isPrimary: true
+  },
+  passengers: [
+    {
+      id: "pax_1",
+      title: "Mr",
+      firstName: "Adam",
+      lastName: "Smith",
+      email: "adam.smith@example.com",
+      isPrimary: true
+    },
+    {
+      id: "pax_2",
+      title: "Ms",
+      firstName: "Sarah",
+      lastName: "Smith",
+      email: "sarah.smith@example.com"
+    }
+  ]
+};
+
+window.addEventListener("arcube:widget:ready", () => {
+  sendToWidget({
+    type: "PASSENGER_DETAILS_UPDATED",
+    payload: passengerDetails
+  });
+});
+```
+
+`customer` is used for the primary customer details form. `passengers` is used to prefill additional passenger forms for products that require traveler-level information. Mark the primary traveler with `isPrimary: true`;
+
 ---
 
 ## Order API
