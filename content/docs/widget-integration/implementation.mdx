@@ -135,6 +135,10 @@ window.addEventListener("arcube:cart:updated", (event) => {
   console.log("Arcube widget cart updated", messageType, correlationId, cart);
 });
 
+window.addEventListener("arcube:widget:closed", (event) => {
+  console.log("Arcube widget closed", event.detail);
+});
+
 window.Widget.init(widgetConfig);
 ```
 
@@ -402,6 +406,23 @@ The airline does not need to guess the message shape. The add-to-cart event cont
 
 ---
 
+## Automatic Close When No Ancillaries Are Available
+
+If the recommendations API returns no sellable ancillaries for the current session, the widget closes itself: the integration script removes the iframe and hides the host mount node (`#arcube-widget`) so no empty slot remains in the page. The script also dispatches `arcube:widget:closed` so the tenant can react — for example, by hiding a surrounding "Extras" section heading.
+
+```javascript
+window.addEventListener("arcube:widget:closed", (event) => {
+  const { reason, correlationId } = event.detail;
+  // reason is "no_ancillaries" when the widget closed because the
+  // recommendations response was empty.
+  console.log("Arcube widget closed", reason, correlationId);
+});
+```
+
+The next call to `window.Widget.init(...)` restores the mount node and remounts the iframe, so this behavior is fully reversible.
+
+---
+
 ## Sending Updates to the Widget
 
 The airline can also send data and commands to the widget. In the current website integration, the airline page already loads the Arcube integration script. That script adds the embedded widget into the page. Runtime communication happens by sending a browser message to the embedded widget window.
@@ -583,6 +604,7 @@ The Arcube widget dispatches events that indicate its state. Tenants must handle
 |-------|---------|--------------------------|
 | `arcube:widget:ready` | Widget is ready | Mark the widget area as live |
 | `arcube:widget:error` | Widget failed | Show fallback UI and log the error |
+| `arcube:widget:closed` | Widget closed itself (e.g. no ancillaries available) | Optional: hide surrounding chrome such as section headings |
 | `arcube:cart:updated` + `CART_ITEM_ADDED` | User added an item | Run your add-to-cart logic |
 | `arcube:cart:updated` + `CART_ITEM_REMOVED` | User removed an item | Run your remove-from-cart logic |
 
