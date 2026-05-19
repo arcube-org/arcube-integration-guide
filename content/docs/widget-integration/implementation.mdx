@@ -118,7 +118,8 @@ const widgetConfig = {
   language: "en-US",
   backendUrl: "ARCUBE_BACKEND_URL",
   token: widgetToken,
-  themeJsonUrl: "https://cdn.airline.com/arcube/widget-theme.json"
+  themeJsonUrl: "https://cdn.airline.com/arcube/widget-theme.json",
+  ancillaryCategories: ["ESIMS", "AIRPORT_TRANSFER"]
 };
 
 window.addEventListener("arcube:widget:ready", (event) => {
@@ -136,6 +137,8 @@ window.addEventListener("arcube:cart:updated", (event) => {
 
 window.Widget.init(widgetConfig);
 ```
+
+`ancillaryCategories` is optional. When provided, the widget renders only the listed categories; when omitted, it renders every category enabled for your tenant. Accepted values: `ESIMS`, `BAGGAGE_PROTECTION`, `AIRPORT_TRANSFER`, `FAST_TRACK`, `CARBON_OFFSET`, `LOUNGE_ACCESS`, `CAR_RENTAL`.
 
 ---
 
@@ -587,7 +590,7 @@ The Arcube widget dispatches events that indicate its state. Tenants must handle
 
 ## Styling and Branding
 
-The widget can be branded to match the airline experience. The current styling contract is based on a hosted theme file. The airline hosts a theme JSON file on an HTTPS URL and passes that URL to the widget as `themeJsonUrl` when the widget is opened.
+The widget can be branded to match the airline experience. The current styling contract is based on a hosted theme file. The airline hosts a theme JSON file on a publicly accessible HTTPS URL and passes that URL to the widget as `themeJsonUrl` when the widget is opened. The hosting bucket or CDN must allow public GET requests with CORS enabled so the widget can fetch the file from the browser.
 
 The widget reads that theme file, applies the color and typography tokens internally, and keeps the styling scoped to the widget itself. If the airline wants to use a custom font, the theme file can also include a `font-url` value - an HTTPS stylesheet link such as a hosted font stylesheet or a Google Fonts URL. The widget loads that stylesheet automatically and uses the declared `font-family`.
 
