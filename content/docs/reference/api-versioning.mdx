@@ -1,48 +1,44 @@
 ---
 title: API Versioning
-description: Arcube's versioning strategy, backward compatibility policy, deprecation timeline, and sandbox access.
+description: How Arcube handles versioning today, backward compatibility, and sandbox access.
 ---
 
-Arcube follows a simple, predictable API versioning strategy to ensure that all integrated tenants can continue operating without disruption while still benefiting from improvements and new features.
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Arcube currently exposes a single, un-versioned set of REST endpoints. None of the production URLs carry a version prefix (no `/v1/`, no `/v2/`) - the base URL is followed directly by the API namespace, for example `https://api.arcube.com/aggregation-api/servePassengerRecommendations`.
 
 ---
 
 ## Versioning Approach
 
-- **Major Versions** - Identified in the base URL (e.g., `/api/v1/...`).
-- **Minor Updates** - Backward-compatible improvements and non-breaking changes will be rolled out within the same major version without changing the version number.
-- **Breaking Changes** - Any changes that could impact existing integrations (e.g., removing fields, changing request/response formats) will trigger a new **major version**.
-
-**Example:**
-- Current version: `v1`
-- Future major release: `v2` (only if breaking changes are introduced)
+- **No version segment in the URL.** All current endpoints live under their namespace directly (`/journey-api/...`, `/aggregation-api/...`, `/order-api/...`, `/checkout/...`, `/oauth/...`).
+- **Additive evolution.** Non-breaking changes - new fields, new optional parameters, new endpoints - are rolled out in place. Tenants do not need to update their integration to keep working.
+- **Breaking changes go through a separate channel.** Anything that would change the shape of an existing request or response, remove a field, or alter behavior in a way that could break an integration is communicated in advance rather than shipped silently.
 
 ---
 
 ## Backward Compatibility
 
-- We strive to maintain backward compatibility within the same major version.
-- Tenants do not need to update their integration for minor updates unless they wish to use new features.
-
----
-
-## Deprecation Policy
-
-- When a new major version is released, the previous major version will be **supported for a minimum of 6 months** before deprecation.
-- We will provide advance notice to all tenants before deprecating any version.
+- Existing endpoint URLs are stable. We do not rename or move endpoints without notice.
+- Existing fields keep their names, types, and semantics. New optional fields may be added; clients should ignore unknown fields they do not consume.
+- Clients should be permissive on read: tolerate new fields in responses, and avoid relying on key ordering.
 
 ---
 
 ## Communication of Changes
 
-- Tenants will be notified of upcoming changes via **email** and through our **developer documentation**.
-- Each release will include a concise **changelog** highlighting new features, improvements, and any actions required by tenants.
+- Tenants are notified of upcoming changes via **email** and through the **developer documentation**.
+- Each notable change is captured in a **changelog** entry highlighting what is new, what is changing, and any required tenant action.
+
+<Callout type="info" title="Planned: formal deprecation policy">
+  A formal deprecation timeline (notice period, sunset dates, namespace bumps) has not been published yet. Once finalized it will appear here. In the meantime, breaking-change announcements are handled on a per-change basis - reach out to your Arcube contact for the latest status.
+</Callout>
 
 ---
 
 ## Testing and Sandbox
 
-- A **sandbox environment** will be available for tenants to test against new versions before production deployment.
-- Sandbox access will mirror production functionality to ensure smooth transition.
+- A **sandbox environment** is available for tenants to test against before production deployment.
+- Sandbox functionality mirrors production to ensure a smooth transition.
 
 Contact Arcube to obtain sandbox credentials and the sandbox base URL.

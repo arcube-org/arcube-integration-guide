@@ -495,6 +495,8 @@ window.addEventListener("arcube:widget:ready", () => {
 
 Create the widget order after checkout. Arcube places the ancillary order with the relevant provider and records the transaction.
 
+Immediately before charging the customer and creating the order, call [Verify Prices](/docs/reference/essential-api-calls#63-verify-prices) to confirm that the cart prices still match Arcube's authoritative bundle. Re-confirm with the user if any item has drifted.
+
 When sending the order payload, put the primary passenger/customer in `customer`. The `passengers` array should include only additional passengers and should exclude the primary passenger.
 
 <Callout type="info" title="Request URL Parameter">

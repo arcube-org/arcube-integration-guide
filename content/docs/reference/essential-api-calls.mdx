@@ -24,7 +24,7 @@ Insert trip and passenger context into Arcube to enable personalization.
 </Callout>
 
 <Callout type="info" title="HTTP Method: POST">
-  **URL:** `${arcube-url}/v1/journey-api/passenger-data`
+  **URL:** `${arcube-url}/journey-api/passenger-data`
 </Callout>
 
 <Callout title="Request Headers">
@@ -200,7 +200,7 @@ Retrieve recommendations for a specific PNR, point of sale, and touch point.
 </Callout>
 
 <Callout type="info" title="HTTP Method: POST">
-  **URL:** `${arcube-url}/v1/aggregation-api/servePassengerRecommendations`
+  **URL:** `${arcube-url}/aggregation-api/servePassengerRecommendations`
 </Callout>
 
 <Callout title="Request Headers">
@@ -276,7 +276,271 @@ Retrieve recommendations for a specific PNR, point of sale, and touch point.
 
 ---
 
-## 6.3 Confirm Order
+## 6.3 Verify Prices
+
+### Description
+
+Call this endpoint **immediately before order creation** to confirm that the prices held in the customer's cart still match Arcube's authoritative bundle. Prices may drift between the original quote and checkout - a vendor changes their rate, a supplier updates pricing, or an FX/markup/eligibility policy is updated.
+
+The response indicates whether each line item is still valid and returns the authoritative price for any item that has drifted, so the client can re-confirm with the user before charging.
+
+<Callout type="info" title="Request URL Parameter">
+  Replace `${arcube-url}` with your assigned Arcube environment URL (e.g., `https://api.arcube.com`).
+</Callout>
+
+<Callout type="info" title="HTTP Method: POST">
+  **URL:** `${arcube-url}/checkout/verify`
+</Callout>
+
+<Callout title="Request Headers">
+  - `Authorization: Bearer <access_token>`
+  - `Content-Type: application/json`
+</Callout>
+
+<Callout type="info" title="HTTP Response">
+  `200 OK` - verification ran. Inspect `verified` and `mismatches` in the body to determine whether the cart is safe to charge.
+</Callout>
+
+<Callout type="warn" title="Allowed roles">
+  The Bearer token must belong to one of: `api_client`, `widget_user`, `whitelabel_user`.
+</Callout>
+
+### Notes
+
+- `correlationId` references the pricing bundle returned by the earlier batch-price call. UUID-shaped by default; any non-empty string is accepted.
+- All items in a single request must share the same `currency` (3-char ISO 4217).
+- `extra[]` carries add-ons attached to a parent item (e.g. lounge guest passes). Extras inherit the parent's `categoryCode`.
+- A `200` response with `verified: false` is **not an error** - it means the cart needs to be re-priced on the client. `items[]` carries the authoritative prices to re-display; `mismatches[]` explains what drifted.
+- Recommended `categoryCode` values: `ESIMS`, `LOUNGE_ACCESS`, `FAST_TRACK`, `BAGGAGE_PROTECTION`, `CARBON_OFFSET`, `AIRPORT_TRANSFER`, `CAR_RENTAL`.
+- `quantity` is capped at 100 per line item.
+
+### Request Payload Sample
+
+```json
+{
+  "correlationId": "0c0c5f9a-4d51-4a4f-9a08-9e8a83a0a111",
+  "items": [
+    {
+      "id": "esim-eu-7d-1gb",
+      "categoryCode": "ESIMS",
+      "unitPrice": 12.50,
+      "quantity": 1,
+      "totalPrice": 12.50,
+      "currency": "USD"
+    },
+    {
+      "id": "lounge-lhr-t5",
+      "categoryCode": "LOUNGE_ACCESS",
+      "unitPrice": 45.00,
+      "quantity": 2,
+      "totalPrice": 90.00,
+      "currency": "USD",
+      "extra": [
+        {
+          "id": "lounge-guest-pass",
+          "unitPrice": 20.00,
+          "quantity": 1,
+          "totalPrice": 20.00,
+          "currency": "USD"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Request Payload JSON Schema
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["correlationId", "items"],
+  "properties": {
+    "correlationId": { "type": "string", "minLength": 1 },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "categoryCode", "unitPrice", "quantity", "totalPrice", "currency"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "categoryCode": { "type": "string", "minLength": 1 },
+          "unitPrice": { "type": "number", "minimum": 0 },
+          "quantity": { "type": "integer", "minimum": 1, "maximum": 100 },
+          "totalPrice": { "type": "number", "minimum": 0 },
+          "currency": { "type": "string", "minLength": 3, "maxLength": 3 },
+          "extra": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "unitPrice", "quantity", "totalPrice", "currency"],
+              "properties": {
+                "id": { "type": "string", "minLength": 1 },
+                "unitPrice": { "type": "number", "minimum": 0 },
+                "quantity": { "type": "integer", "minimum": 1, "maximum": 100 },
+                "totalPrice": { "type": "number", "minimum": 0 },
+                "currency": { "type": "string", "minLength": 3, "maxLength": 3 }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+### Response Sample - Prices Match
+
+```json
+{
+  "verified": true,
+  "correlationId": "0c0c5f9a-4d51-4a4f-9a08-9e8a83a0a111",
+  "items": [
+    {
+      "id": "esim-eu-7d-1gb",
+      "categoryCode": "ESIMS",
+      "unitPrice": 12.50,
+      "quantity": 1,
+      "totalPrice": 12.50,
+      "currency": "USD"
+    },
+    {
+      "id": "lounge-lhr-t5",
+      "categoryCode": "LOUNGE_ACCESS",
+      "unitPrice": 45.00,
+      "quantity": 2,
+      "totalPrice": 90.00,
+      "currency": "USD",
+      "extra": [
+        {
+          "id": "lounge-guest-pass",
+          "unitPrice": 20.00,
+          "quantity": 1,
+          "totalPrice": 20.00,
+          "currency": "USD"
+        }
+      ]
+    }
+  ],
+  "mismatches": []
+}
+```
+
+### Response Sample - Price Drift Detected
+
+Still a `200 OK`. `items[]` carries authoritative prices for the client to re-display; `mismatches[]` lists every field that drifted.
+
+```json
+{
+  "verified": false,
+  "correlationId": "0c0c5f9a-4d51-4a4f-9a08-9e8a83a0a111",
+  "items": [
+    {
+      "id": "esim-eu-7d-1gb",
+      "categoryCode": "ESIMS",
+      "unitPrice": 13.75,
+      "quantity": 1,
+      "totalPrice": 13.75,
+      "currency": "USD"
+    }
+  ],
+  "mismatches": [
+    {
+      "itemId": "esim-eu-7d-1gb",
+      "extraId": null,
+      "field": "unitPrice",
+      "submitted": 12.50,
+      "expected": 13.75,
+      "reason": "VALUE_MISMATCH"
+    }
+  ]
+}
+```
+
+### Response Field Reference
+
+**Top level**
+
+| Field           | Type    | Notes                                                        |
+|-----------------|---------|--------------------------------------------------------------|
+| `verified`      | boolean | `true` when every line item matches the authoritative bundle |
+| `correlationId` | string  | Echoes the request `correlationId`                           |
+| `items`         | array   | Authoritative item prices; lookup-failed items are omitted   |
+| `mismatches`    | array   | Per-item drift details; empty when `verified === true`       |
+
+**`items[]` entry**
+
+| Field          | Type             | Notes                                                       |
+|----------------|------------------|-------------------------------------------------------------|
+| `id`           | string           | Item id from the request                                    |
+| `categoryCode` | string           | Authoritative category from the bundle                      |
+| `unitPrice`    | number           | Authoritative unit price                                    |
+| `quantity`     | integer          | Echoes request                                              |
+| `totalPrice`   | number           | Authoritative total = `unitPrice × quantity` (rounded to 2) |
+| `currency`     | string (3 chars) | Request currency                                            |
+| `extra`        | array            | Optional; same shape minus `categoryCode`                   |
+
+**`mismatches[]` entry**
+
+| Field       | Type                                                              | Notes                                                              |
+|-------------|-------------------------------------------------------------------|--------------------------------------------------------------------|
+| `itemId`    | string                                                            | Always present                                                     |
+| `extraId`   | string \| null                                                    | `null` when the mismatch is on the main item; set when on an extra |
+| `field`     | `"unitPrice"` \| `"totalPrice"` \| `"categoryCode"` \| `"lookup"` | Which field drifted                                                |
+| `submitted` | number \| string \| null                                          | Client-supplied value (`null` for `lookup` failures)               |
+| `expected`  | number \| string \| null                                          | Authoritative value (`null` for `lookup` failures)                 |
+| `reason`    | `"VALUE_MISMATCH"` \| `"NOT_IN_BUNDLE"`                           | `NOT_IN_BUNDLE` accompanies `field: "lookup"`                      |
+
+### Error Responses
+
+Validation, auth, and upstream errors use the standard backend envelope (see [Error Model](/docs/reference/error-model)):
+
+```json
+{
+  "success": false,
+  "error": "correlationId is required; items.0.unitPrice must be greater than or equal to 0",
+  "statusCode": 400,
+  "traceId": "abc123",
+  "correlationId": "req-7f1e",
+  "timestamp": "2026-05-18T10:23:45.123Z"
+}
+```
+
+Business-level pricing errors are passed through unchanged with a `code` discriminator:
+
+```json
+{
+  "statusCode": 404,
+  "message": "Quote bundle not found or expired.",
+  "code": "QUOTE_EXPIRED"
+}
+```
+
+| Status | Origin          | Trigger                                                                  |
+|--------|-----------------|--------------------------------------------------------------------------|
+| 200    | pricing-service | Verification ran - inspect `verified` and `mismatches`                   |
+| 400    | arcube-backend  | Zod validation failure (malformed body)                                  |
+| 400    | pricing-service | `MIXED_CURRENCY`, `UNSUPPORTED_CURRENCY`, `BUNDLE_INTEGRITY_ERROR`       |
+| 401    | arcube-backend  | Missing or invalid token                                                 |
+| 403    | pricing-service | `AIRLINE_MISMATCH` - bundle does not belong to the authenticated airline |
+| 404    | pricing-service | `QUOTE_EXPIRED` - bundle not found or expired                            |
+| 5xx    | arcube-backend  | Upstream verification service unreachable / timeout                      |
+
+Business error codes: `QUOTE_EXPIRED`, `AIRLINE_MISMATCH`, `MIXED_CURRENCY`, `UNSUPPORTED_CURRENCY`, `BUNDLE_INTEGRITY_ERROR`.
+
+<Callout type="warn" title="Client behavior on drift">
+  When `verified` is `false`, **do not proceed to order creation**. Re-render the cart using `items[]` from the response, ask the user to re-confirm the new totals, then call verify again before charging.
+</Callout>
+
+---
+
+## 6.4 Confirm Order
 
 ### Description
 
@@ -287,7 +551,7 @@ Confirm an order after **successful payment**. Arcube will place orders with rel
 </Callout>
 
 <Callout type="info" title="HTTP Method: POST">
-  **URL:** `${arcube-url}/v1/order-api/confirmOrder`
+  **URL:** `${arcube-url}/order-api/confirmOrder`
 </Callout>
 
 <Callout title="Request Headers">

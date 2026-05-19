@@ -50,6 +50,7 @@ In this model:
 
 - The **tenant handles the full checkout process**, bundling ancillary charges with flights or other services.
 - The tenant collects payment from the passenger directly.
+- Immediately before charging the customer, the tenant should call [Verify Prices](/docs/reference/essential-api-calls#63-verify-prices) to confirm that the cart prices still match Arcube's authoritative bundle and re-confirm with the user if any item has drifted.
 
 ---
 
@@ -57,7 +58,7 @@ In this model:
 
 After payment is captured, the tenant must notify Arcube to **finalize ancillary fulfillment** with the vendors.
 
-→ Refer to [Confirm Order](/docs/reference/essential-api-calls#63-confirm-order) for details on how to complete this step.
+→ Refer to [Confirm Order](/docs/reference/essential-api-calls#64-confirm-order) for details on how to complete this step.
 
 ---
 

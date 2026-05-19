@@ -39,6 +39,7 @@ Once the passenger selects ancillary services:
 - Arcube handles the **entire payment process**
 - A redirect to an external **Payment Service Provider (PSP)** is used
 - No sensitive payment information is captured or processed directly within the Arcube domain
+- Before charging, the white-label site calls [Verify Prices](/docs/reference/essential-api-calls#63-verify-prices) to confirm the cart still matches the authoritative bundle - the passenger sees the updated total if any item has drifted
 
 ---
 
