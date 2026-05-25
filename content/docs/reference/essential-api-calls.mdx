@@ -24,7 +24,7 @@ Insert trip and passenger context into Arcube to enable personalization.
 </Callout>
 
 <Callout type="info" title="HTTP Method: POST">
-  **URL:** `${arcube-url}/journey-api/passenger-data`
+  **URL:** `${arcube-url}/aggregation-api/servePassengerRecommendations`
 </Callout>
 
 <Callout title="Request Headers">
@@ -34,11 +34,11 @@ Insert trip and passenger context into Arcube to enable personalization.
 </Callout>
 
 <Callout type="info" title="HTTP Response">
-  `202 Accepted` - request accepted for asynchronous processing.
+  `200 OK`
 </Callout>
 
-<Callout type="warn" title="Behavior by pointOfSale">
-  `pointOfSale` is **required**. When it is `API`, Arcube treats the call as **PNR ingestion only** - no recommendations are generated and the data is stored for later retrieval via [6.2 Serve Recommendations](#62-serve-recommendations). For any other value (`AIRLINE_WEBSITE`, `EMAIL`, `WIDGET`, `MOBILE_APP`, ...) Arcube precomputes recommendations against the ingested context.
+<Callout type="warn" title="One endpoint, two behaviors">
+  Ingesting passenger data and serving recommendations are the **same endpoint** (`servePassengerRecommendations`) - `pointOfSale` selects the behavior. When it is `API`, Arcube treats the call as **PNR ingestion / generation only**: the trip and passenger context is stored and **no recommendations are returned** (retrieve them later via [6.2 Serve Recommendations](#62-serve-recommendations)). For any other value (`AIRLINE_WEBSITE`, `EMAIL`, `WIDGET`, `MOBILE_APP`, ...) Arcube ingests the context **and** returns recommendations in the same response.
 </Callout>
 
 ### Notes
@@ -48,13 +48,17 @@ Insert trip and passenger context into Arcube to enable personalization.
 - **`passengers` and `segments` are required only on the first ingest for a PNR.** Subsequent calls for the same PNR may omit them, or send only the fields that changed.
 - Include the **lead passenger's email** (`isLead: true` + `email`) if you want Arcube to send transactional/marketing emails.
 - `tenant` is **optional** - your tenant is resolved from the Bearer token. Send it only when you need to override.
+- `fare`, `pnrLocale`, and `pnrCurrency` are **optional** enrichment fields: `fare` is the cabin/fare class (e.g. `business`), `pnrLocale` is the locale used for generated content and emails (e.g. `es-es`), and `pnrCurrency` is the ISO 4217 currency used for pricing (e.g. `USD`).
 
 ### Payload Sample
 
 ```json
 {
   "pnr": "AB12CD",
-  "pointOfSale": "AIRLINE_WEBSITE",
+  "pointOfSale": "API",
+  "fare": "business",
+  "pnrLocale": "es-es",
+  "pnrCurrency": "USD",
   "passengers": [
     {
       "id": "PAX1",
@@ -135,6 +139,9 @@ Insert trip and passenger context into Arcube to enable personalization.
     "pnr": { "type": "string" },
     "pointOfSale": { "type": "string" },
     "tenant": { "type": "string" },
+    "fare": { "type": "string" },
+    "pnrLocale": { "type": "string" },
+    "pnrCurrency": { "type": "string" },
     "passengers": {
       "type": "array",
       "items": {
@@ -193,7 +200,7 @@ Insert trip and passenger context into Arcube to enable personalization.
 
 ### Description
 
-Retrieve recommendations for a specific PNR, point of sale, and touch point.
+Retrieve recommendations for an already-ingested PNR. This is the **same endpoint** as [6.1 Ingest Passenger Data](#61-ingest-passenger-data), called with a non-`API` `pointOfSale`.
 
 <Callout type="info" title="Request URL Parameter">
   Replace `${arcube-url}` with your assigned Arcube environment URL (e.g., `https://api.arcube.com`).
@@ -216,13 +223,12 @@ Retrieve recommendations for a specific PNR, point of sale, and touch point.
 
 ```json
 {
-  "touchPoint": "EMAIL",
-  "pointOfSale": "AIRLINE_WEBSITE",
-  "pnr": "3MIN12"
+  "pnr": "3MIN12",
+  "pointOfSale": "WIDGET"
 }
 ```
 
-`touchPoint` is a free-text string identifying where the recommendation will be surfaced (e.g. `EMAIL`, `AIRLINE_WEBSITE`, `WIDGET`, `MOBILE_APP`). New touch points may be introduced without breaking the contract. Your tenant is resolved from the Bearer token, so it is not part of the payload.
+`pointOfSale` identifies where the offers will be surfaced (e.g. `AIRLINE_WEBSITE`, `EMAIL`, `WIDGET`, `MOBILE_APP`); new values may be introduced without breaking the contract. Setting it to `API` instead ingests without returning offers (see [6.1](#61-ingest-passenger-data)). Your tenant is resolved from the Bearer token, so it is not part of the payload.
 
 ### Request Payload JSON Schema
 
@@ -230,13 +236,11 @@ Retrieve recommendations for a specific PNR, point of sale, and touch point.
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["pnr", "pointOfSale", "touchPoint"],
+  "required": ["pnr", "pointOfSale"],
   "properties": {
     "pnr": { "type": "string" },
-    "pointOfSale": { "type": "string" },
-    "touchPoint": { "type": "string" }
-  },
-  "additionalProperties": false
+    "pointOfSale": { "type": "string" }
+  }
 }
 ```
 
