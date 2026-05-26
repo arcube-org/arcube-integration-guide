@@ -93,42 +93,6 @@ Session expiry and recovery are handled transparently - the passenger will not s
 
 ---
 
-## Local Development Setup
-
-For local development, the widget requires a subdomain to resolve the tenant. Use a `*.localarcube.com` domain that points to `127.0.0.1`.
-
-### 1. Add DNS entry
-
-Add to `/etc/hosts`:
-
-```
-127.0.0.1   airline.localarcube.com
-```
-
-Replace `airline` with the airline's assigned tenant subdomain.
-
-### 2. Access the widget
-
-The widget runs on port `3000` by default:
-
-```
-http://airline.localarcube.com:3000?pnr=DEV394
-```
-
-### 3. Embed in a local airline app
-
-If testing the iframe embedding from a separate local app (e.g., on port 4000):
-
-```html
-<iframe
-  src="http://airline.localarcube.com:3000?pnr=DEV394"
-  style="width: 100%; min-height: 500px; border: none;"
-  title="Order Management"
-></iframe>
-```
-
----
-
 ## Support
 
 If you need further assistance, contact [support@arcube.com](mailto:support@arcube.com).
