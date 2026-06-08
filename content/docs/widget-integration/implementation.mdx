@@ -25,9 +25,9 @@ This section describes the preferred widget authentication model for airline int
 
 <small style={{display: 'block', textAlign: 'center'}}>Figure 1: Secure token vending flow via airline CDN proxy.</small>
 
-The recommended approach keeps the airline secret on the airline side, and the browser receives only a short-lived token. In the current model, the widget token is valid for 4 hours.
+The recommended approach keeps the airline secret on the airline side, and the browser receives only a short-lived token. In the current model, the widget token is valid for 1 hour.
 
-When the booking page needs the widget, the browser first asks an airline-controlled endpoint for a widget token. That request stays inside the airline environment. The airline secure layer - such as a backend service, CDN worker, or edge layer - builds a canonical string and signs it with HMAC using the airline secret. Arcube receives that signed request, verifies it, and returns a short-lived token. The browser then passes the token to the widget, and the widget uses it for later Arcube API calls.
+When the booking page needs the widget, the browser first asks an airline-controlled endpoint for a widget token. That request stays inside the airline environment. The airline secure layer - such as a backend service, CDN worker, or edge layer - builds a canonical string and signs it with HMAC-SHA256 using the airline secret. Arcube receives that signed request at POST ${arcube-url}/auth/edge/token, verifies it, and returns a short-lived token. The browser then passes the token to the widget, and the widget uses it for later Arcube API calls.
 
 The reference image below shows the same flow in a more visual way. The important point is that the airline website does not expose the secret in browser code. The secure layer signs the request, forwards it to Arcube, and returns only a token to the browser.
 
@@ -35,19 +35,29 @@ The reference image below shows the same flow in a more visual way. The importan
 
 <small style={{display: 'block', textAlign: 'center'}}>Figure 2: Token flow sequence diagram.</small>
 
-The diagram below zooms in on the exact token-generation steps that the Airline CDN/EDGE performs before calling Arcube. The secure layer fetches the airline secret, attaches the required headers (`X-Tenant-Id`, `X-Key-Id`, `X-Timestamp`, `X-Nonce`), prepares the canonical string, signs it, and sends the request with the `X-Arcube-Signature` header. Arcube validates the signature and returns a short-lived token, which the IBE then uses to render the widget.
+The diagram below zooms in on the exact token-generation steps that the Airline CDN/EDGE performs before calling Arcube. The secure layer fetches the airline secret, attaches the required headers (`X-Tenant-ID`, `X-Timestamp`, `X-Nonce`, `X-Signature`), prepares the canonical string, signs it, and sends the request with the `X-Signature` header. Arcube validates the signature and returns a short-lived token, which the IBE then uses to render the widget.
 
 <img src="/images/widget/widget-token-generation.png" alt="Detailed token generation and HMAC signing steps" style={{display: 'block', margin: '0 auto', width: '100%'}} />
 
 <small style={{display: 'block', textAlign: 'center'}}>Figure 3: Detailed token generation and HMAC signing steps.</small>
 
-The signed text usually contains the tenant identifier, a timestamp, and a session ID or PNR when one already exists. Arcube rebuilds the same string on its side and checks that the signature matches. It also checks that the tenant is known and that the timestamp or nonce is still valid.
+The signed text usually contains the HTTP method, request path, tenant identifier, timestamp, and nonce. Arcube rebuilds the same string on its side and checks that the signature matches. It also checks that the tenant is known and that the timestamp is still valid.
 
 The airline secret and the signing logic stay on the airline secure side. The browser must never receive them. The browser should receive only the short-lived widget token and the booking context it already owns.
 
-If a session ID or PNR exists before the widget opens, it should be included in the signed request so the token can be tied to that booking context. If a PNR does not exist yet, a session-level identifier is enough for the first step.
+PNR should be included in the JSON body so the token can be tied to that booking context. If a PNR does not exist yet, a session-level identifier is enough for the first step.
 
-For this token, the safest approach is to keep it in memory and treat it as temporary. In the current model, the token is valid for 4 hours. Where possible, it should also be tied to the session or PNR.
+For this token, the safest approach is to keep it in memory and treat it as temporary. In the current model, the token is valid for 1 hour. Where possible, it should also be tied to the PNR.
+
+### PNR Feed to Arcube
+
+Before the widget is rendered, the airline must send the PNR feed to Arcube once the PNR and passenger or segment context is available. This lets Arcube store the booking context and prepare personalized recommendations for the widget.
+
+Use the [Ingest Passenger Data](https://docs.arcube.com/docs/reference/essential-api-calls#61-ingest-passenger-data) call.
+
+Send the PNR feed to POST ${arcube-url}/aggregation-api/servePassengerRecommendations. Use `pointOfSale: API`. This tells Arcube to store the PNR, passenger, and trip details only. Arcube will not return widget recommendations from this ingest call.
+
+For the first call for a PNR, send `pnr`, `pointOfSale: API`, `passengers`, and `segments`. For later updates to the same PNR, send only the fields that changed.
 
 ---
 
