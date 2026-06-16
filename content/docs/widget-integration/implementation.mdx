@@ -540,6 +540,8 @@ More information about this endpoint is available under [Reference → Essential
 
 <Callout type="info" title="Note">
   Price Verification is optional when the payment flow does not involve Split Payments. Arcube already has full visibility of the priced ancillaries through its pricing engine, so an additional price verification step is not required in standard non-split-payment flows.
+
+  The Price Verify call should be executed before payment capture by the Merchant of Record. This ensures that the correct capture amount is calculated and allocated for each Merchant of Record involved in the transaction.
 </Callout>
 
 ---
