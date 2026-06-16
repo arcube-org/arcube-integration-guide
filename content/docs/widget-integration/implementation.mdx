@@ -27,7 +27,7 @@ This section describes the preferred widget authentication model for airline int
 
 The recommended approach keeps the airline secret on the airline side, and the browser receives only a short-lived token. In the current model, the widget token is valid for 1 hour.
 
-When the booking page needs the widget, the browser first asks an airline-controlled endpoint for a widget token. That request stays inside the airline environment. The airline secure layer - such as a backend service, CDN worker, or edge layer - builds a canonical string and signs it with HMAC-SHA256 using the airline secret. Arcube receives that signed request at POST ${arcube-url}/auth/edge/token, verifies it, and returns a short-lived token. The browser then passes the token to the widget, and the widget uses it for later Arcube API calls.
+When the booking page needs the widget, the browser first asks an airline-controlled endpoint for a widget token. That request stays inside the airline environment. The airline secure layer - such as a backend service, CDN worker, or edge layer - builds a canonical string and signs it with HMAC-SHA256 using the airline secret. Arcube receives that signed request at POST `${arcube-url}/auth/edge/token`, verifies it, and returns a short-lived token. The browser then passes the token to the widget, and the widget uses it for later Arcube API calls.
 
 The reference image below shows the same flow in a more visual way. The important point is that the airline website does not expose the secret in browser code. The secure layer signs the request, forwards it to Arcube, and returns only a token to the browser.
 
@@ -55,7 +55,7 @@ Before the widget is rendered, the airline must send the PNR feed to Arcube once
 
 Use the [Ingest Passenger Data](https://docs.arcube.com/docs/reference/essential-api-calls#61-ingest-passenger-data) call.
 
-Send the PNR feed to POST ${arcube-url}/aggregation-api/servePassengerRecommendations. Use `pointOfSale: API`. This tells Arcube to store the PNR, passenger, and trip details only. Arcube will not return widget recommendations from this ingest call.
+Send the PNR feed to POST `${arcube-url}/aggregation-api/servePassengerRecommendations`. Use `pointOfSale: API`. This tells Arcube to store the PNR, passenger, and trip details only. Arcube will not return widget recommendations from this ingest call.
 
 For the first call for a PNR, send `pnr`, `pointOfSale: API`, `passengers`, and `segments`. For later updates to the same PNR, send only the fields that changed.
 
