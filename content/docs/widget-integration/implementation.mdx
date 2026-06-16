@@ -525,6 +525,25 @@ window.addEventListener("arcube:widget:ready", () => {
 
 ---
 
+## Price Verification
+
+Before creating an order, a tenant may optionally perform a Price Verify call to validate the prices being submitted and determine the required payment split for third-party ancillaries.
+
+The Price Verify endpoint serves two purposes:
+
+- **Price validation** — verifies that the prices submitted by the tenant match the prices calculated by Arcube.
+- **Payment split calculation** — returns the amounts that must be captured on behalf of the airline and the amounts that must be captured on behalf of Arcube.
+
+This allows the tenant to confirm the commercial values before order creation and, where applicable, correctly allocate payment capture between the airline and Arcube.
+
+More information about this endpoint is available under [Reference → Essential API Calls → Verify Prices](/docs/reference/essential-api-calls#63-verify-prices).
+
+<Callout type="info" title="Note">
+  Price Verification is optional when the payment flow does not involve Split Payments. Arcube already has full visibility of the priced ancillaries through its pricing engine, so an additional price verification step is not required in standard non-split-payment flows.
+</Callout>
+
+---
+
 ## Order API
 
 Create the widget order after checkout. Arcube places the ancillary order with the relevant provider and records the transaction.
