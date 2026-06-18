@@ -124,6 +124,7 @@ const widgetConfig = {
   widgetUrl: "ARCUBE_WIDGET_URL",
   tenantId: "YOUR_TENANT_ID",
   sessionId: "YOUR_PNR",
+  correlationId: "BOOKING_SESSION_ID",
   currency: "USD",
   language: "en-US",
   backendUrl: "ARCUBE_BACKEND_URL",
@@ -153,6 +154,8 @@ window.Widget.init(widgetConfig);
 ```
 
 `ancillaryCategories` is optional. When provided, the widget renders only the listed categories; when omitted, it renders every category enabled for your tenant. Accepted values: `ESIMS`, `BAGGAGE_PROTECTION`, `AIRPORT_TRANSFER`, `FAST_TRACK`, `CARBON_OFFSET`, `LOUNGE_ACCESS`, `CAR_RENTAL`.
+
+`correlationId` is optional. When provided, the widget sends it as `x-correlation-id` on backend requests so all priced items can be associated with the same booking session.
 
 ---
 
