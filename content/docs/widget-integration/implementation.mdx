@@ -157,6 +157,37 @@ window.Widget.init(widgetConfig);
 
 `correlationId` is optional. When provided, the widget sends it as `x-correlation-id` on backend requests so all priced items can be associated with the same booking session.
 
+### Optional Iframe Height Control
+
+The widget emits its current content height through the `arcube:widget:resize` event whenever the widget layout changes. The parent page can listen to this event and resize the iframe.
+
+If the airline wants to limit how tall the widget can become, the max height should be handled in the parent page.
+
+```javascript
+const widgetMaxHeight = 900; // Set to undefined to allow full content height.
+
+function resizeArcubeWidgetFrame(height) {
+  const appliedHeight = widgetMaxHeight ? Math.min(height, widgetMaxHeight) : height;
+  const nextHeight = `${appliedHeight}px`;
+  const mount = document.getElementById("arcube-widget");
+  const container = document.getElementById("arcube-widget-container");
+  const iframe = container?.querySelector("iframe");
+
+  [mount, container, iframe].forEach((element) => {
+    if (!element) return;
+    element.style.setProperty("height", nextHeight, "important");
+    element.style.setProperty("min-height", nextHeight, "important");
+    element.style.overflow = "visible";
+  });
+}
+
+window.addEventListener("arcube:widget:resize", (event) => {
+  resizeArcubeWidgetFrame(event.detail.height);
+});
+```
+
+When `widgetMaxHeight` is set, the iframe grows until that value and then stops. If the widget content later becomes smaller, the iframe shrinks again to the new content height.
+
 ---
 
 ## Add to Cart Functionality
@@ -641,6 +672,7 @@ The Arcube widget dispatches events that indicate its state. Tenants must handle
 | `arcube:widget:closed` | Widget closed itself (e.g. no ancillaries available) | Optional: hide surrounding chrome such as section headings |
 | `arcube:cart:updated` + `CART_ITEM_ADDED` | User added an item | Run your add-to-cart logic |
 | `arcube:cart:updated` + `CART_ITEM_REMOVED` | User removed an item | Run your remove-from-cart logic |
+| `arcube:widget:resize` | Widget content height changed | Optional: resize the iframe and apply any parent-side max height |
 
 ---
 
