@@ -587,7 +587,7 @@ More information about this endpoint is available under [Reference → Essential
 <Callout type="info" title="Note">
   Price Verification is optional when the payment flow does not involve Split Payments. Arcube already has full visibility of the priced ancillaries through its pricing engine, so an additional price verification step is not required in standard non-split-payment flows.
 
-  The Price Verify call should be executed before payment capture by the Merchant of Record. This ensures that the correct capture amount is calculated and allocated for each Merchant of Record involved in the transaction.
+  The Price Verify call should be executed before payment capture by the Merchant of Record. This ensures that the correct capture amount is calculated and allocated for each Merchant of Record involved in the transaction. The Arcube-side amount from this split is what you report as `externalPSP.amount` when creating the order (see [Order API → Payment Proof](#payment-proof-externalpsp)).
 </Callout>
 
 ---
@@ -599,6 +599,40 @@ Create the widget order after checkout. Arcube places the ancillary order with t
 Immediately before charging the customer and creating the order, call [Verify Prices](/docs/reference/essential-api-calls#63-verify-prices) to confirm that the cart prices still match Arcube's authoritative bundle. Re-confirm with the user if any item has drifted.
 
 When sending the order payload, put the primary passenger/customer in `customer`. The `passengers` array should include only additional passengers and should exclude the primary passenger.
+
+### Payment Proof (`externalPSP`)
+
+In the widget flow the order is created with `pointOfSale: AIRLINE_WEBSITE` and the **airline as Merchant of Record**. This means the airline charges the customer on its own PSP, so Arcube never collects payment - it only places the ancillary orders and records the transaction. To create the order, the airline must pass back proof of the charge it already captured in an `externalPSP` object.
+
+The amount to report here is the **Arcube-side capture** - the portion of the total captured on behalf of Arcube, as returned by the payment split in [Verify Prices](/docs/reference/essential-api-calls#63-verify-prices). The split tells you how much was captured for the airline versus Arcube; `externalPSP.amount` should reflect the Arcube share.
+
+<Callout type="warn" title="externalPSP is required">
+  When the airline is Merchant of Record, the order request is rejected with `400 MISSING_EXTERNAL_PSP` if `externalPSP` is absent or any required field is invalid. The response `details` array lists each offending field.
+</Callout>
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `provider` | Yes | The airline's PSP, e.g. `"stripe"`, `"adyen"`. |
+| `referenceId` | Yes | The PSP charge/transaction id. Arcube indexes the transaction by this value. |
+| `status` | Yes | Payment status. Use `"CONFIRMED"` for a successful charge. See the allowed values below. |
+| `amount` | Yes | Captured amount as a positive number (the Arcube-side share). |
+| `currency` | Yes | ISO 4217 currency code, e.g. `"USD"`. |
+| `paidAt` | Yes | ISO 8601 timestamp of when the charge was captured. |
+| `paymentMethod` | No | Display metadata, e.g. `"card"`. |
+| `cardType` | No | Display metadata, e.g. `"visa"`. |
+| `cardLastFour` | No | Display metadata, e.g. `"4242"`. |
+| `rawPayload` | No | Raw PSP response, stored as-is for reconciliation. |
+
+Allowed `status` values:
+
+| Status | Meaning | When to send |
+|--------|---------|--------------|
+| `CONFIRMED` | Payment successfully captured. | The standard case for order creation — the airline has already captured payment for the ancillaries before calling this endpoint. |
+| `PENDING` | Payment initiated, awaiting the final result. | The charge is still being processed asynchronously (e.g. awaiting 3-D Secure or an async PSP confirmation) at order-create time. |
+| `FAILED` | Payment was declined or failed. | Reported for reconciliation when a charge attempt did not succeed. |
+| `CANCELLED` | Authorization voided / payment cancelled before capture. | The reserved authorization was released and no funds were captured. |
+| `PARTIALLY_REFUNDED` | Part of the captured amount has been refunded. | Reported when part of an earlier charge is later refunded. |
+| `REFUNDED` | The full captured amount has been refunded. | Reported when an earlier charge is later refunded in full. |
 
 <Callout type="info" title="Request URL Parameter">
   Replace `${arcube-url}` with your assigned Arcube environment URL (e.g., `https://api.arcube.com`).
@@ -667,8 +701,48 @@ curl --location "${arcube-url}/transactions/widget-order-create" \
         "lastName": "Passenger",
         "email": "additional.passenger@example.com"
       }
-    ]
+    ],
+    "externalPSP": {
+      "provider": "stripe",
+      "referenceId": "ch_3PqANCESPAYMENTREF",
+      "status": "CONFIRMED",
+      "amount": 5.41,
+      "currency": "USD",
+      "paidAt": "2026-03-25T10:30:00.000Z",
+      "paymentMethod": "card",
+      "cardType": "visa",
+      "cardLastFour": "4242"
+    }
   }'
+```
+
+### Responses
+
+On success the order is confirmed immediately - no payment redirect is returned, because the airline already captured the charge.
+
+```json
+{
+  "success": true,
+  "transactionId": "TRANSACTION_ID",
+  "pnr": "YOUR_PNR",
+  "status": "confirmed",
+  "paymentRequired": false,
+  "transactionItems": [],
+  "message": "No payment required",
+  "timestamp": "2026-03-25T10:30:01.000Z"
+}
+```
+
+If `externalPSP` is missing or invalid, the request is rejected:
+
+```json
+{
+  "success": false,
+  "error": "externalPSP with payment details is required for the no-PSP flow",
+  "code": "MISSING_EXTERNAL_PSP",
+  "details": ["amount: Number must be greater than 0"],
+  "timestamp": "2026-03-25T10:30:01.000Z"
+}
 ```
 
 ---
