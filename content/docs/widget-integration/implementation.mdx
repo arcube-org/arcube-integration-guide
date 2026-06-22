@@ -507,6 +507,18 @@ async function handleRemove(itemId) {
   await removeFromAirlineCart(itemId);
   removeItemFromWidget(itemId);
 }
+
+function clearWidgetCart() {
+  sendToWidget({
+    type: "CART_CLEAR_REQUEST",
+    payload: {}
+  });
+}
+
+async function handleClearCart() {
+  await clearAirlineCart();
+  clearWidgetCart();
+}
 ```
 
 ### Passenger Details Prefill
@@ -663,16 +675,22 @@ curl --location "${arcube-url}/transactions/widget-order-create" \
 
 ## Tenant Event Contract
 
-The Arcube widget dispatches events that indicate its state. Tenants must handle these events appropriately. The table below summarizes the events and the required tenant actions:
+The Arcube widget and the parent page exchange messages to keep the widget UI and the airline basket in sync.
 
-| Event | Meaning | What the tenant should do |
-|-------|---------|--------------------------|
-| `arcube:widget:ready` | Widget is ready | Mark the widget area as live |
-| `arcube:widget:error` | Widget failed | Show fallback UI and log the error |
-| `arcube:widget:closed` | Widget closed itself (e.g. no ancillaries available) | Optional: hide surrounding chrome such as section headings |
-| `arcube:cart:updated` + `CART_ITEM_ADDED` | User added an item | Run your add-to-cart logic |
-| `arcube:cart:updated` + `CART_ITEM_REMOVED` | User removed an item | Run your remove-from-cart logic |
-| `arcube:widget:resize` | Widget content height changed | Optional: resize the iframe and apply any parent-side max height |
+Some messages are sent by the widget to the parent page, for example when an item is added or removed in the widget. Other messages are sent by the parent page to the widget, for example when the airline basket is updated outside the widget.
+The table below summarizes the events and the required actions:
+
+
+| Event / Command | Direction | Meaning | Integration handling |
+|---|---|---|---|
+| `arcube:widget:ready` | Widget → Parent | Widget is ready | Mark the widget area as live |
+| `arcube:widget:error` | Widget → Parent | Widget failed | Show fallback UI and log the error |
+| `arcube:widget:closed` | Widget → Parent | Widget closed itself, for example when no ancillaries are available | Optional: hide surrounding chrome such as section headings |
+| `arcube:widget:resize` | Widget → Parent | Widget content height changed | Optional: resize the iframe/container and apply any parent-side max height |
+| `arcube:cart:updated` + `CART_ITEM_ADDED` | Widget → Parent | User added an item in the widget | Add the item to the airline basket |
+| `arcube:cart:updated` + `CART_ITEM_REMOVED` | Widget → Parent | User removed an item in the widget | Remove the item from the airline basket |
+| `CART_ITEM_REMOVE_REQUEST` | Parent → Widget | Parent asks the widget to remove one selected item | Use when one item is removed from the airline basket outside the widget |
+| `CART_CLEAR_REQUEST` | Parent → Widget | Parent asks the widget to clear all selected items | Use when the airline basket is cleared outside the widget |
 
 ---
 
