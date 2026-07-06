@@ -127,6 +127,7 @@ const widgetConfig = {
   correlationId: "BOOKING_SESSION_ID",
   currency: "USD",
   language: "en-US",
+  pointOfSale: "WIDGET",
   backendUrl: "ARCUBE_BACKEND_URL",
   token: widgetToken,
   themeJsonUrl: "https://cdn.airline.com/arcube/widget-theme.json",
@@ -156,6 +157,11 @@ window.Widget.init(widgetConfig);
 `ancillaryCategories` is optional. When provided, the widget renders only the listed categories; when omitted, it renders every category enabled for your tenant. Accepted values: `ESIMS`, `BAGGAGE_PROTECTION`, `AIRPORT_TRANSFER`, `FAST_TRACK`, `CARBON_OFFSET`, `LOUNGE_ACCESS`, `CAR_RENTAL`.
 
 `correlationId` is optional. When provided, the widget sends it as `x-correlation-id` on backend requests so all priced items can be associated with the same booking session.
+
+`pointOfSale` controls who completes the order and payment flow.
+
+- `WIDGET` — the widget owns the ancillary checkout/order flow. Use this when the parent page only embeds the widget and listens for cart updates.
+- `AIRLINE_WEBSITE` — the airline website owns checkout/payment and later creates the order through `/transactions/widget-order-create` with `externalPSP` payment proof (see [Order API → Payment Proof](#payment-proof-externalpsp)).
 
 ### Optional Iframe Height Control
 
@@ -568,6 +574,29 @@ window.addEventListener("arcube:widget:ready", () => {
 ```
 
 `customer` is used for the primary customer details form. `passengers` is used to prefill additional passenger forms for products that require traveler-level information. Mark the primary traveler with `isPrimary: true`;
+
+---
+
+## Cart Persistence
+
+Cart persistence allows the widget to restore a shopper's selected ancillaries if they refresh the page or return shortly after. The airline only needs to pass a stable `correlationId` when initializing the widget.
+
+```js
+window.Widget.init({
+  correlationId: "BOOKING_SESSION_ID",
+  tenantId: "...",
+  sessionId: "...",
+  // ...rest of your config
+});
+```
+
+The `correlationId` must be unique to one shopper / booking session, and the airline should store it. The same value can be reused every time the widget is loaded for that booking, including after refresh.
+
+Do not generate a new `correlationId` on every page load. If the value changes, the widget treats it as a different cart and cannot recover the previous selections.
+
+If no `correlationId` is provided, the widget still works normally, but cart recovery after refresh is not guaranteed. Persisted carts expire automatically after the backend retention window, currently about 2 hours.
+
+When a saved cart is restored, the widget emits the normal cart update event, so the parent page can keep its cart badge, summary, or booking UI in sync using the existing `arcube:cart:updated` listener.
 
 ---
 
