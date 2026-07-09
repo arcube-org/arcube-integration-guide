@@ -1,0 +1,178 @@
+---
+title: End-to-end Examples
+description: Complete, copy-paste flows — single product, multi-product cart, and multi-session cart — showing exactly how values chain between requests.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+These worked examples show how identifiers chain from one call to the next. Each step lists the
+values you must carry forward. Field-level schemas live on the
+[AirShopping](/docs/api-offer-order-integration/air-shopping),
+[OfferPrice](/docs/api-offer-order-integration/offer-price), and
+[OrderCreate](/docs/api-offer-order-integration/order-create) pages.
+
+<Callout type="info" title="Conventions">
+  `${arcube-url}` is your environment base URL. `${token}` is the Bearer token from
+  [Getting Started](/docs/api-offer-order-integration/getting-started). `${corr}` is one UUID you
+  generate once and reuse on every call in the journey.
+</Callout>
+
+## Single-product order (eSIM)
+
+### 1 — AirShopping
+
+```http
+POST ${arcube-url}/ndc/airshopping
+Authorization: Bearer ${token}
+Content-Type: application/json
+x-correlation-id: ${corr}
+```
+
+Body: a general AirShopping (see [AirShopping example](/docs/api-offer-order-integration/air-shopping#example-request)).
+
+**Carry forward from the response:**
+- `Metadata.CorrelationID` → keep using it as `${corr}`.
+- `Metadata.ShoppingSessionID` → `${ssid}`.
+- Pick an offer where `ServiceDefinitionRef` starts with `SVC-SIM` and `amount > 0`; keep its
+  `OtherOfferID`, `OfferItems[0].OfferItemID`, `OfferItems[0].ServiceDefinitionRef`.
+
+### 2 — OfferPrice
+
+```http
+POST ${arcube-url}/ndc/offerprice
+Authorization: Bearer ${token}
+x-correlation-id: ${corr}
+```
+
+```json
+{
+  "OfferPriceRQ": {
+    "Document": { "Name": "OfferPrice", "ReferenceVersion": "1.0" },
+    "Party": { "Sender": { "AgentUser": { "Name": "Arcube API" } } },
+    "Query": {
+      "SelectedOffers": [
+        {
+          "OfferID": "${otherOfferId}",
+          "ShoppingSessionID": "${ssid}",
+          "Owner": "Arcube",
+          "OfferItems": [
+            { "OfferItemID": "${offerItemId}", "Quantity": 1, "Currency": "USD", "Price": 1, "ServiceDefinitionRef": "${sdRef}" }
+          ]
+        }
+      ]
+    },
+    "Metadata": { "SessionID": "${corr}", "Tenant": "6941cc3502a186f72ba55226" },
+    "ProductInputs": [
+      {
+        "ServiceDefinitionRef": "${sdRef}",
+        "Input": {
+          "vendorReferenceId": "hallo-mobil-7days-1gb",
+          "description": "1 GB - 7 days",
+          "serviceDetails": { "Region": "DE", "CountryCode": "DE", "Data Amount": "1GB", "Validity": "7 days" },
+          "metadata": { "passengers": [ { "firstName": "John", "lastName": "Doe", "email": "john@example.com" } ] }
+        }
+      }
+    ]
+  }
+}
+```
+
+**Carry forward:** `OfferPriceRS.PricedSessionID` → `${psid}`, and `PricedOffers[0]`
+(its `OfferID`, `OfferItems[0]`, `PriceSummary`).
+
+### 3 — OrderCreate
+
+```http
+POST ${arcube-url}/ndc/ordercreate
+Authorization: Bearer ${token}
+x-correlation-id: ${corr}
+x-idempotency-key: ${new-uuid}
+```
+
+```json
+{
+  "OrderCreateRQ": {
+    "Document": { "Name": "OrderCreate", "ReferenceVersion": "1.0" },
+    "PointOfSale": { "SalesChannel": "AIRLINE_WEBSITE", "Seller": "AIRLINE", "Owner": "A3", "CountryCode": "GR" },
+    "Customer": { "PrimaryContact": { "Title": "Mr", "GivenName": "Jane", "Surname": "Doe", "Email": "jane.doe@example.com", "DateOfBirth": "1983-11-10", "Phone": { "CountryCode": "+30", "Number": "2100000000" }, "Address": { "Line1": "1 Example St", "City": "Athens", "PostalCode": "10558", "CountryCode": "GR" } } },
+    "Query": {
+      "PricedOfferRef": { "OfferID": "${pricedOfferId}", "Owner": "Arcube" },
+      "OfferItems": [ { "OfferItemID": "${pricedOfferItemId}", "ServiceDefinitionRef": "${sdRef}", "Quantity": 1 } ]
+    },
+    "Payments": [ { "Mode": "AIRLINE_CAPTURED", "Currency": "USD", "Amount": 1.64, "decimal": 3, "airlineCaptureRef": "ALN-TRX-0001" } ],
+    "Metadata": { "SessionID": "${corr}", "Tenant": "6941cc3502a186f72ba55226", "PricedSessionID": "${psid}", "PNR": "NEWPNR001" }
+  }
+}
+```
+
+Response contains `Order.OrderID` and `Order.TransactionRef`.
+
+---
+
+## Multi-product order
+
+Cart several products in **one** OfferPrice and book them with **one** OrderCreate. Only the
+OfferPrice differs — send multiple `SelectedOffers` (each from the same AirShopping response) and
+matching `ProductInputs`.
+
+```json title="OfferPrice — Query.SelectedOffers"
+[
+  { "OfferID": "${loungeOfferId}",  "ShoppingSessionID": "${ssid}", "Owner": "Arcube",
+    "OfferItems": [ { "OfferItemID": "${loungeItemId}",  "Quantity": 1, "Currency": "USD", "Price": 1, "ServiceDefinitionRef": "${loungeRef}" } ] },
+  { "OfferID": "${carbonOfferId}",  "ShoppingSessionID": "${ssid}", "Owner": "Arcube",
+    "OfferItems": [ { "OfferItemID": "${carbonItemId}",  "Quantity": 1, "Currency": "USD", "Price": 1, "ServiceDefinitionRef": "${carbonRef}" } ] },
+  { "OfferID": "${fastTrackOfferId}", "ShoppingSessionID": "${ssid}", "Owner": "Arcube",
+    "OfferItems": [ { "OfferItemID": "${fastTrackItemId}", "Quantity": 1, "Currency": "USD", "Price": 1, "ServiceDefinitionRef": "${fastTrackRef}" } ] }
+]
+```
+
+Provide a matching `ProductInputs[]` entry for each `ServiceDefinitionRef` (see
+[Products](/docs/api-offer-order-integration/products)). OfferPrice returns a `PricedSessionID`
+with three `PricedOffers`. OrderCreate (same as above) books the whole cart; the response lists
+all three `Items` and a combined `PriceSummary.GrandTotal`.
+
+<Callout type="warn" title="Same currency">
+  All carted offers must price in one currency, or OfferPrice returns
+  `Mixed currencies are not supported`.
+</Callout>
+
+---
+
+## Multi-session order
+
+Combine offers discovered in **separate** AirShopping calls — as long as every call shares the
+same `x-correlation-id`.
+
+### 1 — AirShopping #1 (generates `${corr}`)
+
+`POST /ndc/airshopping` with `x-correlation-id: ${corr}`. Take a **lounge** offer from the
+response; keep its ids and `ShoppingSessionID` → `${ssidA}`.
+
+### 2 — AirShopping #2 (reuse `${corr}`)
+
+`POST /ndc/airshopping` with the **same** `x-correlation-id: ${corr}`. Take a **fast-track** offer;
+keep its ids and `ShoppingSessionID` → `${ssidB}`.
+
+### 3 — OfferPrice across both sessions
+
+```json title="OfferPrice — Query.SelectedOffers"
+[
+  { "OfferID": "${loungeOfferId}",    "ShoppingSessionID": "${ssidA}", "Owner": "Arcube",
+    "OfferItems": [ { "OfferItemID": "${loungeItemId}",    "Quantity": 1, "Currency": "USD", "Price": 1, "ServiceDefinitionRef": "${loungeRef}" } ] },
+  { "OfferID": "${fastTrackOfferId}", "ShoppingSessionID": "${ssidB}", "Owner": "Arcube",
+    "OfferItems": [ { "OfferItemID": "${fastTrackItemId}", "Quantity": 1, "Currency": "USD", "Price": 1, "ServiceDefinitionRef": "${fastTrackRef}" } ] }
+]
+```
+
+Note the two **different** `ShoppingSessionID`s. `Metadata.SessionID` is still `${corr}`. OfferPrice
+merges the two shopping catalogs and returns one `PricedSessionID`.
+
+### 4 — OrderCreate
+
+Same as the single-product OrderCreate, using the `${psid}` from step 3. Both items are booked in
+one order.
+
+<Callout type="error" title="The correlation id is what makes this work">
+  If AirShopping #1 and #2 used different `x-correlation-id`s, OfferPrice still succeeds but
+  OrderCreate fails with `Quote bundle not found or expired`. One correlation id per journey.
+</Callout>

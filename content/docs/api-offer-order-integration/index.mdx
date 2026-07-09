@@ -1,0 +1,100 @@
+---
+title: NDC-like API Overview
+description: An IATA NDC-inspired, session-based REST API for discovering, pricing, and booking travel ancillaries — eSIMs, lounge access, airport transfers, car rental, carbon offset, fast-track, and more.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+The **NDC-like API** is Arcube's server-to-server REST interface for selling ancillary
+products. It follows the shopping → pricing → ordering pattern defined by **IATA NDC**, extended
+to aggregate third-party ancillaries (connectivity, ground transport, lounges, sustainability,
+and more) behind a single, normalized contract.
+
+It is designed for airlines, TMCs, OTAs, and booking platforms that want to embed ancillary
+commerce **directly into their own systems** — at any point of the customer journey — while
+Arcube handles product sourcing, pricing, and fulfillment.
+
+<Callout type="info" title="When to use this API">
+  Use the NDC-like API when you control the checkout experience and want a structured,
+  offer-based contract to **discover**, **cart**, and **book** ancillaries programmatically.
+  For drop-in UI, see the [Widget Integration](/docs/widget-integration). For raw recommendation
+  ingestion, see [Essential API Calls](/docs/reference/essential-api-calls).
+</Callout>
+
+## The three-step flow
+
+Every purchase moves through three sequential, stateful calls. Each step consumes an identifier
+produced by the previous one.
+
+| Step | Endpoint | Purpose | Produces |
+| --- | --- | --- | --- |
+| **1. AirShopping** | `POST /ndc/airshopping` | Discover available ancillary offers for a trip or product search | `ShoppingSessionID` |
+| **2. OfferPrice** | `POST /ndc/offerprice` | Add one or more selected offers to a cart and (re)price them | `PricedSessionID` |
+| **3. OrderCreate** | `POST /ndc/ordercreate` | Confirm payment and book the cart | `OrderID` + `TransactionRef` |
+
+```text
+AirShopping ─▶ OfferPrice ─▶ OrderCreate
+ (discover)     (cart+price)    (book)
+
+ ShoppingSessionID ─▶ PricedSessionID ─▶ OrderID
+        └──────────── x-correlation-id ────────────┘
+```
+
+<Callout type="warn" title="Fire each step as a separate, sequential request">
+  You **cannot** combine cart-creation and order-creation into one call, and you cannot batch
+  them. Each of the three steps is its own HTTP request and must run in order — the platform
+  persists the cart before a transaction can reference it.
+</Callout>
+
+## What you can sell
+
+A single AirShopping response can surface offers across many categories. The current catalog:
+
+| Category | `ServiceTypeCode` | Discovery |
+| --- | --- | --- |
+| eSIM / connectivity | `ESIMS` | General AirShopping |
+| Lounge access | `LOUNGE_ACCESS` | General AirShopping |
+| Carbon offset | `CARBON_OFFSET` | General AirShopping |
+| Fast-track security | `FAST_TRACK` | General AirShopping |
+| Baggage protection | `BAGGAGE_PROTECTION` | General AirShopping |
+| Airport transfer | `AIRPORT_TRANSFER` | Dedicated product search |
+| Car rental | `CAR_RENTAL` | Dedicated product search |
+
+See [Products](/docs/api-offer-order-integration/products) for per-category input requirements.
+
+## Key architectural concepts
+
+### Offer / content decoupling
+
+Each AirShopping response separates **commercial data** from **descriptive data**:
+
+- `OtherOffers[]` — offers and pricing (ids, prices, references).
+- `DataLists.ServiceDefinitionList[]` — content and attributes (name, media, service metadata).
+
+Offers reference service definitions by `ServiceDefinitionRef`. This avoids duplication and
+enables efficient caching.
+
+### Session-correlated, not stateful-per-connection
+
+Requests are independent HTTP calls, but they are **correlated** by identifiers:
+
+- `x-correlation-id` threads a whole shopping-to-order journey.
+- `ShoppingSessionID`, `PricedSessionID`, and `OrderID` chain the three steps.
+
+### Multi-provider aggregation
+
+Offers may originate from airline-native services, third-party providers, or global aggregators.
+They are all normalized into one response model, so your integration code is provider-agnostic.
+
+### Basket model
+
+OfferPrice builds a **cart** on Arcube's side. It can hold **multiple products** and can even
+combine offers drawn from **several AirShopping searches** — then OrderCreate books the whole
+cart in one transaction. See [Key Concepts](/docs/api-offer-order-integration/key-concepts).
+
+## Next steps
+
+- [Getting Started](/docs/api-offer-order-integration/getting-started) — authentication, base URL, headers, and a minimal happy path.
+- [Key Concepts](/docs/api-offer-order-integration/key-concepts) — identifiers, correlation, currency, and cart rules you must understand before integrating.
+- [AirShopping](/docs/api-offer-order-integration/air-shopping) · [OfferPrice](/docs/api-offer-order-integration/offer-price) · [OrderCreate](/docs/api-offer-order-integration/order-create).
+- [End-to-end Examples](/docs/api-offer-order-integration/examples) — copy-paste flows for single, multi-product, and multi-session orders.

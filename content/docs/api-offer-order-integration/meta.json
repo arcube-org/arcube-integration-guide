@@ -1,0 +1,15 @@
+{
+  "title": "API Offer/Order Integration",
+  "pages": [
+    "index",
+    "getting-started",
+    "key-concepts",
+    "air-shopping",
+    "offer-price",
+    "order-create",
+    "order-management",
+    "products",
+    "errors",
+    "examples"
+  ]
+}

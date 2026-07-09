@@ -1,0 +1,350 @@
+---
+title: AirShopping
+description: Discover ancillary offers. Full request/response schema for the general itinerary search and the Airport Transfer and Car Rental product searches.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+`POST /ndc/airshopping`
+
+AirShopping is the entry point of every journey. It returns the ancillary offers available for a
+trip (or a product-specific search) and creates a **ShoppingSession** whose id you carry into
+[OfferPrice](/docs/api-offer-order-integration/offer-price).
+
+There are two request shapes:
+
+- **General AirShopping** — driven by the flight itinerary (`CoreQuery.Segments`). Returns
+  itinerary-derived ancillaries: eSIMs, lounges, carbon offset, fast-track, baggage protection.
+- **Product search** — driven by `ProductSearchInputs`. Required for **airport transfer** and
+  **car rental**, whose availability depends on parameters not derivable from an itinerary
+  (locations, timing, driver, geocoordinates).
+
+---
+
+## General AirShopping
+
+### Request schema
+
+The body is a single `AirShoppingRQ` object with five sections.
+
+#### `Document`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `Name` | string | Free-form request label (tracing/debugging). |
+| `ReferenceVersion` | string | Arcube NDC-like schema version, e.g. `"1.0"`. |
+
+#### `Party`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `Sender.AgentUser.Name` | string | Logical name of the calling system. |
+| `Sender.AgentUser.IATA_Number` | string | Airline/TMC IATA identifier. |
+| `Sender.AgentUser.PseudoCity` | string | PCC / tenant routing identifier. |
+| `Recipient.SystemID` | string | Target system, typically `ArcubeAggregationEngine`. |
+
+#### `CoreQuery.Segments[]`
+
+Each segment is one leg of the journey.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `SegmentKey` | string | Unique segment identifier. |
+| `Departure.AirportCode` | string | IATA origin (e.g. `ATH`). |
+| `Departure.DateTime` | string | ISO-8601 (UTC recommended). |
+| `Arrival.AirportCode` | string | IATA destination. |
+| `Arrival.DateTime` | string | ISO-8601. |
+| `MarketingCarrier.AirlineID` | string | Marketing carrier code. |
+| `MarketingCarrier.FlightNumber` | string | Flight number. |
+| `OperatingCarrier.AirlineID` | string | Operating carrier code. |
+| `PassengerRefs[]` | string[] | Passenger ids travelling on this leg. |
+
+#### `DataLists.PassengerList.Passenger[]`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `PassengerID` | string | Unique id, referenced by `PassengerRefs`. |
+| `PTC` | string | Passenger Type Code: `ADT`, `CHD`, `INF`. |
+| `Individual.GivenName` / `Individual.Surname` | string | Identity. |
+| `Associations.InfantRef` / `Associations.AssociatedAdultRef` | string | Links infants ↔ adults. |
+| `LoyaltyProgram.ProgramCode` / `LoyaltyProgram.TierCode` | string | Optional loyalty enrichment for eligibility/personalization. |
+
+#### `Metadata`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `PointOfSale` | string | Sales channel — `AIRLINE_WEBSITE`, `WHITE_LABEL`, ... |
+| `Tenant` | string | Arcube tenant id (optional; resolved from token). |
+| `SessionID` | string | Your client-side reference for the search. |
+
+<Callout type="warn" title="PointOfSale must use underscores">
+  `AIRLINE_WEBSITE`, not `AIRLINE-WEBSITE`. A hyphenated value is rejected by the pricing engine.
+</Callout>
+
+### Example request
+
+```json title="POST /ndc/airshopping"
+{
+  "AirShoppingRQ": {
+    "Document": { "Name": "Arcube NDC-like AirShopping", "ReferenceVersion": "1.0" },
+    "Party": {
+      "Sender": { "AgentUser": { "Name": "Arcube API Client", "IATA_Number": "00000000", "PseudoCity": "ARC123" } },
+      "Recipient": { "SystemID": "ArcubeAggregationEngine" }
+    },
+    "CoreQuery": {
+      "Segments": [
+        {
+          "SegmentKey": "SEG1",
+          "Departure": { "AirportCode": "ATH", "DateTime": "2026-09-29T08:00:00Z" },
+          "Arrival": { "AirportCode": "FRA", "DateTime": "2026-09-29T10:00:00Z" },
+          "MarketingCarrier": { "AirlineID": "XY", "FlightNumber": "XY123" },
+          "OperatingCarrier": { "AirlineID": "XY" },
+          "PassengerRefs": ["PAX1"]
+        }
+      ]
+    },
+    "DataLists": {
+      "PassengerList": {
+        "Passenger": [
+          { "PassengerID": "PAX1", "PTC": "ADT", "Individual": { "GivenName": "John", "Surname": "Doe" } }
+        ]
+      }
+    },
+    "Metadata": { "PointOfSale": "AIRLINE_WEBSITE", "Tenant": "6941cc3502a186f72ba55226", "SessionID": "NDC-001" }
+  }
+}
+```
+
+### Response schema
+
+The response separates commercial data (`OtherOffers`) from descriptive data
+(`DataLists.ServiceDefinitionList`).
+
+#### `OtherOffers`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `Owner` | string | Always `"Arcube"`. |
+| `OtherOffers[]` | array | The offers. |
+| `OtherOffers[].OtherOfferID` | string | Unique offer id (used when selecting in OfferPrice). |
+| `OtherOffers[].OfferItems[]` | array | Purchasable items (usually one). |
+| `OtherOffers[].OfferItems[].OfferItemID` | string | Item id. |
+| `OtherOffers[].OfferItems[].ServiceDefinitionRef` | string | Reference into `ServiceDefinitionList`. The prefix identifies the category (see below). |
+| `OtherOffers[].OfferItems[].PriceDetail.TotalAmount.SimpleCurrencyPrice` | object | `{ amount, decimal, currency }`. |
+| `OtherOffers[].PriceDetail.TotalAmount` | object | Offer-level total. |
+
+#### `DataLists.ServiceDefinitionList[]`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `ServiceDefinitionID` | string | Referenced by `ServiceDefinitionRef`. |
+| `Name` | string | Commercial name. |
+| `Description` | string | Human-readable description. |
+| `MediaLink` | string | Image/media URL. |
+| `ServiceTypeCode` | string | Category — `ESIMS`, `LOUNGE_ACCESS`, `CARBON_OFFSET`, `FAST_TRACK`, `AIRPORT_TRANSFER`, `CAR_RENTAL`. |
+| `OtherServiceInformation` | object | Category-specific public metadata. |
+
+#### `Metadata`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `CorrelationID` | string | Echo of `x-correlation-id` (generated if you didn't send one). **Reuse it.** |
+| `ShoppingSessionID` | string | The session id for this search. Send it back per selected offer in OfferPrice. |
+
+### Example response (trimmed)
+
+```json
+{
+  "OtherOffers": {
+    "Owner": "Arcube",
+    "OtherOffers": [
+      {
+        "OtherOfferID": "2d1842ea-c534-4ff4-81e4-44dc34cf4b08",
+        "OfferItems": [
+          {
+            "OfferItemID": "SIM-2d1842ea-c534-4f",
+            "ServiceDefinitionRef": "SVC-SIM-2d1842ea-c534-4f",
+            "PriceDetail": { "TotalAmount": { "SimpleCurrencyPrice": { "amount": 1640, "decimal": 3, "currency": "USD" } } }
+          }
+        ],
+        "PriceDetail": { "TotalAmount": { "amount": 1640, "decimal": 3, "currency": "USD" } }
+      }
+    ]
+  },
+  "DataLists": {
+    "ServiceDefinitionList": [
+      {
+        "ServiceDefinitionID": "SVC-SIM-2d1842ea-c534-4f",
+        "Name": "1 GB - 7 days",
+        "Description": "eSIM data package",
+        "MediaLink": "https://.../esim.png",
+        "ServiceTypeCode": "ESIMS",
+        "OtherServiceInformation": { "bundle_id": "2d1842ea-c534-4f", "days": 7, "country": "DE", "region": "DE" }
+      }
+    ]
+  },
+  "Metadata": {
+    "CorrelationID": "159b2361-3bc8-420d-a0f8-ba55c33187e2",
+    "ShoppingSessionID": "df03ef63-335f-4a47-a302-1e13d5b89649"
+  }
+}
+```
+
+### Selecting an offer by category
+
+`ServiceDefinitionRef` is prefixed by category, which is the reliable way to filter offers:
+
+| Category | Ref prefix |
+| --- | --- |
+| eSIM | `SVC-SIM` |
+| Lounge access | `SVC-LNG` |
+| Carbon offset | `SVC-CO2` |
+| Fast-track | `SVC-FT` |
+| Airport transfer | `SVC-TRF` |
+| Car rental | `SVC-CAR` |
+
+<Callout type="info" title="Prefer priced offers">
+  Some entries can be zero-priced placeholders. When selecting programmatically, choose an offer
+  whose `PriceDetail.TotalAmount.SimpleCurrencyPrice.amount > 0`.
+</Callout>
+
+---
+
+## Airport Transfer AirShopping
+
+Point-to-point transfer discovery. Uses `ProductSearchInputs` with `ProductType: "AIRPORT_TRANSFER"`.
+
+<Callout type="warn" title="Run a general AirShopping first, on the same correlation id">
+  Airport transfer results need a category product id that is resolved from the general
+  recommendation context. Issue a **general AirShopping** first (any itinerary) using the **same**
+  `x-correlation-id`, then the transfer product search. Otherwise OrderCreate later fails during
+  identity resolution.
+</Callout>
+
+### Input fields
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `airline_id` | Yes | Tenant/airline id for routing and eligibility. |
+| `pointOfSale` | Yes | Sales channel (e.g. `WHITE_LABEL`). Required by the pricing engine. |
+| `mode` | Yes | `one_way` or `round_trip`. |
+| `num_passengers` | Yes | Passenger count. |
+| `start_address` / `end_address` | Yes | Human-readable pickup/drop-off. |
+| `start_coordinates` / `end_coordinates` | Yes | `{ lat, lng }` for each endpoint. |
+| `pickup_datetime` | Yes | Requested pickup date/time. Use a **future** date. |
+| `currency` | Yes | Shopping currency. |
+| `requested_currency` | Optional | Display/settlement currency (triggers conversion; requires white-label origin). |
+| `fromCountryCode` / `toCountryCode` | Yes | Country context. |
+| `providers` | Optional | Constrain to specific providers, e.g. `["mistertransfer","mozio"]`. |
+| `campaign` / `branch` | Optional | Merchandising / experiment context. |
+
+### Example request
+
+```json title="POST /ndc/airshopping"
+{
+  "AirShoppingRQ": {
+    "Document": { "Name": "Arcube NDC-like AirShopping", "ReferenceVersion": "1.0" },
+    "Party": {
+      "Sender": { "AgentUser": { "Name": "Arcube API Client", "IATA_Number": "00000000", "PseudoCity": "ARC123" } },
+      "Recipient": { "SystemID": "ArcubeAggregationEngine" }
+    },
+    "ProductSearchInputs": [
+      {
+        "ProductType": "AIRPORT_TRANSFER",
+        "Input": {
+          "airline_id": "6941cc3502a186f72ba55226",
+          "pointOfSale": "WHITE_LABEL",
+          "mode": "one_way",
+          "num_passengers": 1,
+          "start_address": "Athens International Airport (ATH), Spata, Greece",
+          "end_address": "Cholargos, Greece",
+          "pickup_datetime": "2026-07-23 15:00",
+          "currency": "USD",
+          "requested_currency": "DOP",
+          "providers": ["mistertransfer", "mozio"],
+          "start_coordinates": { "lat": 37.936175, "lng": 23.9465255 },
+          "end_coordinates": { "lat": 37.9975628, "lng": 23.8027203 },
+          "fromCountryCode": "GR",
+          "toCountryCode": "GR"
+        }
+      }
+    ],
+    "Metadata": { "PointOfSale": "WHITE_LABEL", "Tenant": "6941cc3502a186f72ba55226", "SessionID": "NDC-TRF" }
+  }
+}
+```
+
+### Response
+
+Same normalized shape — one `OtherOffer` per transfer option, each referencing one `SVC-TRF-...`
+service definition. `OtherServiceInformation` typically exposes `pickupAddress`, `dropoffAddress`,
+`pickupTimeIso`, `vehicleType`, `providerName`, `maxPassengers`, `maxBags`, and `amenities`.
+
+---
+
+## Car Rental AirShopping
+
+Dedicated rental search. Uses `ProductSearchInputs` with `ProductType: "CAR_RENTAL"`.
+
+### Input fields
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `airline_id` | Optional | Resolved from token if omitted. |
+| `pointOfSale` | Yes | Sales channel. Required by the pricing engine. |
+| `currency` | Yes | Shopping currency. |
+| `requested_currency` | Optional | Display/settlement currency. |
+| `fromCountryCode` / `toCountryCode` | Yes | Country context. |
+| `driver.age` | Yes | Driver age (eligibility / rate filtering). |
+| `driver.date_of_birth` | Yes | `YYYY-MM-DD`. |
+| `driver.residence` | Yes | Driver residence country code. |
+| `pickup_at` / `dropoff_at` | Yes | Rental start/end (ISO). Use **future** dates. |
+| `pickup_location` | Yes | `{ iata }` or `{ id }`. |
+| `dropoff_location` | Optional | `{ iata }` or `{ id }`. Omit for pickup-location return. |
+
+### Example request
+
+```json title="POST /ndc/airshopping"
+{
+  "AirShoppingRQ": {
+    "Document": { "Name": "Arcube NDC-like AirShopping", "ReferenceVersion": "1.0" },
+    "Party": {
+      "Sender": { "AgentUser": { "Name": "Arcube API Client", "IATA_Number": "00000000", "PseudoCity": "ARC123" } },
+      "Recipient": { "SystemID": "ArcubeAggregationEngine" }
+    },
+    "ProductSearchInputs": [
+      {
+        "ProductType": "CAR_RENTAL",
+        "Input": {
+          "airline_id": "6941cc3502a186f72ba55226",
+          "pointOfSale": "WHITE_LABEL",
+          "currency": "USD",
+          "requested_currency": "DOP",
+          "fromCountryCode": "MX",
+          "toCountryCode": "MX",
+          "driver": { "age": 37, "date_of_birth": "1989-07-06", "residence": "DO" },
+          "pickup_at": "2026-07-15T12:15:00",
+          "dropoff_at": "2026-07-24T18:00:00",
+          "pickup_location": { "iata": "CUN" }
+        }
+      }
+    ],
+    "Metadata": { "PointOfSale": "WHITE_LABEL", "Tenant": "6941cc3502a186f72ba55226", "SessionID": "NDC-CAR" }
+  }
+}
+```
+
+### Response
+
+One `OtherOffer` per rental option, each referencing a `SVC-CAR-...` service definition. The
+public `OtherServiceInformation` includes vehicle and location detail (car name, category,
+transmission, seats, pickup location). Internal identifiers required for booking (the rental rate
+id) are resolved automatically and carried into OfferPrice.
+
+<Callout type="info" title="Empty results are a valid response">
+  If a search returns zero offers, the criteria (dates, locations, availability) yielded nothing —
+  it is not an error. Verify dates are in the future and locations are valid.
+</Callout>
+
+Continue to [OfferPrice](/docs/api-offer-order-integration/offer-price) to cart and price your
+selection.

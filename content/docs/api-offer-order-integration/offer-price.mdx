@@ -1,0 +1,169 @@
+---
+title: OfferPrice
+description: Add selected offers to a cart and re-price them. Covers SelectedOffers, per-category ProductInputs, and multi-product and multi-session carts.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+`POST /ndc/offerprice`
+
+OfferPrice takes the offers you selected from one or more AirShopping responses, builds a **cart**
+(basket) on Arcube's side, validates and re-prices them, and returns a `PricedSessionID` that
+[OrderCreate](/docs/api-offer-order-integration/order-create) books.
+
+<Callout type="info" title="Headers">
+  Send the **same** `x-correlation-id` you used on AirShopping, plus `Authorization` and
+  `Content-Type: application/json`.
+</Callout>
+
+## Request schema
+
+The body is a single `OfferPriceRQ`.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `Document.Name` / `Document.ReferenceVersion` | Yes | Request label + schema version. |
+| `Party.Sender.AgentUser.Name` | Yes | Calling system name. |
+| `Query.SelectedOffers[]` | Yes | The offers to cart. One entry per offer (see below). |
+| `Metadata.SessionID` | Yes | Set to the **CorrelationID** from AirShopping. Its presence selects the basket flow. |
+| `Metadata.Tenant` | Optional | Tenant id. |
+| `ProductInputs[]` | Yes | Per-product fulfillment inputs, keyed by `ServiceDefinitionRef` (see [Products](/docs/api-offer-order-integration/products)). |
+
+### `SelectedOffers[]`
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `OfferID` | Yes | `OtherOfferID` of the chosen offer. |
+| `ShoppingSessionID` | Yes | The `Metadata.ShoppingSessionID` of the AirShopping response the offer came from. |
+| `Owner` | Yes | The AirShopping response `OtherOffers.Owner` (`"Arcube"`). |
+| `OfferItems[]` | Yes | The chosen item(s). |
+| `OfferItems[].OfferItemID` | Yes | From AirShopping. |
+| `OfferItems[].ServiceDefinitionRef` | Yes | From AirShopping. |
+| `OfferItems[].Quantity` | Yes | Usually `1`. |
+| `OfferItems[].Currency` / `OfferItems[].Price` | Yes | Echoed selection price. The authoritative price is taken from the catalog. |
+
+### `ProductInputs[]`
+
+Each entry supplies the fulfillment data for one selected service, matched by
+`ServiceDefinitionRef`.
+
+| Field | Description |
+| --- | --- |
+| `ServiceDefinitionRef` | Must match a selected `OfferItems[].ServiceDefinitionRef`. |
+| `Input` | Category-specific object. See [Products](/docs/api-offer-order-integration/products) for the required fields per `ServiceTypeCode`. |
+
+<Callout type="warn" title="Product inputs are validated per category">
+  Each category enforces its own schema (e.g. eSIM requires `serviceDetails.Region`,
+  `CountryCode`, `Data Amount`, `Validity` and `metadata.passengers`). Missing fields fail with
+  `Basket input validation failed`. Car rental additionally requires a client-supplied
+  `ancillaryId`.
+</Callout>
+
+## Example request (single eSIM)
+
+```json title="POST /ndc/offerprice"
+{
+  "OfferPriceRQ": {
+    "Document": { "Name": "OfferPrice", "ReferenceVersion": "1.0" },
+    "Party": { "Sender": { "AgentUser": { "Name": "Arcube API" } } },
+    "Query": {
+      "SelectedOffers": [
+        {
+          "OfferID": "2d1842ea-c534-4ff4-81e4-44dc34cf4b08",
+          "ShoppingSessionID": "df03ef63-335f-4a47-a302-1e13d5b89649",
+          "Owner": "Arcube",
+          "OfferItems": [
+            {
+              "OfferItemID": "SIM-2d1842ea-c534-4f",
+              "ServiceDefinitionRef": "SVC-SIM-2d1842ea-c534-4f",
+              "Quantity": 1,
+              "Currency": "USD",
+              "Price": 1
+            }
+          ]
+        }
+      ]
+    },
+    "Metadata": { "SessionID": "159b2361-3bc8-420d-a0f8-ba55c33187e2", "Tenant": "6941cc3502a186f72ba55226" },
+    "ProductInputs": [
+      {
+        "ServiceDefinitionRef": "SVC-SIM-2d1842ea-c534-4f",
+        "Input": {
+          "vendorReferenceId": "hallo-mobil-7days-1gb",
+          "description": "1 GB - 7 days",
+          "serviceDetails": { "Region": "DE", "CountryCode": "DE", "Data Amount": "1GB", "Validity": "7 days" },
+          "metadata": { "passengers": [ { "firstName": "John", "lastName": "Doe", "email": "john@example.com" } ] }
+        }
+      }
+    ]
+  }
+}
+```
+
+## Response schema
+
+| Field | Description |
+| --- | --- |
+| `OfferPriceRS.PricedSessionID` | The cart id. Pass it to OrderCreate. |
+| `OfferPriceRS.PricedOffers[]` | One priced offer per selected item. |
+| `OfferPriceRS.PricedOffers[].OfferID` | Priced offer id. |
+| `OfferPriceRS.PricedOffers[].OfferItems[].OfferItemID` / `.ServiceDefinitionRef` | Item references for OrderCreate. |
+| `OfferPriceRS.PricedOffers[].PriceSummary.Currency` / `.GrandTotal` | Per-offer total. |
+| `Metadata.CorrelationID` | Echoed correlation id. |
+
+### Example response
+
+```json
+{
+  "OfferPriceRS": {
+    "Document": { "Name": "Arcube NDC-like OfferPrice Response", "ReferenceVersion": "1.0" },
+    "PricedSessionID": "e77589d0-bb90-4783-993c-c1e90b3864d7",
+    "PricedOffers": [
+      {
+        "OfferID": "2d1842ea-c534-4ff4-81e4-44dc34cf4b08",
+        "Owner": "Arcube",
+        "OfferItems": [
+          {
+            "OfferItemID": "SIM-2d1842ea-c534-4f",
+            "ServiceDefinitionRef": "SVC-SIM-2d1842ea-c534-4f",
+            "PriceDetail": {
+              "BaseAmount": { "amount": 1.64, "currency": "USD" },
+              "TotalAmount": { "amount": 1.64, "currency": "USD" }
+            }
+          }
+        ],
+        "PriceSummary": { "Currency": "USD", "GrandTotal": 1.64 }
+      }
+    ],
+    "Metadata": { "CorrelationID": "159b2361-3bc8-420d-a0f8-ba55c33187e2", "PricedSessionID": "e77589d0-bb90-4783-993c-c1e90b3864d7" }
+  }
+}
+```
+
+## Multi-product carts
+
+Send several `SelectedOffers` (and matching `ProductInputs`) in one call. They land in a single
+cart; the response returns one `PricedOffers[]` entry per item, and OrderCreate books them all.
+
+<Callout type="warn" title="One currency per cart">
+  All carted items must price in the same currency, or OfferPrice returns
+  `Mixed currencies are not supported`.
+</Callout>
+
+See the [multi-product example](/docs/api-offer-order-integration/examples#multi-product-order).
+
+## Multi-session carts
+
+`SelectedOffers` may reference **different** `ShoppingSessionID`s — offers gathered from several
+AirShopping calls. OfferPrice loads each shopping session, merges their catalogs, and prices them
+together.
+
+<Callout type="warn" title="All contributing AirShopping calls must share one correlation id">
+  OfferPrice will price a multi-session cart even if the sources used different correlation ids,
+  but **OrderCreate will then fail** with `Quote bundle not found or expired`. Ensure every
+  AirShopping call that contributes to the cart used the **same** `x-correlation-id`.
+</Callout>
+
+See the [multi-session example](/docs/api-offer-order-integration/examples#multi-session-order).
+
+Continue to [OrderCreate](/docs/api-offer-order-integration/order-create).

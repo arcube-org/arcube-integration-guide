@@ -1,56 +1,94 @@
 ---
 title: Overview
-description: Embed Arcube's ancillary booking widget directly into your airline's booking flow.
+description: Embed Arcube's ancillary booking widget anywhere in your airline's digital journey.
 ---
 
-This guide explains how to integrate the Arcube booking widget into an airline booking platform. The widget is an embedded ancillary experience that appears inside the airline booking flow. It helps passengers discover and select additional services such as airport transfers, car rental, lounge access, eSIMs, carbon offset, insurance, and other ancillary products.
+The Arcube widget is an embedded ancillary experience you can place anywhere in your passenger journey - the booking flow, manage my booking, check-in, a confirmation page, or a standalone landing page. It lets passengers discover and add extras such as airport transfers, car rental, lounge access, eSIMs, carbon offset, and insurance without leaving your page.
 
-The widget does not replace the airline booking engine. The airline still owns:
+The widget adds a passenger-facing ancillary layer on top of your journey. It does not replace the airline booking engine.
 
-- the booking session
-- the flight selection
-- the basket
-- the checkout
-- the final order
+---
 
-The widget adds a passenger-facing ancillary layer on top of the airline booking journey.
+## Where You Can Place It
+
+The widget is not tied to a single step. Wherever there is a known booking context, it can surface relevant offers:
+
+- During the **booking flow** - the classic extras / ancillaries step
+- In **manage my booking**, after the trip is ticketed
+- On the **check-in** path
+- On a **confirmation** or post-purchase page
+- As a **standalone** ancillary page linked from an email or app
+
+---
+
+## What It Is / What It Isn't
+
+| The widget adds | The airline always owns |
+|---|---|
+| Ancillary discovery and selection | The booking session and flight selection |
+| Real-time, context-aware offers | The passenger / PNR context it is given |
+| A branded, embedded UI | Its own basket and journey |
+| Cart events back to your page | The final travel order |
+
+The widget is a passenger-facing ancillary layer on top of your journey - not a replacement for your booking engine.
+
+---
+
+## Two Integration Models
+
+Before integrating, decide who owns checkout and payment. This single choice - controlled by the `pointOfSale` value - determines who captures the money and how much the airline has to build.
+
+| | Widget-owned checkout | Airline-owned checkout |
+|---|---|---|
+| `pointOfSale` | `WIDGET` | `AIRLINE_WEBSITE` |
+| Who captures payment | The widget captures payment inside its own frame | The airline captures on its own PSP |
+| Merchant of record | Arcube | Airline |
+| Airline effort | Minimal - embed and listen for cart events | Airline runs checkout and creates the order with payment proof |
+| Best for | Standalone pages, manage-booking, lighter integrations | Deep booking-flow integration with a unified basket |
+
+<Callout type="info" title="Pick the model first">
+  The integration model determines who takes the money and how much the airline has to build. The full token flow, order creation, and payment proof for both models are covered in the [Implementation](/docs/widget-integration/implementation) guide.
+</Callout>
 
 ---
 
 ## End-to-End Flow
 
-The diagram below shows the full integration at a glance - from the moment the passenger lands on the airline website through search, trip selection, passenger details, widget rendering, ancillary selection, and the final payment handled by the airline.
+The diagram below shows the full integration at a glance - from the moment the passenger reaches a page that hosts the widget, through search context, widget rendering, and ancillary selection, to the final payment.
 
-<img src="/images/widget/widget-general-flow.png" alt="End-to-end widget integration flow" style={{display: 'block', margin: '0 auto', width: '100%'}} />
+<img src="/images/widget/widget-sequence-flow.svg" alt="End-to-end widget sequence diagram showing token vending, ancillary selection, and both payment models" style={{display: 'block', margin: '0 auto', width: '100%'}} />
 
-<small style={{display: 'block', textAlign: 'center'}}>End-to-end widget integration flow.</small>
+<small style={{display: 'block', textAlign: 'center'}}>End-to-end widget flow. Payment is captured either inside the widget (Model A) or by the airline (Model B), depending on the integration model above.</small>
 
 A few things to notice:
 
-- The **airline IBE** owns the booking session, the search, the trip selection, and the passenger details.
-- The **Airline CDN/EDGE** is the secure layer that requests a widget token on behalf of the browser, so the airline secret never reaches the passenger's device.
+- The **airline surface** - booking flow, manage my booking, check-in, or a standalone page - owns the session and the PNR context.
+- The **Airline CDN / EDGE** is the secure layer that requests a widget token on behalf of the browser, so the airline secret never reaches the passenger's device.
 - The **Arcube Backend** issues the short-lived token and powers the widget's ancillary catalog and offers.
-- Once the widget is rendered with a valid token and the PNR context, all ancillary interactions (view extras, add eSIM, etc.) happen inside the widget and are emitted back to the airline page as cart events.
-- Payment and final order processing remain entirely on the airline side.
+- Once the widget is rendered with a valid token and the PNR context, all ancillary interactions happen inside the widget and are emitted back to the host page as cart events.
+- Payment is handled by whichever party is the merchant of record for the chosen model.
+
+---
+
+## The Four Roles
+
+- **Airline surface** - the page hosting the widget (booking flow, manage my booking, check-in, or a standalone page). Owns the session and PNR context.
+- **Airline CDN / Edge** - signs the token request so the airline secret never reaches the browser.
+- **Arcube Backend** - issues the short-lived token, powers the offer catalog, and, in the widget-owned model, processes payment.
+- **Passenger's browser** - renders the widget with the token and emits cart events.
 
 ---
 
 ## How It Works
 
-In most integrations, the widget is shown on the extras or ancillary step. A common pattern includes:
+A common integration follows a single, linear path:
 
-- Loading the Arcube integration script on the booking site
-- Waiting until the correct booking step and booking data are available
-- Sending the booking context to Arcube
-- Opening the widget inside the airline page
-- Fetching offers and showing them to the passenger
-- Letting the passenger select services
-- Handing selected items back to the airline basket flow
-
-### Operating Model
-
-- Prepare recommendations as soon as there is a stable booking session
-- Render the widget on the extras step where the passenger is expected to buy ancillaries
+- Load the Arcube integration script on the host page
+- Establish a stable booking or session context
+- Send that booking context to Arcube
+- Render the widget where you want it
+- Let the passenger discover and select ancillaries
+- Complete checkout inside the widget, or hand the selected item back to the airline basket - depending on the chosen model
 
 ---
 
@@ -66,20 +104,21 @@ The widget can be fully branded to match your airline experience using a hosted 
 
 ## Benefits
 
-- Seamless user experience embedded in the booking flow
+- Embed anywhere in the passenger journey, not just the booking flow
 - Real-time personalization based on booking context
 - Fully branded to match your airline's design
+- A choice of who owns payment - the widget or the airline
 
 ---
 
-## Payment Flow
-
-You process payments; Arcube invoices for ancillaries.
-
----
-
-## Security
+## Security and Payment
 
 - The airline secret never reaches the browser - only a short-lived token is passed to the widget
 - HMAC-signed requests for token vending
 - HTTPS encryption for all API and widget communication
+
+Payment is captured either inside the widget (Arcube as merchant of record) or by the airline (airline as merchant of record), depending on the integration model.
+
+<Callout type="info" title="Next">
+  The full token flow, HMAC signing, and both payment models are covered in the [Implementation](/docs/widget-integration/implementation) guide.
+</Callout>

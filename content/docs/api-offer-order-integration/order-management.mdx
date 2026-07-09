@@ -1,0 +1,55 @@
+---
+title: Order Management
+description: Retrieve a single order (OrderView) or list a customer's orders (OrderList) after booking.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+After an order is created you can retrieve it individually or list a customer's orders.
+
+## OrderView
+
+`POST /ndc/orderview` — retrieve a single order and its current status.
+
+### Request
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `OrderViewRQ.OrderID` | Yes | The order/transaction identifier to look up. |
+
+```json title="POST /ndc/orderview"
+{
+  "OrderViewRQ": { "OrderID": "3a8d8d01-a92d-4028-8a27-5efd910bed49" }
+}
+```
+
+<Callout type="info" title="Headers">
+  Send `Authorization: Bearer <token>` and, optionally, `x-correlation-id` for traceability.
+</Callout>
+
+### Response
+
+Returns the mapped order (items, status, pricing) plus `Metadata.CorrelationID`. A lookup for an
+unknown id returns `400 Order not found`.
+
+## OrderList
+
+`POST /ndc/orderlist` — list all orders for a customer within a tenant.
+
+### Request
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `OrderListRQ.tenant` | Yes | Tenant identifier. |
+| `OrderListRQ.email` | Yes | Customer email to filter by. |
+
+```json title="POST /ndc/orderlist"
+{
+  "OrderListRQ": { "tenant": "6941cc3502a186f72ba55226", "email": "jane.doe@example.com" }
+}
+```
+
+### Response
+
+Returns the customer's orders (mapped to the NDC-like order shape) plus `Metadata.CorrelationID`.
+Both `tenant` and `email` are required; omitting either returns `400`.

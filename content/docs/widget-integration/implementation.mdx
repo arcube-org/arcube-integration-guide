@@ -1,71 +1,37 @@
 ---
 title: Implementation
-description: Technical steps for Widget Integration - authentication, integration flow, cart events, styling, and error handling.
+description: Technical reference for the Arcube widget - rendering, configuration, authentication, events, payment models, styling, and error handling.
 ---
 
-## End-to-End Flow
+## Overview
 
-Before diving into the individual building blocks, the diagram below shows how the widget fits into the full airline booking journey - from search and trip selection, through token vending and widget rendering, to the airline's own payment and order confirmation.
+This page is the technical reference for integrating the Arcube widget. It covers rendering the widget, configuration, secure authentication, the event contract, both payment models, styling, and error handling.
 
-<img src="/images/widget/widget-general-flow.png" alt="End-to-end widget integration flow" style={{display: 'block', margin: '0 auto', width: '100%'}} />
+The sequence below shows the full passenger journey end to end - from establishing the booking context, through secure token vending and widget rendering, to ancillary selection and checkout. Checkout is shown for both integration models: **Model A**, where the passenger pays inside the widget frame (Arcube is Merchant of Record), and **Model B**, where the airline captures payment on its own PSP and creates the order with `externalPSP` proof (airline is Merchant of Record).
 
-<small style={{display: 'block', textAlign: 'center'}}>End-to-end widget integration flow.</small>
+<img src="/images/widget/widget-sequence-flow.svg" alt="End-to-end widget sequence diagram showing token vending, ancillary selection, and both payment models" style={{display: 'block', margin: '0 auto', width: '100%'}} />
 
-The diagram above intentionally treats the `getToken` step as a single call to keep the overall picture readable. The exact token-generation steps - including the headers the Airline CDN/EDGE must add and the HMAC signature it must produce - are shown in the dedicated diagram in the [Token Flow](#token-flow) section below.
+<small style={{display: 'block', textAlign: 'center'}}>Figure 1: End-to-end sequence, including both payment models.</small>
 
----
-
-## Authentication and Token Flow
-
-### Token Flow
-
-This section describes the preferred widget authentication model for airline integrations.
-
-<img src="/images/widget/widget-token-flow-diagram.jpg" alt="Secure token vending flow via airline CDN proxy" style={{display: 'block', margin: '0 auto'}} />
-
-<small style={{display: 'block', textAlign: 'center'}}>Figure 1: Secure token vending flow via airline CDN proxy.</small>
-
-The recommended approach keeps the airline secret on the airline side, and the browser receives only a short-lived token. In the current model, the widget token is valid for 1 hour.
-
-When the booking page needs the widget, the browser first asks an airline-controlled endpoint for a widget token. That request stays inside the airline environment. The airline secure layer - such as a backend service, CDN worker, or edge layer - builds a canonical string and signs it with HMAC-SHA256 using the airline secret. Arcube receives that signed request at POST `${arcube-url}/auth/edge/token`, verifies it, and returns a short-lived token. The browser then passes the token to the widget, and the widget uses it for later Arcube API calls.
-
-The reference image below shows the same flow in a more visual way. The important point is that the airline website does not expose the secret in browser code. The secure layer signs the request, forwards it to Arcube, and returns only a token to the browser.
-
-<img src="/images/widget/widget-token-sequence.jpg" alt="Token flow sequence diagram" style={{display: 'block', margin: '0 auto', width: '100%'}} />
-
-<small style={{display: 'block', textAlign: 'center'}}>Figure 2: Token flow sequence diagram.</small>
-
-The diagram below zooms in on the exact token-generation steps that the Airline CDN/EDGE performs before calling Arcube. The secure layer fetches the airline secret, attaches the required headers (`X-Tenant-ID`, `X-Timestamp`, `X-Nonce`, `X-Signature`), prepares the canonical string, signs it, and sends the request with the `X-Signature` header. Arcube validates the signature and returns a short-lived token, which the IBE then uses to render the widget.
-
-<img src="/images/widget/widget-token-generation.png" alt="Detailed token generation and HMAC signing steps" style={{display: 'block', margin: '0 auto', width: '100%'}} />
-
-<small style={{display: 'block', textAlign: 'center'}}>Figure 3: Detailed token generation and HMAC signing steps.</small>
-
-The signed text usually contains the HTTP method, request path, tenant identifier, timestamp, and nonce. Arcube rebuilds the same string on its side and checks that the signature matches. It also checks that the tenant is known and that the timestamp is still valid.
-
-The airline secret and the signing logic stay on the airline secure side. The browser must never receive them. The browser should receive only the short-lived widget token and the booking context it already owns.
-
-PNR should be included in the JSON body so the token can be tied to that booking context. If a PNR does not exist yet, a session-level identifier is enough for the first step.
-
-For this token, the safest approach is to keep it in memory and treat it as temporary. In the current model, the token is valid for 1 hour. Where possible, it should also be tied to the PNR.
-
-### PNR Feed to Arcube
-
-Before the widget is rendered, the airline must send the PNR feed to Arcube once the PNR and passenger or segment context is available. This lets Arcube store the booking context and prepare personalized recommendations for the widget.
-
-Use the [Ingest Passenger Data](https://docs.arcube.com/docs/reference/essential-api-calls#61-ingest-passenger-data) call.
-
-Send the PNR feed to POST `${arcube-url}/aggregation-api/servePassengerRecommendations`. Use `pointOfSale: API`. This tells Arcube to store the PNR, passenger, and trip details only. Arcube will not return widget recommendations from this ingest call.
-
-For the first call for a PNR, send `pnr`, `pointOfSale: API`, `passengers`, and `segments`. For later updates to the same PNR, send only the fields that changed.
+The diagram treats the `getToken` step as a single call to keep the picture readable. The exact token-generation steps - the headers the Airline CDN/EDGE must add and the HMAC signature it must produce - are detailed in [Authentication and Token Flow](#authentication-and-token-flow).
 
 ---
 
-## System Architecture
+## Prerequisites
+
+Before integrating, make sure you have:
+
+- **Tenant ID** - your Arcube tenant identifier.
+- **Environment URL** - your assigned Arcube base URL (for example `https://api.arcube.com`), referred to below as `${arcube-url}`.
+- **Widget script URL** and **widget URL** - provided by Arcube.
+- **Signing secret** - held only on your secure server or edge layer, never in the browser (see [Authentication](#authentication-and-token-flow)).
+- **Theme file** (optional) - a hosted JSON file used for branding (see [Styling and Branding](#styling-and-branding)).
+
+### System Architecture
 
 The tenant integration has four moving parts:
 
-- the airline frontend page
+- the airline frontend page (the host page)
 - the Arcube integration script
 - the Arcube widget
 - the airline basket API
@@ -74,43 +40,13 @@ The airline page mounts the widget. The widget sends cart events back to the pag
 
 <img src="/images/widget/widget-architecture.jpg" alt="Architecture diagram" style={{display: 'block', margin: '0 auto'}} />
 
-<small style={{display: 'block', textAlign: 'center'}}>Figure 4: Architecture diagram.</small>
+<small style={{display: 'block', textAlign: 'center'}}>Figure 2: Architecture diagram.</small>
 
 ---
 
-## Integration Flow
+## Quick Start: Rendering the Widget
 
-### 1. User Opens the Widget
-
-The airline renders the widget component when the user reaches the extras step. Mount the widget when the extras route is active and destroy it when that view unmounts.
-
-### 2. User Searches for Services
-
-The widget uses the session and flight context from the airline page. For some ancillaries, the passenger also enters extra product-specific details - for example, pickup and drop-off addresses or driver age.
-
-### 3. User Selects an Option
-
-The widget keeps the passenger inside the airline page and lets them select the ancillary product.
-
-### 4. Add to Cart
-
-When the passenger adds an item, the widget emits a cart event to the parent page. The airline frontend receives that event and calls its own basket API.
-
-### 5. Continue to Checkout
-
-After the airline basket is updated successfully, the normal airline flow continues.
-
-### Journey Diagram
-
-<img src="/images/widget/widget-journey.jpg" alt="Integration flow journey diagram" style={{display: 'block', margin: '0 auto'}} />
-
-<small style={{display: 'block', textAlign: 'center'}}>Figure 5: Journey diagram.</small>
-
----
-
-## Rendering the Widget
-
-Once the airline has authenticated itself and acquired a short-lived widget token, the airline page can render the widget. The page needs a stable mount element, the Arcube widget bridge script, and a call to `window.Widget.init`.
+Once the airline has authenticated itself and acquired a short-lived widget token (see [Authentication](#authentication-and-token-flow)), the host page can render the widget. The page needs a stable mount element, the Arcube widget bridge script, and a call to `window.Widget.init`.
 
 ```html
 <div id="arcube-widget"></div>
@@ -123,11 +59,11 @@ Register widget event listeners before initialization when possible, so the pare
 const widgetConfig = {
   widgetUrl: "ARCUBE_WIDGET_URL",
   tenantId: "YOUR_TENANT_ID",
-  sessionId: "YOUR_PNR",
+  sessionId: "YOUR_PNR",            // the booking reference; see note below
   correlationId: "BOOKING_SESSION_ID",
   currency: "USD",
   language: "en-US",
-  pointOfSale: "WIDGET",
+  pointOfSale: "WIDGET",            // selects the payment model - see Payment & Order Creation
   backendUrl: "ARCUBE_BACKEND_URL",
   token: widgetToken,
   themeJsonUrl: "https://cdn.airline.com/arcube/widget-theme.json",
@@ -154,55 +90,108 @@ window.addEventListener("arcube:widget:closed", (event) => {
 window.Widget.init(widgetConfig);
 ```
 
-`ancillaryCategories` is optional. When provided, the widget renders only the listed categories; when omitted, it renders every category enabled for your tenant. Accepted values: `ESIMS`, `BAGGAGE_PROTECTION`, `AIRPORT_TRANSFER`, `FAST_TRACK`, `CARBON_OFFSET`, `LOUNGE_ACCESS`, `CAR_RENTAL`.
+<Callout type="info" title="sessionId carries the booking reference">
+  `sessionId` is the booking the widget operates on. Pass the **PNR** once it exists. If a PNR does not exist yet, a session-level identifier is acceptable for the first step and can be replaced by the PNR later.
+</Callout>
 
-`correlationId` is optional. When provided, the widget sends it as `x-correlation-id` on backend requests so all priced items can be associated with the same booking session.
-
-`pointOfSale` controls who completes the order and payment flow.
-
-- `WIDGET` — the widget owns the ancillary checkout/order flow. Use this when the parent page only embeds the widget and listens for cart updates.
-- `AIRLINE_WEBSITE` — the airline website owns checkout/payment and later creates the order through `/transactions/widget-order-create` with `externalPSP` payment proof (see [Order API → Payment Proof](#payment-proof-externalpsp)).
-
-### Optional Iframe Height Control
-
-The widget emits its current content height through the `arcube:widget:resize` event whenever the widget layout changes. The parent page can listen to this event and resize the iframe.
-
-If the airline wants to limit how tall the widget can become, the max height should be handled in the parent page.
-
-```javascript
-const widgetMaxHeight = 900; // Set to undefined to allow full content height.
-
-function resizeArcubeWidgetFrame(height) {
-  const appliedHeight = widgetMaxHeight ? Math.min(height, widgetMaxHeight) : height;
-  const nextHeight = `${appliedHeight}px`;
-  const mount = document.getElementById("arcube-widget");
-  const container = document.getElementById("arcube-widget-container");
-  const iframe = container?.querySelector("iframe");
-
-  [mount, container, iframe].forEach((element) => {
-    if (!element) return;
-    element.style.setProperty("height", nextHeight, "important");
-    element.style.setProperty("min-height", nextHeight, "important");
-    element.style.overflow = "visible";
-  });
-}
-
-window.addEventListener("arcube:widget:resize", (event) => {
-  resizeArcubeWidgetFrame(event.detail.height);
-});
-```
-
-When `widgetMaxHeight` is set, the iframe grows until that value and then stops. If the widget content later becomes smaller, the iframe shrinks again to the new content height.
+The `pointOfSale` value you pass here selects the payment model for the whole session. See [Payment & Order Creation](#payment-and-order-creation) for the full behaviour of each.
 
 ---
 
-## Add to Cart Functionality
+## Configuration Reference
 
-The widget does not write into the airline basket directly. It emits cart events. The airline frontend must listen to those events and run its own add-to-cart logic. Each widget event contains a cart snapshot with the root `customer` and a flat `selectedAncillaries` array. For add-to-cart, the tenant should catch the widget event, read the newest selected ancillary, and pass that data into its own basket logic.
+All options passed to `window.Widget.init`:
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `widgetUrl` | Yes | The Arcube widget URL provided to you. |
+| `backendUrl` | Yes | The Arcube backend base URL used for widget API calls. |
+| `tenantId` | Yes | Your Arcube tenant identifier. |
+| `token` | Yes | The short-lived widget token from the [token flow](#authentication-and-token-flow). |
+| `sessionId` | Yes | The booking reference the widget operates on - the PNR, or a session-level identifier before the PNR exists. |
+| `pointOfSale` | Yes | Selects the payment model: `WIDGET` (widget owns checkout, Arcube is MoR) or `AIRLINE_WEBSITE` (airline owns checkout, airline is MoR). See [Payment & Order Creation](#payment-and-order-creation). |
+| `currency` | Yes | ISO 4217 currency code, for example `USD`. |
+| `correlationId` | No | Ties multiple widget invocations for one shopper into a single order and enables [cart persistence](#cart-persistence). If omitted, the Arcube backend generates one, but separate invocations then cannot be tied together into one order. |
+| `language` | No | BCP-47 language tag, for example `en-US`. |
+| `ancillaryCategories` | No | Restricts which categories render. Omit to render every category enabled for your tenant. Accepted values: `ESIMS`, `BAGGAGE_PROTECTION`, `AIRPORT_TRANSFER`, `FAST_TRACK`, `CARBON_OFFSET`, `LOUNGE_ACCESS`, `CAR_RENTAL`. |
+| `themeJsonUrl` | No | HTTPS URL to a hosted theme JSON file for branding. See [Styling and Branding](#styling-and-branding). |
+
+<Callout type="info" title="correlationId and orders">
+  `correlationId` is optional. If you do not provide one, the Arcube backend creates it for you - but without a stable value you own, you cannot tie multiple widget invocations (for example after a page refresh, or across steps of the journey) into a single order, and cart recovery after refresh is not guaranteed. When you need that continuity, generate a stable `correlationId` per booking session, store it, and reuse it. Do not generate a new value on every page load.
+</Callout>
+
+---
+
+## Authentication and Token Flow
+
+This section describes the preferred widget authentication model for airline integrations. The goal is simple: the airline secret stays on the airline side, and the browser only ever receives a short-lived token.
+
+When the host page needs the widget, the browser first asks an airline-controlled endpoint for a widget token. That request stays inside the airline environment. The airline secure layer - a backend service, CDN worker, or edge layer - builds a canonical string and signs it with **HMAC-SHA256** using the airline secret, then calls `POST ${arcube-url}/auth/edge/token` with the headers `X-Tenant-ID`, `X-Timestamp`, `X-Nonce`, and `X-Signature`. Arcube rebuilds the same canonical string, verifies the signature, checks that the tenant is known and the timestamp is still valid, and returns a short-lived token. The browser then passes that token to the widget, which uses it for later Arcube API calls.
+
+The canonical (signed) string typically contains the HTTP method, request path, tenant identifier, timestamp, and nonce. In the current model the widget token is valid for **1 hour**.
+
+<img src="/images/widget/widget-token-sequence.jpg" alt="Token flow sequence diagram" style={{display: 'block', margin: '0 auto', width: '100%'}} />
+
+<small style={{display: 'block', textAlign: 'center'}}>Figure 3: Secure token vending via the airline CDN/edge proxy.</small>
+
+The diagram below zooms in on the exact token-generation steps the Airline CDN/EDGE performs before calling Arcube: fetch the airline secret, attach the required headers, prepare the canonical string, sign it, and send the request with the `X-Signature` header. Arcube validates the signature and returns the token, which the host page then uses to render the widget.
+
+<img src="/images/widget/widget-token-generation.png" alt="Detailed token generation and HMAC signing steps" style={{display: 'block', margin: '0 auto', width: '100%'}} />
+
+<small style={{display: 'block', textAlign: 'center'}}>Figure 4: Token generation and HMAC signing steps.</small>
+
+<Callout type="warn" title="Keep the secret server-side">
+  The airline secret and the signing logic must never reach the browser. The browser should only ever receive the short-lived widget token and the booking context the airline already owns.
+</Callout>
+
+Include the **PNR** in the JSON body so the token can be tied to that booking context. If a PNR does not exist yet, a session-level identifier is enough for the first step. Keep the token in memory, treat it as temporary, and tie it to the PNR where possible.
+
+### PNR Feed to Arcube
+
+Before the widget is rendered, the airline must send the PNR feed to Arcube once the PNR and passenger or segment context is available. This lets Arcube store the booking context and prepare personalized recommendations for the widget.
+
+Use the [Ingest Passenger Data](https://docs.arcube.com/docs/reference/essential-api-calls#61-ingest-passenger-data) call. Send the PNR feed to `POST ${arcube-url}/aggregation-api/servePassengerRecommendations` with `pointOfSale: API`. This tells Arcube to store the PNR, passenger, and trip details only; it will not return widget recommendations from this ingest call.
+
+For the first call for a PNR, send `pnr`, `pointOfSale: API`, `passengers`, and `segments`. For later updates to the same PNR, send only the fields that changed.
+
+---
+
+## Integration Flow
+
+At runtime the integration follows a single linear path:
+
+1. **Render** - the host page mounts the widget when the user reaches the step where extras are offered. Mount when that view is active and destroy it when the view unmounts.
+2. **Search** - the widget uses the session and flight context from the host page. For some ancillaries the passenger enters extra product-specific details, such as pickup and drop-off addresses or driver age.
+3. **Select** - the passenger selects an ancillary product without leaving the host page.
+4. **Add to cart** - when the passenger adds an item, the widget emits a cart event to the parent page. The host page receives it and updates its own basket (see [Handling Cart Events](#handling-cart-events)).
+5. **Checkout** - the normal flow continues. Payment is completed inside the widget or by the airline, depending on the [payment model](#payment-and-order-creation).
+
+---
+
+## Tenant Event Contract
+
+The widget and the parent page exchange messages to keep the widget UI and the airline basket in sync. Some messages are sent by the widget to the parent page (for example when an item is added or removed); others are sent by the parent page to the widget (for example when the airline basket changes outside the widget).
+
+| Event / Command | Direction | Meaning | Integration handling |
+|---|---|---|---|
+| `arcube:widget:ready` | Widget → Parent | Widget is ready | Mark the widget area as live |
+| `arcube:widget:error` | Widget → Parent | Widget failed | Show fallback UI and log the error |
+| `arcube:widget:closed` | Widget → Parent | Widget closed itself, for example when no ancillaries are available | Optional: hide surrounding chrome such as section headings |
+| `arcube:widget:resize` | Widget → Parent | Widget content height changed | Optional: resize the iframe/container and apply any parent-side max height |
+| `arcube:cart:updated` + `CART_ITEM_ADDED` | Widget → Parent | User added an item in the widget | Add the item to the airline basket |
+| `arcube:cart:updated` + `CART_ITEM_REMOVED` | Widget → Parent | User removed an item in the widget | Remove the item from the airline basket |
+| `CART_ITEM_REMOVE_REQUEST` | Parent → Widget | Parent asks the widget to remove one selected item | Use when one item is removed from the airline basket outside the widget |
+| `CART_CLEAR_REQUEST` | Parent → Widget | Parent asks the widget to clear all selected items | Use when the airline basket is cleared outside the widget |
+
+---
+
+## Handling Cart Events
+
+The widget does not write into the airline basket directly. It emits cart events. The airline frontend must listen to those events and run its own add-to-cart logic. Each widget event contains a cart snapshot with the root `customer` and a flat `selectedAncillaries` array.
 
 ### Catching the Add Event
 
-Listen for cart update events and extract the latest selected ancillary from the cart. The following example shows how to do that in JavaScript:
+Listen for cart update events and extract the latest selected ancillary from the cart:
 
 ```typescript
 function getLatestSelectedAncillary(detail: ArcubeCartUpdateEvent) {
@@ -226,8 +215,6 @@ window.addEventListener("arcube:cart:updated", (event) => {
 ### selectedAncillaries Example
 
 `selectedAncillaries` is a flat array. Each entry represents one selected ancillary and should be passed through unchanged when creating the widget order. The root `customer` is not stored inside each selected ancillary. If an ancillary has additional passengers, `metadata.passengers` contains only those additional passengers, not the root customer.
-
-The eSIM item is a selected ancillary entry. It carries provider, price, quantity, description, the vendor reference, and service details such as region, country code, data amount, and validity.
 
 ```json
 [
@@ -381,7 +368,7 @@ The payload format shown above reflects what is used in version 1. The list is n
 
 ### Expected Message from Widget
 
-The airline does not need to guess the message shape. The add-to-cart event contains the current cart snapshot. The cart includes a root `customer` and a flat `selectedAncillaries` array.
+The add-to-cart event contains the current cart snapshot. The cart includes a root `customer` and a flat `selectedAncillaries` array.
 
 ```json
 {
@@ -454,37 +441,17 @@ The airline does not need to guess the message shape. The add-to-cart event cont
 }
 ```
 
----
+### Sending Updates to the Widget
 
-## Automatic Close When No Ancillaries Are Available
-
-If the recommendations API returns no sellable ancillaries for the current session, the widget closes itself: the integration script removes the iframe and hides the host mount node (`#arcube-widget`) so no empty slot remains in the page. The script also dispatches `arcube:widget:closed` so the tenant can react — for example, by hiding a surrounding "Extras" section heading.
-
-```javascript
-window.addEventListener("arcube:widget:closed", (event) => {
-  const { reason, correlationId } = event.detail;
-  // reason is "no_ancillaries" when the widget closed because the
-  // recommendations response was empty.
-  console.log("Arcube widget closed", reason, correlationId);
-});
-```
-
-The next call to `window.Widget.init(...)` restores the mount node and remounts the iframe, so this behavior is fully reversible.
-
----
-
-## Sending Updates to the Widget
-
-The airline can also send data and commands to the widget. In the current website integration, the airline page already loads the Arcube integration script. That script adds the embedded widget into the page. Runtime communication happens by sending a browser message to the embedded widget window.
+The airline can also send data and commands to the widget - for example when the airline basket changes outside the widget. Runtime communication happens by posting a browser message to the embedded widget window.
 
 ```javascript
 const widgetUrl = "use the same widget URL configured in your integration";
 const widgetOrigin = new URL(widgetUrl).origin;
 
 function getEmbeddedWidgetWindow() {
-  const container = document.getElementById("arcube-inline-widget");
-  const frame = container?.firstElementChild;
-  return frame && "contentWindow" in frame ? frame.contentWindow : null;
+  const frame = document.querySelector("#arcube-widget-container iframe");
+  return frame?.contentWindow ?? null;
 }
 
 function sendToWidget(message) {
@@ -573,11 +540,9 @@ window.addEventListener("arcube:widget:ready", () => {
 });
 ```
 
-`customer` is used for the primary customer details form. `passengers` is used to prefill additional passenger forms for products that require traveler-level information. Mark the primary traveler with `isPrimary: true`;
+`customer` is used for the primary customer details form. `passengers` is used to prefill additional passenger forms for products that require traveler-level information. Mark the primary traveler with `isPrimary: true`.
 
----
-
-## Cart Persistence
+### Cart Persistence
 
 Cart persistence allows the widget to restore a shopper's selected ancillaries if they refresh the page or return shortly after. The airline only needs to pass a stable `correlationId` when initializing the widget.
 
@@ -590,52 +555,104 @@ window.Widget.init({
 });
 ```
 
-The `correlationId` must be unique to one shopper / booking session, and the airline should store it. The same value can be reused every time the widget is loaded for that booking, including after refresh.
+The `correlationId` must be unique to one shopper / booking session, and the airline should store it. Reuse the same value every time the widget is loaded for that booking, including after a refresh. Do not generate a new `correlationId` on every page load - if the value changes, the widget treats it as a different cart and cannot recover the previous selections.
 
-Do not generate a new `correlationId` on every page load. If the value changes, the widget treats it as a different cart and cannot recover the previous selections.
-
-If no `correlationId` is provided, the widget still works normally, but cart recovery after refresh is not guaranteed. Persisted carts expire automatically after the backend retention window, currently about 2 hours.
+If no `correlationId` is provided, the widget still works and the backend generates one, but cart recovery after refresh is not guaranteed and separate invocations cannot be tied into one order. Persisted carts expire automatically after the backend retention window, currently about 2 hours.
 
 When a saved cart is restored, the widget emits the normal cart update event, so the parent page can keep its cart badge, summary, or booking UI in sync using the existing `arcube:cart:updated` listener.
 
+### Automatic Close When No Ancillaries Are Available
+
+If the recommendations API returns no sellable ancillaries for the current session, the widget closes itself: the integration script removes the iframe and hides the host mount node (`#arcube-widget`) so no empty slot remains in the page. It also dispatches `arcube:widget:closed` so the tenant can react - for example, by hiding a surrounding "Extras" section heading.
+
+```javascript
+window.addEventListener("arcube:widget:closed", (event) => {
+  const { reason, correlationId } = event.detail;
+  // reason is "no_ancillaries" when the widget closed because the
+  // recommendations response was empty.
+  console.log("Arcube widget closed", reason, correlationId);
+});
+```
+
+The next call to `window.Widget.init(...)` restores the mount node and remounts the iframe, so this behavior is fully reversible.
+
+### Optional Iframe Height Control
+
+The widget emits its current content height through the `arcube:widget:resize` event whenever the widget layout changes. The parent page can listen and resize the iframe. If the airline wants to cap how tall the widget can become, the max height should be handled in the parent page.
+
+```javascript
+const widgetMaxHeight = 900; // Set to undefined to allow full content height.
+
+function resizeArcubeWidgetFrame(height) {
+  const appliedHeight = widgetMaxHeight ? Math.min(height, widgetMaxHeight) : height;
+  const nextHeight = `${appliedHeight}px`;
+  const mount = document.getElementById("arcube-widget");
+  const container = document.getElementById("arcube-widget-container");
+  const iframe = container?.querySelector("iframe");
+
+  [mount, container, iframe].forEach((element) => {
+    if (!element) return;
+    element.style.setProperty("height", nextHeight, "important");
+    element.style.setProperty("min-height", nextHeight, "important");
+    element.style.overflow = "visible";
+  });
+}
+
+window.addEventListener("arcube:widget:resize", (event) => {
+  resizeArcubeWidgetFrame(event.detail.height);
+});
+```
+
+When `widgetMaxHeight` is set, the iframe grows until that value and then stops. If the widget content later becomes smaller, the iframe shrinks again to the new content height.
+
 ---
 
-## Price Verification
+## Payment and Order Creation
 
-Before creating an order, a tenant may optionally perform a Price Verify call to validate the prices being submitted and determine the required payment split for third-party ancillaries.
+The payment model is selected by the `pointOfSale` value you pass to `window.Widget.init`. It determines who captures payment, who is Merchant of Record, and whether the airline needs to create the order itself.
 
-The Price Verify endpoint serves two purposes:
+| | Model A - Widget-owned | Model B - Airline-owned |
+|---|---|---|
+| `pointOfSale` | `WIDGET` | `AIRLINE_WEBSITE` |
+| Who captures payment | The widget, inside its own frame | The airline, on its own PSP |
+| Merchant of Record | Arcube | Airline |
+| Airline order-create call | Not required | Required (`widget-order-create` with `externalPSP`) |
+| Best for | Standalone pages, manage-my-booking, lighter integrations | Deep booking-flow integration with a unified basket |
 
-- **Price validation** — verifies that the prices submitted by the tenant match the prices calculated by Arcube.
-- **Payment split calculation** — returns the amounts that must be captured on behalf of the airline and the amounts that must be captured on behalf of Arcube.
+### Price Verification
 
-This allows the tenant to confirm the commercial values before order creation and, where applicable, correctly allocate payment capture between the airline and Arcube.
+Before creating an order, a tenant may optionally perform a Price Verify call to validate the prices being submitted and determine the required payment split for third-party ancillaries. The endpoint serves two purposes:
 
-More information about this endpoint is available under [Reference → Essential API Calls → Verify Prices](/docs/reference/essential-api-calls#63-verify-prices).
+- **Price validation** - verifies that the prices submitted by the tenant match the prices calculated by Arcube.
+- **Payment split calculation** - returns the amounts that must be captured on behalf of the airline and on behalf of Arcube.
 
-<Callout type="info" title="Note">
+More information is available under [Reference → Essential API Calls → Verify Prices](/docs/reference/essential-api-calls#63-verify-prices).
+
+<Callout type="info" title="When Price Verify is needed">
   Price Verification is optional when the payment flow does not involve Split Payments. Arcube already has full visibility of the priced ancillaries through its pricing engine, so an additional price verification step is not required in standard non-split-payment flows.
 
-  The Price Verify call should be executed before payment capture by the Merchant of Record. This ensures that the correct capture amount is calculated and allocated for each Merchant of Record involved in the transaction. The Arcube-side amount from this split is what you report as `externalPSP.amount` when creating the order (see [Order API → Payment Proof](#payment-proof-externalpsp)).
+  The Price Verify call should be executed before payment capture by the Merchant of Record. This ensures the correct capture amount is calculated and allocated for each Merchant of Record in the transaction. In Model B, the Arcube-side amount from this split is what you report as `externalPSP.amount` when creating the order.
 </Callout>
 
----
+### Model A - Widget-owned checkout (`pointOfSale: WIDGET`)
 
-## Order API
+When the widget is rendered with `pointOfSale: WIDGET`, the widget owns the ancillary checkout and captures payment **inside its own frame**. **Arcube is the Merchant of Record.** The airline embeds the widget and listens for cart events; it does not run a checkout and does not call the order API itself - the widget completes payment and creates the order with Arcube directly.
 
-Create the widget order after checkout. Arcube places the ancillary order with the relevant provider and records the transaction.
+Use this model for standalone pages, manage-my-booking, and lighter integrations where Arcube handles payment and settlement. The parent page still receives `arcube:cart:updated` events and can keep its own cart badge or summary in sync, but no airline-side order-create call is required.
+
+### Model B - Airline-owned checkout (`pointOfSale: AIRLINE_WEBSITE`)
+
+When the widget is rendered with `pointOfSale: AIRLINE_WEBSITE`, the airline owns checkout and captures payment on its own PSP. **The airline is the Merchant of Record.** After capturing payment, the airline creates the order through `/transactions/widget-order-create`, passing proof of the charge in an `externalPSP` object. Arcube never collects payment in this model - it places the ancillary orders with the relevant providers and records the transaction.
 
 Immediately before charging the customer and creating the order, call [Verify Prices](/docs/reference/essential-api-calls#63-verify-prices) to confirm that the cart prices still match Arcube's authoritative bundle. Re-confirm with the user if any item has drifted.
 
 When sending the order payload, put the primary passenger/customer in `customer`. The `passengers` array should include only additional passengers and should exclude the primary passenger.
 
-### Payment Proof (`externalPSP`)
+#### Payment Proof (`externalPSP`)
 
-In the widget flow the order is created with `pointOfSale: AIRLINE_WEBSITE` and the **airline as Merchant of Record**. This means the airline charges the customer on its own PSP, so Arcube never collects payment - it only places the ancillary orders and records the transaction. To create the order, the airline must pass back proof of the charge it already captured in an `externalPSP` object.
+To create the order, the airline must pass back proof of the charge it already captured in an `externalPSP` object. The amount to report is the **Arcube-side capture** - the portion of the total captured on behalf of Arcube, as returned by the payment split in [Verify Prices](/docs/reference/essential-api-calls#63-verify-prices).
 
-The amount to report here is the **Arcube-side capture** - the portion of the total captured on behalf of Arcube, as returned by the payment split in [Verify Prices](/docs/reference/essential-api-calls#63-verify-prices). The split tells you how much was captured for the airline versus Arcube; `externalPSP.amount` should reflect the Arcube share.
-
-<Callout type="warn" title="externalPSP is required">
+<Callout type="warn" title="externalPSP is required in Model B">
   When the airline is Merchant of Record, the order request is rejected with `400 MISSING_EXTERNAL_PSP` if `externalPSP` is absent or any required field is invalid. The response `details` array lists each offending field.
 </Callout>
 
@@ -656,7 +673,7 @@ Allowed `status` values:
 
 | Status | Meaning | When to send |
 |--------|---------|--------------|
-| `CONFIRMED` | Payment successfully captured. | The standard case for order creation — the airline has already captured payment for the ancillaries before calling this endpoint. |
+| `CONFIRMED` | Payment successfully captured. | The standard case for order creation - the airline has already captured payment for the ancillaries before calling this endpoint. |
 | `PENDING` | Payment initiated, awaiting the final result. | The charge is still being processed asynchronously (e.g. awaiting 3-D Secure or an async PSP confirmation) at order-create time. |
 | `FAILED` | Payment was declined or failed. | Reported for reconciliation when a charge attempt did not succeed. |
 | `CANCELLED` | Authorization voided / payment cancelled before capture. | The reserved authorization was released and no funds were captured. |
@@ -677,7 +694,7 @@ Allowed `status` values:
   - `X-Correlation-ID: <correlation_id>`
 </Callout>
 
-### Request Payload Sample
+#### Request Payload Sample
 
 The example below shows an order request for baggage protection.
 
@@ -745,7 +762,7 @@ curl --location "${arcube-url}/transactions/widget-order-create" \
   }'
 ```
 
-### Responses
+#### Responses
 
 On success the order is confirmed immediately - no payment redirect is returned, because the airline already captured the charge.
 
@@ -776,32 +793,11 @@ If `externalPSP` is missing or invalid, the request is rejected:
 
 ---
 
-## Tenant Event Contract
-
-The Arcube widget and the parent page exchange messages to keep the widget UI and the airline basket in sync.
-
-Some messages are sent by the widget to the parent page, for example when an item is added or removed in the widget. Other messages are sent by the parent page to the widget, for example when the airline basket is updated outside the widget.
-The table below summarizes the events and the required actions:
-
-
-| Event / Command | Direction | Meaning | Integration handling |
-|---|---|---|---|
-| `arcube:widget:ready` | Widget → Parent | Widget is ready | Mark the widget area as live |
-| `arcube:widget:error` | Widget → Parent | Widget failed | Show fallback UI and log the error |
-| `arcube:widget:closed` | Widget → Parent | Widget closed itself, for example when no ancillaries are available | Optional: hide surrounding chrome such as section headings |
-| `arcube:widget:resize` | Widget → Parent | Widget content height changed | Optional: resize the iframe/container and apply any parent-side max height |
-| `arcube:cart:updated` + `CART_ITEM_ADDED` | Widget → Parent | User added an item in the widget | Add the item to the airline basket |
-| `arcube:cart:updated` + `CART_ITEM_REMOVED` | Widget → Parent | User removed an item in the widget | Remove the item from the airline basket |
-| `CART_ITEM_REMOVE_REQUEST` | Parent → Widget | Parent asks the widget to remove one selected item | Use when one item is removed from the airline basket outside the widget |
-| `CART_CLEAR_REQUEST` | Parent → Widget | Parent asks the widget to clear all selected items | Use when the airline basket is cleared outside the widget |
-
----
-
 ## Styling and Branding
 
 The widget can be branded to match the airline experience. The current styling contract is based on a hosted theme file. The airline hosts a theme JSON file on a publicly accessible HTTPS URL and passes that URL to the widget as `themeJsonUrl` when the widget is opened. The hosting bucket or CDN must allow public GET requests with CORS enabled so the widget can fetch the file from the browser.
 
-The widget reads that theme file, applies the color and typography tokens internally, and keeps the styling scoped to the widget itself. If the airline wants to use a custom font, the theme file can also include a `font-url` value - an HTTPS stylesheet link such as a hosted font stylesheet or a Google Fonts URL. The widget loads that stylesheet automatically and uses the declared `font-family`.
+The widget reads that theme file, applies the color and typography tokens internally, and keeps the styling scoped to the widget itself. If the airline wants a custom font, the theme file can include a `font-url` value - an HTTPS stylesheet link such as a hosted font stylesheet or a Google Fonts URL. The widget loads that stylesheet automatically and uses the declared `font-family`.
 
 The theme file should include an `en` block with a colors section and a typography section. At minimum, the widget expects:
 
@@ -815,8 +811,6 @@ When opening the widget, pass a `themeJsonUrl` pointing to the hosted theme file
 ```
 themeJsonUrl=https://cdn.airline.com/arcube/widget-theme.json
 ```
-
-The query-based theme URL supports the main color tokens as well as `fontFamily` and `fontUrl`, making it useful for quick branding changes. For long-term production control, a hosted theme JSON file is the cleaner option.
 
 **Example theme file:**
 
@@ -844,7 +838,7 @@ The query-based theme URL supports the main color tokens as well as `fontFamily`
 }
 ```
 
-If the theme file cannot be fetched, is invalid, or is missing required values, the widget falls back to the default Arcube styling. For that reason, the theme file should be hosted on a stable HTTPS URL and treated as part of the production integration.
+If the theme file cannot be fetched, is invalid, or is missing required values, the widget falls back to the default Arcube styling. For that reason, host the theme file on a stable HTTPS URL and treat it as part of the production integration.
 
 ---
 
@@ -866,7 +860,7 @@ The widget must never block the airline booking flow. Follow these rules to hand
 - If your cart update fails, show a clear message and do not assume the ancillary was saved
 - If session data is missing, do not mount the widget
 
-Listen for error events and wrap your cart update logic in a try-catch block. The following example illustrates how to handle errors in JavaScript:
+Listen for error events and wrap your cart update logic in a try-catch block:
 
 ```typescript
 window.addEventListener("arcube:widget:error", (event) => {
@@ -887,8 +881,6 @@ async function handleCartAdd(runCartLogic: () => Promise<void>) {
 
 ---
 
-## Thank You
+## Support
 
-Thank you for integrating the Arcube widget into your booking flow. This guide was designed to help you get the most out of the Arcube widget and integrate it cleanly into your booking flow.
-
-If you need further assistance, contact [support@arcube.com](mailto:support@arcube.com).
+Thank you for integrating the Arcube widget into your booking flow. If you need further assistance, contact [support@arcube.com](mailto:support@arcube.com).

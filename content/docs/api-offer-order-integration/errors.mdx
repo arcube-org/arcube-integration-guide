@@ -1,0 +1,68 @@
+---
+title: Errors & Troubleshooting
+description: Error model and a catalog of common failures across AirShopping, OfferPrice, and OrderCreate — with causes and fixes.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+## Error model
+
+Errors are returned as JSON with an HTTP status. Validation and business-rule failures surface as
+`400 Bad Request`. Upstream aggregation/provider failures are normalized and returned with the
+originating status where available, prefixed `[Aggregation <status>]`.
+
+```json title="Example error"
+{
+  "message": "[Aggregation 400] Prices have changed since items were added to cart.",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+<Callout type="info" title="Always log the correlation id">
+  Capture `x-correlation-id` (and the aggregation `traceId` when present) on every call. They are
+  the fastest way for Arcube support to trace a failed journey end to end.
+</Callout>
+
+## AirShopping
+
+| Message | Cause | Fix |
+| --- | --- | --- |
+| `Invalid pointOfSale: "AIRLINE-WEBSITE"` | Hyphenated / unsupported channel | Use `AIRLINE_WEBSITE` or `WHITE_LABEL` (underscores). |
+| `pointOfSale is required for pricing engine requests` | Missing `pointOfSale` in a product search input | Add `pointOfSale` inside the `ProductSearchInputs[].Input`. |
+| `AIRPORT_TRANSFER ProductSearchInput missing required fields: ...` | Required transfer fields absent | Provide `mode`, `num_passengers`, addresses, coordinates, `pickup_datetime`, currency, country codes. |
+| `CAR_RENTAL ProductSearchInput missing required fields: ...` | Required rental fields absent | Provide country codes, `pickup_at`/`dropoff_at`, `driver.age`/`residence`, `pickup_location`. |
+| Empty `OtherOffers` (no error) | No availability for the criteria | Use future dates and valid locations; try broader criteria. |
+| Slow / `timeout of 30000ms exceeded` | Upstream provider latency | Retry; if persistent it is a provider-side issue. |
+
+## OfferPrice
+
+| Message | Cause | Fix |
+| --- | --- | --- |
+| `Basket input validation failed: [ref] <field>: ...` | Missing/invalid `ProductInput` field | Supply the category's required fields (see [Products](/docs/api-offer-order-integration/products)). |
+| `Mixed currencies are not supported: [...]` | Cart items span currencies | Cart only same-currency offers. |
+| `Shopping session "<id>" not found or has expired` | `ShoppingSessionID` invalid/expired | Re-run AirShopping; use a fresh `ShoppingSessionID`. |
+| `The following ServiceDefinitionRefs were not found ...` | Selected ref not in the (merged) catalog | Ensure each offer's `ShoppingSessionID` matches the AirShopping that returned it. |
+| `No pricing available for ServiceDefinitionRef ...` | Offer had no price data | Select a priced offer (`amount > 0`). |
+
+## OrderCreate
+
+| Message | Cause | Fix |
+| --- | --- | --- |
+| `Missing PricedSessionID ...` | Not sent | Send `Metadata.PricedSessionID` from OfferPrice. |
+| `Missing x-idempotency-key` | Header absent | Add `x-idempotency-key: <uuid>`. |
+| `Missing PNR ...` | `Metadata.PNR` absent | Send a real airline record locator (not the correlation id). |
+| `Quote bundle not found or expired` | Correlation id inconsistent across the flow (or across a multi-session cart's AirShopping calls), or cart expired | Reuse one `x-correlation-id` everywhere; re-run within the cart TTL. |
+| `Item <id> not found in bundle` | Wrong product identifier reached the provider | Usually resolved automatically; if seen, re-run the flow from AirShopping. |
+| `input must be a 24 character hex string ...` | Missing/invalid `ancillaryId` (car rental) | Send the correct 24-char hex `ancillaryId` in the car-rental `ProductInput`. |
+| `Missing or invalid origin header ... *.arcube.com` / `Not allowed by CORS` | White-label origin not configured for the environment | Confirm the environment is provisioned for `WHITE_LABEL`. |
+| `Transaction validation failed: items.0.vendor: Path 'vendor' is required` | Vendor not resolved for an item | Re-run from AirShopping; ensure the offer came from a valid search. |
+
+## Recommended client behavior
+
+- **Idempotency:** always send a fresh `x-idempotency-key` per OrderCreate; safe to retry the same
+  key on a network error.
+- **Timeouts:** allow generous client timeouts (dedicated searches can take tens of seconds).
+- **Session TTL:** complete OfferPrice → OrderCreate promptly; carts expire.
+- **Observability:** persist `CorrelationID`, `PricedSessionID`, `OrderID`, and `TransactionRef`
+  against your own booking record for reconciliation and support.

@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1528" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<defs>
+  <marker id="solid" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+    <path d="M0,0 L8,3 L0,6 z" fill="#1F2933"/>
+  </marker>
+  <marker id="open" markerWidth="11" markerHeight="10" refX="8" refY="3" orient="auto">
+    <path d="M0,0 L8,3 L0,6" fill="none" stroke="#1F2933" stroke-width="1.3"/>
+  </marker>
+  <style>
+    .msg { font-size:14px; fill:#1F2933; }
+    .phase { font-size:12.5px; fill:#0A3D62; font-weight:700; letter-spacing:.2px; }
+    .tab { font-size:12px; fill:#fff; font-weight:700; }
+    .plabel { font-size:14px; fill:#fff; font-weight:700; }
+    .psub { font-size:10.5px; fill:#eef; }
+    .lg { font-size:12.5px; fill:#1F2933; }
+    .lgh { font-size:13px; fill:#0A3D62; font-weight:700; }
+  </style>
+</defs>
+<rect x="0" y="0" width="1240" height="1528" fill="#FFFFFF"/>
+<line x1="95" y1="96" x2="95" y2="1378" stroke="#C4CDD5" stroke-width="1.4" stroke-dasharray="3 5"/>
+<line x1="360" y1="96" x2="360" y2="1378" stroke="#C4CDD5" stroke-width="1.4" stroke-dasharray="3 5"/>
+<line x1="620" y1="96" x2="620" y2="1378" stroke="#C4CDD5" stroke-width="1.4" stroke-dasharray="3 5"/>
+<line x1="880" y1="96" x2="880" y2="1378" stroke="#C4CDD5" stroke-width="1.4" stroke-dasharray="3 5"/>
+<line x1="1140" y1="96" x2="1140" y2="1378" stroke="#C4CDD5" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="40" y="608" width="1160" height="260" rx="12" fill="#E8F4EC" opacity="0.5"/>
+<rect x="40" y="608" width="132.2" height="24" rx="8" fill="#2E7D46"/>
+<rect x="40" y="620" width="12" height="12" fill="#2E7D46"/>
+<text x="51" y="624" class="tab">inside the widget</text>
+<rect x="40" y="902" width="1160" height="178" rx="12" fill="#EAF6FD" opacity="0.5"/>
+<rect x="40" y="902" width="323.59999999999997" height="24" rx="8" fill="#12ADEF"/>
+<rect x="40" y="914" width="12" height="12" fill="#12ADEF"/>
+<text x="51" y="918" class="tab">MODEL A · pay inside the widget (Arcube = MoR)</text>
+<rect x="40" y="1094" width="1160" height="270" rx="12" fill="#FDF1EA" opacity="0.5"/>
+<rect x="40" y="1094" width="310.4" height="24" rx="8" fill="#B23B3B"/>
+<rect x="40" y="1106" width="12" height="12" fill="#B23B3B"/>
+<text x="51" y="1110" class="tab">MODEL B · pay on the airline (Airline = MoR)</text>
+<text x="48" y="148" class="phase">Booking context is established on the host page</text>
+<line x1="100" y1="168" x2="355" y2="168" stroke="#1F2933" stroke-width="1.6"  marker-end="url(#solid)"/>
+<text x="227.5" y="160" text-anchor="middle" class="msg">visit &#183; search &#183; select trip &#183; add passenger details</text>
+<text x="48" y="220" class="phase">Secure token vending (secret never reaches the browser)</text>
+<line x1="365" y1="240" x2="615" y2="240" stroke="#1F2933" stroke-width="1.6"  marker-end="url(#solid)"/>
+<text x="490.0" y="232" text-anchor="middle" class="msg">request widget token</text>
+<line x1="625" y1="286" x2="875" y2="286" stroke="#1F2933" stroke-width="1.6"  marker-end="url(#solid)"/>
+<text x="750.0" y="278" text-anchor="middle" class="msg">signed token request (HMAC-SHA256)</text>
+<line x1="875" y1="332" x2="625" y2="332" stroke="#1F2933" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="750.0" y="324" text-anchor="middle" class="msg">short-lived token (1h)</text>
+<line x1="615" y1="378" x2="365" y2="378" stroke="#1F2933" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="490.0" y="370" text-anchor="middle" class="msg">token</text>
+<text x="48" y="430" class="phase">Prepare recommendations</text>
+<line x1="365" y1="450" x2="875" y2="450" stroke="#1F2933" stroke-width="1.6"  marker-end="url(#solid)"/>
+<text x="620.0" y="442" text-anchor="middle" class="msg">feed PNR data (servePassengerRecommendations)</text>
+<line x1="875" y1="496" x2="365" y2="496" stroke="#1F2933" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="620.0" y="488" text-anchor="middle" class="msg">stored</text>
+<path d="M365,542 h34 a8,8 0 0 1 8,8 v10 a8,8 0 0 1 -8,8 h-34" fill="none" stroke="#1F2933" stroke-width="1.6" marker-end="url(#solid)"/>
+<text x="416" y="556" class="msg" text-anchor="start">render widget (PNR, token, theme)</text>
+<line x1="100" y1="640" x2="355" y2="640" stroke="#1F2933" stroke-width="1.6"  marker-end="url(#solid)"/>
+<text x="227.5" y="632" text-anchor="middle" class="msg">view extras</text>
+<line x1="365" y1="686" x2="875" y2="686" stroke="#1F2933" stroke-width="1.6"  marker-end="url(#solid)"/>
+<text x="620.0" y="678" text-anchor="middle" class="msg">fetch offers</text>
+<line x1="875" y1="732" x2="365" y2="732" stroke="#1F2933" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="620.0" y="724" text-anchor="middle" class="msg">offers</text>
+<line x1="100" y1="778" x2="355" y2="778" stroke="#1F2933" stroke-width="1.6"  marker-end="url(#solid)"/>
+<text x="227.5" y="770" text-anchor="middle" class="msg">add ancillary (e.g. eSIM)</text>
+<path d="M365,824 h34 a8,8 0 0 1 8,8 v10 a8,8 0 0 1 -8,8 h-34" fill="none" stroke="#1F2933" stroke-width="1.6" marker-end="url(#solid)"/>
+<text x="416" y="838" class="msg" text-anchor="start">emit arcube:cart:updated &#8594; update cart totals / basket</text>
+<text x="48" y="882" class="phase">Checkout &amp; payment  —  choose one model</text>
+<line x1="100" y1="950" x2="355" y2="950" stroke="#1F2933" stroke-width="1.6"  marker-end="url(#solid)"/>
+<text x="227.5" y="942" text-anchor="middle" class="msg">checkout &amp; pay (inside widget frame)</text>
+<line x1="365" y1="996" x2="875" y2="996" stroke="#1F2933" stroke-width="1.6"  marker-end="url(#solid)"/>
+<text x="620.0" y="988" text-anchor="middle" class="msg">capture payment + create order</text>
+<line x1="875" y1="1042" x2="365" y2="1042" stroke="#1F2933" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="620.0" y="1034" text-anchor="middle" class="msg">order confirmed</text>
+<line x1="100" y1="1142" x2="355" y2="1142" stroke="#1F2933" stroke-width="1.6"  marker-end="url(#solid)"/>
+<text x="227.5" y="1134" text-anchor="middle" class="msg">proceed to payment</text>
+<line x1="365" y1="1188" x2="1135" y2="1188" stroke="#1F2933" stroke-width="1.6"  marker-end="url(#solid)"/>
+<text x="750.0" y="1180" text-anchor="middle" class="msg">capture payment on airline PSP</text>
+<line x1="1135" y1="1234" x2="365" y2="1234" stroke="#1F2933" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="750.0" y="1226" text-anchor="middle" class="msg">payment proof (externalPSP)</text>
+<line x1="365" y1="1280" x2="875" y2="1280" stroke="#1F2933" stroke-width="1.6"  marker-end="url(#solid)"/>
+<text x="620.0" y="1272" text-anchor="middle" class="msg">widget-order-create (externalPSP)</text>
+<line x1="875" y1="1326" x2="365" y2="1326" stroke="#1F2933" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="620.0" y="1318" text-anchor="middle" class="msg">order confirmed</text>
+<circle cx="95" cy="32" r="11" fill="none" stroke="#5B6B79" stroke-width="2.2"/>
+<line x1="95" y1="44" x2="95" y2="70" stroke="#5B6B79" stroke-width="2.2"/>
+<line x1="81" y1="52" x2="109" y2="52" stroke="#5B6B79" stroke-width="2.2"/>
+<line x1="95" y1="70" x2="83" y2="88" stroke="#5B6B79" stroke-width="2.2"/>
+<line x1="95" y1="70" x2="107" y2="88" stroke="#5B6B79" stroke-width="2.2"/>
+<text x="95" y="112" text-anchor="middle" class="lgh">Passenger</text>
+<rect x="272.0" y="26" width="176" height="54" rx="10" fill="#12ADEF"/>
+<text x="360" y="50" text-anchor="middle" class="plabel">Host Page (IBE)</text>
+<text x="360" y="66" text-anchor="middle" class="psub">any journey step</text>
+<rect x="532.0" y="26" width="176" height="46" rx="10" fill="#B23B3B"/>
+<text x="620" y="54.0" text-anchor="middle" class="plabel">Airline CDN/Edge</text>
+<rect x="792.0" y="26" width="176" height="46" rx="10" fill="#2E7D46"/>
+<text x="880" y="54.0" text-anchor="middle" class="plabel">Arcube Backend</text>
+<rect x="1052.0" y="26" width="176" height="46" rx="10" fill="#2E7D46"/>
+<text x="1140" y="54.0" text-anchor="middle" class="plabel">Airline Backend / PSP</text>
+<rect x="40" y="1418" width="1160" height="96" rx="12" fill="#FBFCFD" stroke="#C4CDD5"/>
+<text x="58" y="1444" class="lgh">Legend</text>
+<rect x="58" y="1459" width="26" height="15" rx="3" fill="#E8F4EC"/>
+<text x="92" y="1470" class="lg">Events occurring inside the widget or on custom view components</text>
+<rect x="58" y="1483" width="26" height="15" rx="3" fill="#B23B3B"/>
+<text x="92" y="1494" class="lg">CDN / Edge — hosted by neither the airline nor Arcube</text>
+<rect x="620" y="1459" width="26" height="15" rx="3" fill="#2E7D46"/>
+<text x="654" y="1470" class="lg">Backend systems — hosted by the airline or Arcube</text>
+<rect x="620" y="1483" width="26" height="15" rx="3" fill="#12ADEF"/>
+<text x="654" y="1494" class="lg">Publicly accessible website (host page)</text>
+</svg>

@@ -1,0 +1,160 @@
+---
+title: OrderCreate
+description: Confirm payment and book the priced cart. Request/response schema, required PNR and idempotency key, and the customer and payment blocks.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+`POST /ndc/ordercreate`
+
+OrderCreate books the cart referenced by a `PricedSessionID`. It creates the transaction with the
+underlying providers and returns an `OrderID` and an aggregation `TransactionRef`.
+
+<Callout type="warn" title="Two mandatory headers">
+  - `x-correlation-id` — the **same** value used on AirShopping and OfferPrice.
+  - `x-idempotency-key` — a fresh UUID per booking attempt; guarantees the order is created at
+    most once.
+</Callout>
+
+## Request schema
+
+The body is a single `OrderCreateRQ`.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `Document.Name` / `Document.ReferenceVersion` | Yes | Label + schema version. |
+| `PointOfSale` | Yes | `{ SalesChannel, Seller, Owner, CountryCode }`. `SalesChannel` mirrors the shopping channel (`AIRLINE_WEBSITE` / `WHITE_LABEL`). |
+| `Customer.PrimaryContact` | Yes | Buyer identity and contact (see below). |
+| `Passengers[]` | Optional | Traveller references. |
+| `Query.PricedOfferRef.OfferID` | Yes | A priced offer id from OfferPrice. |
+| `Query.OfferItems[]` | Yes | Item references from OfferPrice. |
+| `Payments[]` | Yes | Payment instruction (see below). |
+| `Metadata.SessionID` | Yes | The **CorrelationID** used across the flow. |
+| `Metadata.Tenant` | Yes | Tenant id. |
+| `Metadata.PricedSessionID` | Yes | The cart id from OfferPrice. |
+| `Metadata.PNR` | Yes | The airline record locator. **Distinct from the correlation id.** |
+
+<Callout type="info" title="OrderCreate books the whole cart">
+  The transaction is bound to the `PricedSessionID`, which represents the entire cart. For a
+  multi-item cart, `Query.PricedOfferRef`/`OfferItems` need only reference one valid priced offer;
+  every item in the cart is booked, and the response lists them all with the combined total.
+</Callout>
+
+### `Customer.PrimaryContact`
+
+| Field | Description |
+| --- | --- |
+| `Title` | e.g. `Mr`, `Ms`. |
+| `GivenName` / `Surname` | Buyer name. |
+| `Email` | Contact email (required). |
+| `DateOfBirth` | `YYYY-MM-DD`. |
+| `Phone.CountryCode` / `Phone.Number` | Contact phone. |
+| `Address.Line1` / `City` / `PostalCode` / `CountryCode` | Billing address. |
+
+### `Payments[]`
+
+| Field | Description |
+| --- | --- |
+| `Mode` | Payment mode, e.g. `AIRLINE_CAPTURED` (the airline collects payment). |
+| `Currency` | Order currency (matches the cart). |
+| `Amount` | Order total. |
+| `airlineCaptureRef` | Airline-side payment/capture reference. |
+
+## Example request
+
+```json title="POST /ndc/ordercreate"
+{
+  "OrderCreateRQ": {
+    "Document": { "Name": "OrderCreate", "ReferenceVersion": "1.0" },
+    "PointOfSale": { "SalesChannel": "WHITE_LABEL", "Seller": "AIRLINE", "Owner": "A3", "CountryCode": "GR" },
+    "Customer": {
+      "PrimaryContact": {
+        "Title": "Mr",
+        "GivenName": "Jane",
+        "Surname": "Doe",
+        "Email": "jane.doe@example.com",
+        "DateOfBirth": "1983-11-10",
+        "Phone": { "CountryCode": "+30", "Number": "2100000000" },
+        "Address": { "Line1": "1 Example St", "City": "Athens", "PostalCode": "10558", "CountryCode": "GR" }
+      }
+    },
+    "Query": {
+      "PricedOfferRef": { "OfferID": "2d1842ea-c534-4ff4-81e4-44dc34cf4b08", "Owner": "Arcube" },
+      "OfferItems": [
+        { "OfferItemID": "SIM-2d1842ea-c534-4f", "ServiceDefinitionRef": "SVC-SIM-2d1842ea-c534-4f", "Quantity": 1 }
+      ]
+    },
+    "Payments": [
+      { "Mode": "AIRLINE_CAPTURED", "Currency": "USD", "Amount": 1.64, "decimal": 3, "airlineCaptureRef": "ALN-TRX-0001" }
+    ],
+    "Metadata": {
+      "SessionID": "159b2361-3bc8-420d-a0f8-ba55c33187e2",
+      "Tenant": "6941cc3502a186f72ba55226",
+      "PricedSessionID": "e77589d0-bb90-4783-993c-c1e90b3864d7",
+      "PNR": "NEWPNR001"
+    }
+  }
+}
+```
+
+## Response schema
+
+| Field | Description |
+| --- | --- |
+| `OrderCreateRS.Order.OrderID` | Arcube order id. |
+| `OrderCreateRS.Order.Status` | Order status (e.g. `pending`, `CONFIRMED`). |
+| `OrderCreateRS.Order.Owner` | `"Arcube"`. |
+| `OrderCreateRS.Order.TransactionRef` | Aggregation transaction id (provider booking reference). |
+| `OrderCreateRS.Order.Items[]` | Every booked item: `OrderItemID`, `OfferItemRef`, `ServiceDefinitionRef`, `ServiceTypeCode`, `PriceDetail.TotalAmount`. |
+| `OrderCreateRS.Order.PriceSummary` | `{ Currency, GrandTotal }` for the whole order. |
+| `OrderCreateRS.Metadata` | `CorrelationID`, `PricedSessionID`, `CartSessionID`, `OrderKey`. |
+
+### Example response
+
+```json
+{
+  "OrderCreateRS": {
+    "Document": { "Name": "Arcube NDC-like OrderCreate Response", "ReferenceVersion": "1.0" },
+    "Order": {
+      "OrderID": "ORD-20260708-122404-0zmdf9",
+      "Status": "pending",
+      "Owner": "Arcube",
+      "TransactionRef": "3a8d8d01-a92d-4028-8a27-5efd910bed49",
+      "Items": [
+        {
+          "OrderItemID": "ORDI-1",
+          "OfferItemRef": "SIM-2d1842ea-c534-4f",
+          "ServiceDefinitionRef": "SVC-SIM-2d1842ea-c534-4f",
+          "ServiceTypeCode": "ESIMS",
+          "PriceDetail": { "TotalAmount": { "amount": 1.64, "currency": "USD" } }
+        }
+      ],
+      "PriceSummary": { "Currency": "USD", "GrandTotal": 1.64 }
+    },
+    "Metadata": {
+      "CorrelationID": "159b2361-3bc8-420d-a0f8-ba55c33187e2",
+      "PricedSessionID": "e77589d0-bb90-4783-993c-c1e90b3864d7",
+      "OrderKey": "ndc-order:ORD-20260708-122404-0zmdf9"
+    }
+  }
+}
+```
+
+## Common failure modes
+
+| Error | Cause | Fix |
+| --- | --- | --- |
+| `Missing PricedSessionID` | Not sent | Send `Metadata.PricedSessionID` from OfferPrice. |
+| `Missing x-idempotency-key` | Header absent | Add `x-idempotency-key: <uuid>`. |
+| `Missing PNR` | `Metadata.PNR` absent | Send a real record locator. |
+| `Quote bundle not found or expired` | Correlation id inconsistent across the flow, or cart expired | Reuse one `x-correlation-id`; re-run within the cart TTL. |
+| `INVALID_ORIGIN` / `Not allowed by CORS` | White-label origin not configured | Ensure the environment is configured for `WHITE_LABEL`. |
+
+See [Errors](/docs/api-offer-order-integration/errors) for the full catalog.
+
+## Retrieving orders
+
+- `POST /ndc/orderview` — retrieve a created order by id.
+- `POST /ndc/orderlist` — list a customer's orders (by tenant + email).
+
+See [Order Management](/docs/api-offer-order-integration/order-management).

@@ -1,0 +1,106 @@
+---
+title: Getting Started
+description: Authentication, base URL, required headers, and a minimal happy-path walkthrough for the NDC-like API.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+This page gets you from zero to a booked ancillary as quickly as possible.
+
+## Prerequisites
+
+- **Credentials** — a `clientId` and `clientSecret` issued by Arcube.
+- **Base URL** — your assigned NDC-like API environment, referred to below as `${arcube-url}`
+  (e.g. `https://api.arcube.com`). Arcube provides this per environment (sandbox / production).
+- An HTTP client capable of sending JSON with custom headers.
+
+## Authentication
+
+All NDC-like API calls require a **Bearer token**. Obtain one from the authentication endpoint
+using your credentials, then send it on every request.
+
+<Callout type="info" title="HTTP Method: POST">
+  **URL:** `${arcube-url}/auth/api/login`
+</Callout>
+
+```json title="Request body"
+{
+  "clientId": "<your-client-id>",
+  "clientSecret": "<your-client-secret>"
+}
+```
+
+```json title="Response"
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresIn": "24h",
+  "tokenType": "Bearer"
+}
+```
+
+Send the token on every subsequent call:
+
+```http
+Authorization: Bearer <accessToken>
+```
+
+<Callout title="Tenant resolution">
+  Your Arcube **tenant** is resolved from the Bearer token — you do not need to send it, though
+  several request bodies include a `Tenant`/`Metadata.Tenant` field for explicit routing. See
+  [Authentication](/docs/reference/authentication) for token lifecycle details.
+</Callout>
+
+## Required headers
+
+| Header | Applies to | Required | Notes |
+| --- | --- | --- | --- |
+| `Authorization: Bearer <token>` | All calls | Yes | From the login step. |
+| `Content-Type: application/json` | All calls | Yes | Request bodies are JSON. |
+| `x-correlation-id: <uuid>` | AirShopping, OfferPrice, OrderCreate | Recommended | The thread that ties the flow together. If omitted on AirShopping, Arcube generates one and returns it — **capture and reuse it**. See [Key Concepts](/docs/api-offer-order-integration/key-concepts#the-correlation-id). |
+| `x-idempotency-key: <uuid>` | **OrderCreate** | Yes | Guarantees a booking is created at most once. Use a fresh UUID per order attempt. |
+
+<Callout type="warn" title="Correlation id is mandatory across the flow">
+  The **same** `x-correlation-id` must be sent on AirShopping, OfferPrice, and OrderCreate.
+  If they differ, OrderCreate will fail with `Quote bundle not found or expired`.
+</Callout>
+
+## Endpoints at a glance
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/auth/api/login` | Obtain a Bearer token |
+| `POST` | `/ndc/airshopping` | Discover ancillary offers |
+| `POST` | `/ndc/offerprice` | Cart + price selected offers |
+| `POST` | `/ndc/ordercreate` | Book the cart |
+| `POST` | `/ndc/orderview` | Retrieve a created order |
+| `POST` | `/ndc/orderlist` | List orders for a customer |
+
+## Minimal happy path
+
+The shortest route to a booking (an eSIM here). Each step's output feeds the next.
+
+**1. Discover** — `POST /ndc/airshopping` with a flight itinerary. Capture
+`Metadata.CorrelationID`, `Metadata.ShoppingSessionID`, and pick an offer whose
+`ServiceDefinitionRef` starts with `SVC-SIM`.
+
+**2. Cart + price** — `POST /ndc/offerprice` with the selected offer and its
+`ProductInputs`. Capture `OfferPriceRS.PricedSessionID` and `PricedOffers[0]`.
+
+**3. Book** — `POST /ndc/ordercreate` with the `PricedSessionID`, a payment block, a
+customer, and a real airline **PNR**. Receive `OrderID` and `TransactionRef`.
+
+<Callout type="info" title="Full runnable examples">
+  See [End-to-end Examples](/docs/api-offer-order-integration/examples) for complete
+  request/response bodies for single-product, multi-product, and multi-session orders.
+</Callout>
+
+## Environments
+
+| Environment | Purpose |
+| --- | --- |
+| Sandbox | Integration and testing. Bookings do not settle. Ask Arcube for sandbox credentials and a test PNR. |
+| Production | Live bookings. |
+
+Continue to [Key Concepts](/docs/api-offer-order-integration/key-concepts) — it covers the
+identifier model, currency rules, and the point-of-sale/origin requirements you must respect
+before writing integration code.

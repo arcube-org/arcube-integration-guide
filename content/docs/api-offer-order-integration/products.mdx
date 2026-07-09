@@ -1,0 +1,199 @@
+---
+title: Products
+description: Per-category reference for every ancillary — service type code, discovery method, and the exact OfferPrice ProductInput fields each product requires.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Every sellable category and the **OfferPrice `ProductInput`** it requires. In every case the
+`ProductInputs[].ServiceDefinitionRef` must equal the selected offer's `ServiceDefinitionRef`.
+
+| Category | `ServiceTypeCode` | Ref prefix | Discovery |
+| --- | --- | --- | --- |
+| eSIM | `ESIMS` | `SVC-SIM` | General AirShopping |
+| Lounge access | `LOUNGE_ACCESS` | `SVC-LNG` | General AirShopping |
+| Carbon offset | `CARBON_OFFSET` | `SVC-CO2` | General AirShopping |
+| Fast-track | `FAST_TRACK` | `SVC-FT` | General AirShopping |
+| Baggage protection | `BAGGAGE_PROTECTION` | `SVC-BAG` | General AirShopping |
+| Airport transfer | `AIRPORT_TRANSFER` | `SVC-TRF` | Product search (+ general first) |
+| Car rental | `CAR_RENTAL` | `SVC-CAR` | Product search |
+
+---
+
+## eSIM — `ESIMS`
+
+**OfferPrice `Input`:**
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `vendorReferenceId` | Yes | Provider SKU / bundle reference. |
+| `description` | Yes | Human-readable package name. |
+| `serviceDetails.Region` | Yes | Coverage region. |
+| `serviceDetails.CountryCode` | Yes | Coverage country. |
+| `serviceDetails["Data Amount"]` | Yes | e.g. `"1GB"`, `"Unlimited"`. |
+| `serviceDetails.Validity` | Yes | e.g. `"7 days"`. |
+| `metadata.passengers[]` | Yes | `[{ firstName, lastName, email }]` — recipient(s). |
+
+```json
+{
+  "vendorReferenceId": "hallo-mobil-7days-1gb",
+  "description": "1 GB - 7 days",
+  "serviceDetails": { "Region": "DE", "CountryCode": "DE", "Data Amount": "1GB", "Validity": "7 days" },
+  "metadata": { "passengers": [ { "firstName": "John", "lastName": "Doe", "email": "john@example.com" } ] }
+}
+```
+
+---
+
+## Lounge access — `LOUNGE_ACCESS`
+
+**OfferPrice `Input`:**
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `vendorReferenceId` | Yes | Lounge reference. |
+| `description` | Yes | Lounge name / summary. |
+| `serviceDetails["Lounge Name"]` | Yes | Lounge name. |
+| `serviceDetails.Terminal` | Optional | Terminal (many lounges have none). |
+| `serviceDetails["Airport Code"]` | Yes | IATA code. |
+| `serviceDetails["Airport Name"]` | Yes | Airport name. |
+| `serviceDetails.Location` | Yes | Access/location description. |
+| `metadata.passengers[]` | Yes | `[{ firstName, lastName, email }]`. |
+
+```json
+{
+  "vendorReferenceId": "N00419",
+  "description": "VIP lounge by MERA - Terminal 3, CUN",
+  "serviceDetails": {
+    "Lounge Name": "VIP lounge by MERA",
+    "Terminal": "Terminal 3",
+    "Airport Code": "CUN",
+    "Airport Name": "Cancun International Airport",
+    "Location": "Airside - after passport control and security."
+  },
+  "metadata": { "passengers": [ { "firstName": "John", "lastName": "Doe", "email": "john@example.com" } ] }
+}
+```
+
+---
+
+## Carbon offset — `CARBON_OFFSET`
+
+**OfferPrice `Input`:**
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `vendorReferenceId` | Yes | Offset product reference. |
+| `description` | Yes | Project summary. |
+| `serviceDetails["Project Name"]` | Yes | Project name. |
+| `serviceDetails["CO2 Offset Per Passenger"]` | Yes | e.g. `"616.68 KG"`. |
+| `serviceDetails.Route` | Yes | e.g. `"CUN → MAN"`. |
+| `serviceDetails.Passengers` | Yes | Passenger count. |
+| `metadata.perPassengerPrice` | Yes | Number. |
+| `metadata.perPassengerCO2` | Yes | Number. |
+| `metadata.co2Unit` | Yes | e.g. `"KG"`. |
+| `metadata.totalPassengersInBooking` | Yes | Integer. |
+| `metadata.passengersInQuote` | Yes | Integer. |
+
+```json
+{
+  "vendorReferenceId": "00dd9e84-cc54-4f31-8822-02998badf1b0",
+  "description": "Tambopata-Bahuaja Biodiversity Reserve (REDD+)",
+  "serviceDetails": { "Project Name": "Tambopata-Bahuaja Biodiversity Reserve (REDD+)", "CO2 Offset Per Passenger": "616.68 KG", "Route": "CUN → MAN", "Passengers": 1 },
+  "metadata": { "perPassengerPrice": 864.34, "perPassengerCO2": 616.68, "co2Unit": "KG", "totalPassengersInBooking": 1, "passengersInQuote": 1 }
+}
+```
+
+---
+
+## Fast-track & Baggage protection — `FAST_TRACK`, `BAGGAGE_PROTECTION`
+
+Static-price products share a minimal input schema.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `vendorReferenceId` | Yes | Product reference. |
+| `description` | Yes | Product summary. |
+| `serviceDetails` | Yes | Object (may be minimal). |
+| `metadata` | Yes | Object (e.g. `{ passengers: [...] }`; baggage uses `{ productCode, ProductCode, PassengerList, productId }`). |
+
+```json
+{
+  "vendorReferenceId": "dragonpass_ATH_C10702",
+  "description": "Fast Track - Athens",
+  "serviceDetails": { "info": "fast track" },
+  "metadata": { "passengers": [ { "firstName": "John", "lastName": "Doe", "email": "john@example.com" } ] }
+}
+```
+
+---
+
+## Airport transfer — `AIRPORT_TRANSFER`
+
+<Callout type="warn" title="Discovery requires a general AirShopping first">
+  Run a general AirShopping on the **same** `x-correlation-id` before the transfer product search
+  (see [AirShopping](/docs/api-offer-order-integration/air-shopping#airport-transfer-airshopping)).
+  It provides the category identity the transfer needs to book.
+</Callout>
+
+**OfferPrice `Input`:**
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `vendorReferenceId` | Yes | Transfer reference. |
+| `description` | Yes | Route/vehicle summary. |
+| `serviceDetails` | Yes | Object (e.g. `From`, `To`, `Vehicle`). |
+| `metadata` | Yes | Object (e.g. `{ passengers: 1 }`). |
+
+```json
+{
+  "vendorReferenceId": "526870d3565f462f99e7711303eae61f",
+  "description": "ATH → Cholargos - Business",
+  "serviceDetails": { "From": "Athens Airport (ATH)", "To": "Cholargos", "Vehicle": "Business" },
+  "metadata": { "passengers": 1 }
+}
+```
+
+---
+
+## Car rental — `CAR_RENTAL`
+
+Car rental is the only category where the client must supply the **`ancillaryId`** in the input —
+it is the aggregation product id for car rental and is not carried in the search response. Arcube
+provides this id per tenant. Driver contact fields are also required.
+
+**OfferPrice `Input`:**
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `ancillaryId` | Yes | The CAR_RENTAL product id (24-char hex), provided by Arcube per tenant. |
+| `vendorReferenceId` | Yes | Rate reference. |
+| `description` | Yes | Vehicle/summary. |
+| `serviceDetails` | Yes | Object (e.g. `Car`, `Category`, `Pickup Location`, dates, `Supplier`). |
+| `metadata` | Yes | Object. |
+| `driverDateOfBirth` | Yes | `YYYY-MM-DD`. |
+| `driverPhoneCountry` | Yes | e.g. `"+30"`. |
+| `driverPhoneNumber` | Yes | Driver contact number. |
+
+```json
+{
+  "ancillaryId": "68ff0001234567890abcdef1",
+  "vendorReferenceId": "3782-1784142000-3782-1784409300-.../15574/USD/DO",
+  "description": "Seat Mii - Athens Airport (ATH), Greece, 4 days",
+  "serviceDetails": {
+    "Car": "Seat Mii", "Category": "Mini",
+    "Pickup Location": "Athens Airport (ATH), Greece",
+    "Pickup Date": "Jul 15, 2026, 10:00 PM", "Return Date": "Jul 19, 2026, 12:15 AM",
+    "Rental Days": "4", "Supplier": "United Rent a Car"
+  },
+  "metadata": {},
+  "driverDateOfBirth": "1989-07-06",
+  "driverPhoneCountry": "+30",
+  "driverPhoneNumber": "6981164559"
+}
+```
+
+<Callout type="info" title="Identity handling is automatic elsewhere">
+  For every category except car rental's `ancillaryId`, Arcube resolves the internal vendor/product
+  identifiers automatically from the shopping catalog — you only send the fields above.
+</Callout>

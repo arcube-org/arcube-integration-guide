@@ -1,0 +1,119 @@
+---
+title: Key Concepts
+description: The identifier model, correlation rules, point of sale, currency constraints, and cart semantics that govern the NDC-like API.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Read this page before you write integration code. The rules here explain **why** requests are
+shaped the way they are and prevent the most common integration failures.
+
+## Identifiers
+
+The flow produces and consumes five identifiers. Understanding what each one binds is essential.
+
+| Identifier | Created by | Carried in | Binds |
+| --- | --- | --- | --- |
+| **Correlation ID** | You (or Arcube) via `x-correlation-id` | Header on every call; echoed as `Metadata.CorrelationID` | The entire shopping-to-order journey |
+| **ShoppingSessionID** | AirShopping | `Metadata.ShoppingSessionID`; sent back per `SelectedOffer` | One search's catalog of offers |
+| **PricedSessionID** | OfferPrice | `OfferPriceRS.PricedSessionID`; sent in OrderCreate | The priced cart |
+| **PNR** | Your booking system | `OrderCreateRQ.Metadata.PNR` | The airline record locator |
+| **OrderID** | OrderCreate | `OrderCreateRS.Order.OrderID` | The final ancillary order |
+
+### The correlation id
+
+The `x-correlation-id` header is the single thread that ties a journey together. Arcube uses it
+to correlate the recommendation context, the cart, and the transaction.
+
+- If you send one on AirShopping, Arcube **respects** it and echoes it as `Metadata.CorrelationID`.
+- If you omit it, Arcube **generates** one — you must read it from the response and reuse it.
+- The **same** value must be sent on AirShopping, OfferPrice, and OrderCreate.
+
+<Callout type="warn" title="Correlation id must be consistent">
+  Sending a different `x-correlation-id` on OfferPrice or OrderCreate than the one used on
+  AirShopping breaks the link. OfferPrice may still succeed, but OrderCreate fails with
+  `Quote bundle not found or expired`.
+</Callout>
+
+### PNR is not the correlation id
+
+The **PNR** is your airline booking reference (record locator). It is a distinct identifier from
+the correlation id, and it is **required** on OrderCreate (`Metadata.PNR`). Arcube uses it to bind
+the ancillary transaction to the airline system.
+
+<Callout type="error" title="Never derive the PNR from the correlation/session id">
+  Passing the correlation id (or any generated session id) as the PNR produces a PNR that does
+  not exist, and OrderCreate fails. Always send a real record locator.
+</Callout>
+
+## Point of sale
+
+`PointOfSale` (a.k.a. `pointOfSale` inside product search inputs) identifies the sales channel.
+It must be one of Arcube's allowed values. The two most common:
+
+| Value | Meaning |
+| --- | --- |
+| `AIRLINE_WEBSITE` | Sold on the airline's own website/app |
+| `WHITE_LABEL` | Sold on an Arcube-hosted white-label surface |
+
+<Callout type="warn" title="Use underscores, not hyphens">
+  The value is `AIRLINE_WEBSITE` (underscore). A hyphenated value such as `AIRLINE-WEBSITE` is
+  rejected by the pricing engine.
+</Callout>
+
+### White-label origin requirement
+
+When `PointOfSale` is `WHITE_LABEL` (or a currency conversion is requested via
+`requested_currency`), the booking transaction is validated against an allowed **Origin**. Your
+NDC-like API instance must be configured with a valid Arcube origin so that OrderCreate is
+accepted. Arcube handles this server-side per environment — there is nothing to send in the
+request body, but confirm your environment is configured for white-label if you use it.
+
+## Currency
+
+- Prices are returned in a **normalized minor-unit** structure: `{ amount, decimal, currency }`.
+  Example: `{ amount: 43750, decimal: 3, currency: "EUR" }` → **€43.750**.
+- The **`/transactions/create`** money fields Arcube sends downstream are integer minor units
+  (major × 100). You do not build these yourself — OrderCreate derives them from the cart.
+- A single cart (basket) must use **one currency**.
+
+<Callout type="warn" title="One currency per basket">
+  OfferPrice rejects a cart that mixes currencies (`Mixed currencies are not supported`). When
+  carting multiple products together, select offers that price in the same currency.
+</Callout>
+
+## The cart (basket) model
+
+OfferPrice does more than validate a price — it builds a **cart** on Arcube's side from your
+`SelectedOffers`, and returns a `PricedSessionID` that represents it. OrderCreate then books the
+**entire cart** referenced by that `PricedSessionID`.
+
+This yields two powerful capabilities:
+
+### Multi-product orders
+
+One OfferPrice call can carry **several** `SelectedOffers` (e.g. lounge + carbon offset +
+fast-track). They land in one cart, and a single OrderCreate books them all with a combined
+total. See the [multi-product example](/docs/api-offer-order-integration/examples#multi-product-order).
+
+### Multi-session orders
+
+`SelectedOffers` may reference **different** `ShoppingSessionID`s — i.e. offers discovered across
+**several AirShopping calls**. OfferPrice loads each shopping session, merges their catalogs, and
+prices them together into one cart.
+
+<Callout type="warn" title="Multi-session requires one shared correlation id">
+  For a multi-session cart to *book*, every contributing AirShopping call must have used the
+  **same** `x-correlation-id`. With different correlation ids, OfferPrice still succeeds, but
+  OrderCreate fails with `Quote bundle not found or expired`. See the
+  [multi-session example](/docs/api-offer-order-integration/examples#multi-session-order).
+</Callout>
+
+## Sequencing rules (summary)
+
+1. Run the three steps **in order**, as **separate** requests — never combined or batched.
+2. Reuse **one** `x-correlation-id` across the whole journey (and across every AirShopping call
+   that contributes to a multi-session cart).
+3. Send a real **PNR** on OrderCreate; it is not the correlation id.
+4. Keep a cart to a **single currency**.
+5. Send a fresh **`x-idempotency-key`** on every OrderCreate.
