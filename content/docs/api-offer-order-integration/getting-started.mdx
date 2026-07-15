@@ -86,8 +86,9 @@ The shortest route to a booking (an eSIM here). Each step's output feeds the nex
 **2. Cart + price** — `POST /ndc/offerprice` with the selected offer and its
 `ProductInputs`. Capture `OfferPriceRS.PricedSessionID` and `PricedOffers[0]`.
 
-**3. Book** — `POST /ndc/ordercreate` with the `PricedSessionID`, a payment block, a
-customer, and a real airline **PNR**. Receive `OrderID` and `TransactionRef`.
+**3. Book** — `POST /ndc/ordercreate` with the `PricedSessionID`, an `externalPSP`
+payment block, and a customer. Include a real airline **PNR** unless your tenant is
+enabled for no-PNR ordering. Receive `OrderID` and `TransactionRef`.
 
 <Callout type="info" title="Full runnable examples">
   See [End-to-end Examples](/docs/api-offer-order-integration/examples) for complete
@@ -98,7 +99,7 @@ customer, and a real airline **PNR**. Receive `OrderID` and `TransactionRef`.
 
 | Environment | Purpose |
 | --- | --- |
-| Sandbox | Integration and testing. Bookings do not settle. Ask Arcube for sandbox credentials and a test PNR. |
+| Sandbox | Integration and testing. Bookings do not settle. Ask Arcube for sandbox credentials (and a test PNR, unless your tenant is enabled for no-PNR ordering). |
 | Production | Live bookings. |
 
 Continue to [Key Concepts](/docs/api-offer-order-integration/key-concepts) — it covers the

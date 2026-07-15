@@ -8,6 +8,7 @@
     "offer-price",
     "order-create",
     "order-management",
+    "order-cancel",
     "products",
     "errors",
     "examples"

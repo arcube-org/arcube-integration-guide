@@ -1,0 +1,179 @@
+---
+title: OrderCancel
+description: Cancel a single fulfilled item from an order and initiate its refund. Eligibility discovery, request/response schema, idempotency, and failure modes.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+`POST /ndc/ordercancel`
+
+OrderCancel cancels **one fulfilled item** from an existing order and initiates its refund.
+
+Cancellation eligibility is **not re-shopped** — it is computed at booking time and stored on the
+order. Read it from OrderView (`CancellableItems`), then cancel the item by its `ItemID`.
+
+<Callout type="warn" title="One item per request">
+  Each OrderCancel cancels exactly **one** item. To cancel several items from the same order, send
+  one request per item.
+</Callout>
+
+## Step 1 — Find the cancellable item
+
+Call [OrderView](/docs/api-offer-order-integration/order-management) and read
+`Order.CancellableItems[]`. Each entry carries the real `ItemID` (what you pass to OrderCancel), the
+item's live `Status`, a `Cancellable` flag, and the stored `CancellationPolicy`.
+
+```json
+{
+  "OrderViewRS": {
+    "Order": {
+      "OrderID": "3a8d8d01-a92d-4028-8a27-5efd910bed49",
+      "CancellableItems": [
+        {
+          "ItemID": "a02661025303d603aaefdda56730f464",
+          "Name": "Airport Transfer ATH → Cholargos",
+          "Status": "CONFIRMED",
+          "Cancellable": true,
+          "CancellationPolicy": {
+            "Refundable": true,
+            "RefundPercentage": 100,
+            "CutoffHours": 48,
+            "Source": "dynamic",
+            "Tiers": [{ "HoursBefore": 48, "RefundPercentage": 100 }]
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+| `CancellationPolicy` field | Description |
+| --- | --- |
+| `Refundable` | Whether the item can be refunded. Non-refundable products (eSIM, lounge, fast-track, carbon offset, baggage) are `false`. |
+| `RefundPercentage` | Best available refund percentage. |
+| `CutoffHours` | Hours before service start until which the refund applies. |
+| `Tiers[]` | The full time-based refund ladder (`HoursBefore` → `RefundPercentage`). |
+| `Source` | `dynamic` (vendor-provided at booking) or `static` (default policy). |
+
+<Callout type="info" title="Which items can be cancelled">
+  An item is cancellable only when `Status` is `CONFIRMED` and a cancellation has not already been
+  initiated. Refundable transfers and car rentals are cancellable; the non-refundable products
+  above are not.
+</Callout>
+
+## Step 2 — Cancel the item
+
+<Callout type="info" title="Headers">
+  Send `Authorization: Bearer <token>`. Optionally send `x-correlation-id` for traceability and
+  `x-idempotency-key` to control retries (see [Idempotency](#idempotency)).
+</Callout>
+
+### Request schema
+
+The body is a single `OrderCancelRQ`.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `Query.OrderID` | Yes | The order/transaction reference from OrderCreate (`Order.OrderID` / `Order.TransactionRef`). |
+| `Query.OrderItems[]` | Yes | Exactly one entry. `OrderItemID` is the `ItemID` from OrderView. |
+| `Reason` | No | Free-text reason. Defaults to `customer_request`. |
+| `RequestedBy` | No | Who requested it. Defaults to `customer_request`. |
+| `Metadata.Tenant` | No | Tenant id. |
+| `Metadata.IdempotencyKey` | No | Client idempotency key. Generated automatically if omitted. |
+
+```json title="POST /ndc/ordercancel"
+{
+  "OrderCancelRQ": {
+    "Document": { "Name": "OrderCancel", "ReferenceVersion": "1.0" },
+    "Query": {
+      "OrderID": "3a8d8d01-a92d-4028-8a27-5efd910bed49",
+      "OrderItems": [{ "OrderItemID": "a02661025303d603aaefdda56730f464" }]
+    },
+    "Reason": "customer_request",
+    "RequestedBy": "customer_request",
+    "Metadata": { "Tenant": "6941cc3502a186f72ba55226" }
+  }
+}
+```
+
+### Idempotency
+
+Cancellations are idempotent. Supply a key via `Metadata.IdempotencyKey` or the `x-idempotency-key`
+header, or let the API generate one:
+
+- car rental (DiscoverCars) gets a key that is **stable per order** — the vendor keys the
+  cancellation on it
+- every other vendor gets a per-item, per-attempt key
+
+To safely retry, resend with the **same** idempotency key.
+
+## Response schema
+
+| Field | Description |
+| --- | --- |
+| `OrderCancelRS.Order.OrderID` | The order id. |
+| `OrderCancelRS.Order.Cancellation` | `{ CancellationID, ItemID, Status, Mode? }`. `Status` is `completed`, `REJECTED`, or a pending/review state. |
+| `OrderCancelRS.Order.Refund` | `{ RefundID?, Status, Amount?, Currency?, Message? }`. `Status` is `REFUNDED`, `PENDING`, or `FAILED`. |
+| `OrderCancelRS.Order.CancellationPolicy` | The eligibility that was applied (same shape as OrderView). |
+| `OrderCancelRS.Metadata.CorrelationID` | Correlation id for traceability. |
+
+### Example response — cancelled + refunded
+
+```json
+{
+  "OrderCancelRS": {
+    "Document": { "Name": "Arcube NDC-like OrderCancel Response", "ReferenceVersion": "1.0" },
+    "Order": {
+      "OrderID": "3a8d8d01-a92d-4028-8a27-5efd910bed49",
+      "Cancellation": {
+        "CancellationID": "cncl_9629233d-c15b-4764-837f-b740be045d50",
+        "ItemID": "a02661025303d603aaefdda56730f464",
+        "Status": "completed"
+      },
+      "Refund": { "RefundID": "3d0fa504-0b48-4e72-b503-8f6551bece8a", "Status": "REFUNDED", "Amount": 389.72, "Currency": "USD" },
+      "CancellationPolicy": {
+        "Refundable": true,
+        "RefundPercentage": 100,
+        "CutoffHours": 48,
+        "Source": "dynamic",
+        "Tiers": [{ "HoursBefore": 48, "RefundPercentage": 100 }]
+      }
+    },
+    "Metadata": { "CorrelationID": "b31e2850-57c6-4059-b756-917098be850c" }
+  }
+}
+```
+
+### Example response — rejected (not eligible)
+
+```json
+{
+  "OrderCancelRS": {
+    "Document": { "Name": "Arcube NDC-like OrderCancel Response", "ReferenceVersion": "1.0" },
+    "Order": {
+      "OrderID": "3a8d8d01-a92d-4028-8a27-5efd910bed49",
+      "Cancellation": { "ItemID": "airalo_hallo-mobil-7days-1gb", "Status": "REJECTED", "Refundable": false, "Reason": "non_refundable" }
+    },
+    "Errors": [{ "Code": "CANCELLATION_REJECTED", "Message": "This item is not eligible for cancellation" }],
+    "Metadata": { "CorrelationID": "b31e2850-57c6-4059-b756-917098be850c" }
+  }
+}
+```
+
+<Callout type="warn" title="Refund timing">
+  When the vendor confirms the cancellation, `Refund.Status` is `REFUNDED` once the refund has been
+  processed. If it is routed to manual review, the response returns a `PENDING` refund and it
+  completes out of band.
+</Callout>
+
+## Common failure modes
+
+| Error | Cause | Fix |
+| --- | --- | --- |
+| `Order item <id> not found on order <id>` | `OrderItemID` doesn't match a fulfilled item | Use an `ItemID` from OrderView's `CancellableItems`. |
+| `Item <id> is not cancellable (status: <status>)` | Item isn't `CONFIRMED` | Only `CONFIRMED` items can be cancelled. |
+| `Cancellation already initiated for item <id>` | A cancellation is already in progress | Poll the item status instead of resending. |
+| `Exactly one OrderItems entry is required` | Zero or multiple items sent | Send exactly one `OrderItems` entry per request. |
+
+See [Errors](/docs/api-offer-order-integration/errors) for the full catalog.

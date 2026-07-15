@@ -51,7 +51,8 @@ originating status where available, prefixed `[Aggregation <status>]`.
 | --- | --- | --- |
 | `Missing PricedSessionID ...` | Not sent | Send `Metadata.PricedSessionID` from OfferPrice. |
 | `Missing x-idempotency-key` | Header absent | Add `x-idempotency-key: <uuid>`. |
-| `Missing PNR ...` | `Metadata.PNR` absent | Send a real airline record locator (not the correlation id). |
+| `Missing PNR ...` | `Metadata.PNR` absent and the tenant is not enabled for no-PNR ordering | Send a real record locator (not the correlation id), or have Arcube enable no-PNR ordering for your tenant. |
+| `Recommendation schedule not found` (404) | A stale/unknown `Metadata.PNR` was sent | Send a valid record locator, or omit `Metadata.PNR` when your tenant is enabled for no-PNR ordering. |
 | `Quote bundle not found or expired` | Correlation id inconsistent across the flow (or across a multi-session cart's AirShopping calls), or cart expired | Reuse one `x-correlation-id` everywhere; re-run within the cart TTL. |
 | `Item <id> not found in bundle` | Wrong product identifier reached the provider | Usually resolved automatically; if seen, re-run the flow from AirShopping. |
 | `input must be a 24 character hex string ...` | Missing/invalid `ancillaryId` (car rental) | Send the correct 24-char hex `ancillaryId` in the car-rental `ProductInput`. |

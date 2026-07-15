@@ -95,12 +95,13 @@ x-idempotency-key: ${new-uuid}
     "Document": { "Name": "OrderCreate", "ReferenceVersion": "1.0" },
     "PointOfSale": { "SalesChannel": "AIRLINE_WEBSITE", "Seller": "AIRLINE", "Owner": "A3", "CountryCode": "GR" },
     "Customer": { "PrimaryContact": { "Title": "Mr", "GivenName": "Jane", "Surname": "Doe", "Email": "jane.doe@example.com", "DateOfBirth": "1983-11-10", "Phone": { "CountryCode": "+30", "Number": "2100000000" }, "Address": { "Line1": "1 Example St", "City": "Athens", "PostalCode": "10558", "CountryCode": "GR" } } },
+    "Passengers": [ { "PassengerID": "PAX1", "PTC": "ADT", "Individual": { "GivenName": "Jane", "Surname": "Doe" } } ],
     "Query": {
       "PricedOfferRef": { "OfferID": "${pricedOfferId}", "Owner": "Arcube" },
       "OfferItems": [ { "OfferItemID": "${pricedOfferItemId}", "ServiceDefinitionRef": "${sdRef}", "Quantity": 1 } ]
     },
-    "Payments": [ { "Mode": "AIRLINE_CAPTURED", "Currency": "USD", "Amount": 1.64, "decimal": 3, "airlineCaptureRef": "ALN-TRX-0001" } ],
-    "Metadata": { "SessionID": "${corr}", "Tenant": "6941cc3502a186f72ba55226", "PricedSessionID": "${psid}", "PNR": "NEWPNR001" }
+    "Payments": [ { "Provider": "airline-psp", "ReferenceId": "PSP-REF-0001", "Currency": "USD", "Amount": 1.64 } ],
+    "Metadata": { "SessionID": "${corr}", "Tenant": "6941cc3502a186f72ba55226", "PricedSessionID": "${psid}" }
   }
 }
 ```

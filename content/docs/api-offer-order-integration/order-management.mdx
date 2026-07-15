@@ -15,11 +15,12 @@ After an order is created you can retrieve it individually or list a customer's 
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `OrderViewRQ.OrderID` | Yes | The order/transaction identifier to look up. |
+| `OrderViewRQ.OrderID` | Yes | The order identifier. Accepts either the **transaction id** returned by OrderCreate (`Order.OrderID` / `Order.TransactionRef`) or the order's **PNR / session id**. |
+| `OrderViewRQ.tenant` | No | Tenant context. |
 
 ```json title="POST /ndc/orderview"
 {
-  "OrderViewRQ": { "OrderID": "3a8d8d01-a92d-4028-8a27-5efd910bed49" }
+  "OrderViewRQ": { "OrderID": "1bf8e39a-5934-4f2e-a283-af1ff9c1e9db" }
 }
 ```
 
@@ -29,8 +30,70 @@ After an order is created you can retrieve it individually or list a customer's 
 
 ### Response
 
-Returns the mapped order (items, status, pricing) plus `Metadata.CorrelationID`. A lookup for an
-unknown id returns `400 Order not found`.
+| Field | Description |
+| --- | --- |
+| `Order.OrderID` | The resolved order id. |
+| `Order.Status` | Roll-up status across the order's items (e.g. `CONFIRMED`, `PARTIALLY_CONFIRMED`, `REFUNDED`, `FAILED`). |
+| `Order.AssociatedRecords[]` | Linked records — the `PNR` and the underlying transaction id(s) (`TX`). |
+| `Order.Customer` / `Order.Passengers[]` | Buyer and traveller details. |
+| `Order.Items[]` | Each item: `OrderItemID`, `Name`, `ServiceTypeCode`, `Quantity`, `PriceDetail.TotalAmount`, `Status`. Item amounts are in **milles** (decimal = 3). |
+| `Order.PriceSummary` | `{ Currency, GrandTotal }` for the order (major units). |
+| `Order.CancellableItems[]` | Fulfilled items with the real `ItemID`, live `Status`, a `Cancellable` flag, and the booking-time `CancellationPolicy`. Pass an `ItemID` to [OrderCancel](/docs/api-offer-order-integration/order-cancel). |
+| `Metadata.CorrelationID` | Correlation id for traceability. |
+
+An unknown id returns `400 Order not found`.
+
+```json
+{
+  "OrderViewRS": {
+    "Document": { "Name": "Arcube NDC-like OrderView Response", "ReferenceVersion": "1.0" },
+    "Order": {
+      "OrderID": "1bf8e39a-5934-4f2e-a283-af1ff9c1e9db",
+      "Status": "CONFIRMED",
+      "Owner": "Arcube",
+      "CreatedAt": "2026-07-15T10:53:48.927Z",
+      "AssociatedRecords": [
+        { "Type": "PNR", "ID": "ARC000013" },
+        { "Type": "TX", "ID": "1bf8e39a-5934-4f2e-a283-af1ff9c1e9db" }
+      ],
+      "Customer": { "Name": "Jane Doe", "Email": "jane.doe@example.com", "Phone": "+302100000000" },
+      "Passengers": [ { "Name": "Jane Doe", "Email": "jane.doe@example.com" } ],
+      "Items": [
+        {
+          "OrderItemID": "ORDI-1",
+          "ServiceTypeCode": "AIRPORT_TRANSFER",
+          "Name": "Airport Transfer ATH → Cholargos",
+          "Quantity": 1,
+          "PriceDetail": { "TotalAmount": { "amount": 389720, "currency": "USD" } },
+          "Status": "CONFIRMED"
+        }
+      ],
+      "PriceSummary": { "Currency": "USD", "GrandTotal": 389.72 },
+      "CancellableItems": [
+        {
+          "ItemID": "d686aeeecb293ca2bc0e7d943dbe04e0",
+          "Name": "Airport Transfer ATH → Cholargos",
+          "Status": "CONFIRMED",
+          "Cancellable": true,
+          "CancellationPolicy": {
+            "Refundable": true,
+            "RefundPercentage": 100,
+            "CutoffHours": 48,
+            "Source": "dynamic",
+            "Tiers": [ { "HoursBefore": 48, "RefundPercentage": 100 } ]
+          }
+        }
+      ]
+    },
+    "Metadata": { "CorrelationID": "2fc1fc8c-46a5-47cc-bd54-fac09f35db02" }
+  }
+}
+```
+
+<Callout type="info" title="OrderItemID vs. ItemID">
+  `Items[].OrderItemID` is a positional label (`ORDI-1`, `ORDI-2`). The value you pass to
+  OrderCancel is the **`CancellableItems[].ItemID`** — the real fulfilled-item id.
+</Callout>
 
 ## OrderList
 
@@ -45,11 +108,54 @@ unknown id returns `400 Order not found`.
 
 ```json title="POST /ndc/orderlist"
 {
-  "OrderListRQ": { "tenant": "6941cc3502a186f72ba55226", "email": "jane.doe@example.com" }
+  "OrderListRQ": { "tenant": "69e8d990bad67022c672b7bf", "email": "jane.doe@example.com" }
 }
 ```
 
 ### Response
 
-Returns the customer's orders (mapped to the NDC-like order shape) plus `Metadata.CorrelationID`.
-Both `tenant` and `email` are required; omitting either returns `400`.
+Returns one summary row per order (newest first) with a `Count`. Both `tenant` and `email` are
+required; omitting either returns `400`. A customer with no orders returns an empty `Orders` list.
+
+| Field | Description |
+| --- | --- |
+| `Orders[].OrderID` | The transaction id — pass it to OrderView. |
+| `Orders[].Status` | Order status. |
+| `Orders[].CreatedAt` | ISO-8601 creation timestamp. |
+| `Orders[].Currency` / `Orders[].GrandTotal` | Order total (major units). |
+| `Orders[].PNR` | The order's record locator. |
+| `Orders[].ItemCount` | Number of items in the order. |
+| `Count` | Number of orders returned. |
+
+```json
+{
+  "OrderListRS": {
+    "Document": { "Name": "Arcube NDC-like OrderList Response", "ReferenceVersion": "1.0" },
+    "Tenant": "69e8d990bad67022c672b7bf",
+    "Email": "jane.doe@example.com",
+    "Orders": [
+      {
+        "OrderID": "1bf8e39a-5934-4f2e-a283-af1ff9c1e9db",
+        "Status": "CONFIRMED",
+        "CreatedAt": "2026-07-15T10:53:48.927Z",
+        "Currency": "USD",
+        "GrandTotal": 389.72,
+        "Owner": "Arcube",
+        "PNR": "ARC000013",
+        "ItemCount": 1
+      },
+      {
+        "OrderID": "c5266b28-749c-4ab6-9531-926e1029e30d",
+        "Status": "REFUNDED",
+        "CreatedAt": "2026-07-15T10:26:33.203Z",
+        "Currency": "USD",
+        "GrandTotal": 1.64,
+        "Owner": "Arcube",
+        "PNR": "ARC000011",
+        "ItemCount": 1
+      }
+    ],
+    "Count": 2
+  }
+}
+```

@@ -35,15 +35,23 @@ to correlate the recommendation context, the cart, and the transaction.
   `Quote bundle not found or expired`.
 </Callout>
 
-### PNR is not the correlation id
+### PNR is optional (per tenant) and is not the correlation id
 
-The **PNR** is your airline booking reference (record locator). It is a distinct identifier from
-the correlation id, and it is **required** on OrderCreate (`Metadata.PNR`). Arcube uses it to bind
-the ancillary transaction to the airline system.
+The **PNR** is your airline booking reference (record locator), carried on OrderCreate as
+`Metadata.PNR`. It is a distinct identifier from the correlation id.
 
-<Callout type="error" title="Never derive the PNR from the correlation/session id">
-  Passing the correlation id (or any generated session id) as the PNR produces a PNR that does
-  not exist, and OrderCreate fails. Always send a real record locator.
+Whether you must send it depends on your tenant:
+
+- If Arcube has **enabled no-PNR ordering** for your tenant, omit `Metadata.PNR` — the order
+  generates its own reference.
+- Otherwise a **real PNR is required**, and Arcube uses it to bind the ancillary transaction to
+  the airline system.
+
+<Callout type="error" title="If you send a PNR, it must be real">
+  Passing the correlation id (or any generated session id) as the PNR — or any stale/unknown value
+  — produces a PNR that does not exist, and OrderCreate fails with `404 Recommendation schedule not
+  found`. Send a genuine record locator, or omit it entirely when your tenant is enabled for
+  no-PNR ordering.
 </Callout>
 
 ## Point of sale
@@ -114,6 +122,6 @@ prices them together into one cart.
 1. Run the three steps **in order**, as **separate** requests — never combined or batched.
 2. Reuse **one** `x-correlation-id` across the whole journey (and across every AirShopping call
    that contributes to a multi-session cart).
-3. Send a real **PNR** on OrderCreate; it is not the correlation id.
+3. On OrderCreate, send a real **PNR** (never the correlation id) — or omit it if your tenant is enabled for no-PNR ordering.
 4. Keep a cart to a **single currency**.
 5. Send a fresh **`x-idempotency-key`** on every OrderCreate.

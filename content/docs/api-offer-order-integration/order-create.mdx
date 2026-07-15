@@ -1,19 +1,26 @@
 ---
 title: OrderCreate
-description: Confirm payment and book the priced cart. Request/response schema, required PNR and idempotency key, and the customer and payment blocks.
+description: Confirm payment and book the priced cart. Request/response schema, the externalPSP proof-of-payment block, idempotency key, and the customer and payment blocks.
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
 `POST /ndc/ordercreate`
 
-OrderCreate books the cart referenced by a `PricedSessionID`. It creates the transaction with the
-underlying providers and returns an `OrderID` and an aggregation `TransactionRef`.
+OrderCreate books the cart referenced by a `PricedSessionID`. It checks out the cart, confirms the
+order, and fulfils it with the underlying providers — returning an `OrderID` and an aggregation
+`TransactionRef`.
 
 <Callout type="warn" title="Two mandatory headers">
   - `x-correlation-id` — the **same** value used on AirShopping and OfferPrice.
   - `x-idempotency-key` — a fresh UUID per booking attempt; guarantees the order is created at
     most once.
+</Callout>
+
+<Callout type="info" title="Payment is proven, not collected">
+  Arcube does not collect payment here — the seller has already captured it. Prove that with an
+  **`externalPSP`** payment block (sent in `Payments[0]`): only `Provider` and `ReferenceId` are
+  required; the rest is derived from the priced cart. See [Payments](#payments).
 </Callout>
 
 ## Request schema
@@ -25,14 +32,14 @@ The body is a single `OrderCreateRQ`.
 | `Document.Name` / `Document.ReferenceVersion` | Yes | Label + schema version. |
 | `PointOfSale` | Yes | `{ SalesChannel, Seller, Owner, CountryCode }`. `SalesChannel` mirrors the shopping channel (`AIRLINE_WEBSITE` / `WHITE_LABEL`). |
 | `Customer.PrimaryContact` | Yes | Buyer identity and contact (see below). |
-| `Passengers[]` | Optional | Traveller references. |
+| `Passengers[]` | Yes | Traveller records (`PassengerID`, `PTC`, `Individual`). |
 | `Query.PricedOfferRef.OfferID` | Yes | A priced offer id from OfferPrice. |
 | `Query.OfferItems[]` | Yes | Item references from OfferPrice. |
-| `Payments[]` | Yes | Payment instruction (see below). |
+| `Payments[]` | Yes | The `externalPSP` proof-of-payment block (see below). |
 | `Metadata.SessionID` | Yes | The **CorrelationID** used across the flow. |
 | `Metadata.Tenant` | Yes | Tenant id. |
 | `Metadata.PricedSessionID` | Yes | The cart id from OfferPrice. |
-| `Metadata.PNR` | Yes | The airline record locator. **Distinct from the correlation id.** |
+| `Metadata.PNR` | Conditional | Airline record locator. Optional **only if Arcube has enabled no-PNR ordering for your tenant** — then you omit it and the order generates its own. Otherwise a real PNR is required. Either way, a stale/unknown PNR is rejected with `404 Recommendation schedule not found`. |
 
 <Callout type="info" title="OrderCreate books the whole cart">
   The transaction is bound to the `PricedSessionID`, which represents the entire cart. For a
@@ -53,12 +60,17 @@ The body is a single `OrderCreateRQ`.
 
 ### `Payments[]`
 
-| Field | Description |
-| --- | --- |
-| `Mode` | Payment mode, e.g. `AIRLINE_CAPTURED` (the airline collects payment). |
-| `Currency` | Order currency (matches the cart). |
-| `Amount` | Order total. |
-| `airlineCaptureRef` | Airline-side payment/capture reference. |
+`Payments[0]` is the `externalPSP` proof that the seller already collected payment. Only the first
+two fields are required — the rest default from the priced cart.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `Provider` | Yes | The PSP / payment provider that captured the funds (e.g. `airline-psp`). |
+| `ReferenceId` | Yes | The provider-side payment reference. |
+| `Currency` | No | Order currency. Defaults to the cart currency. |
+| `Amount` | No | Order total. Defaults to the cart grand total. |
+| `Status` | No | Payment status. Defaults to `CONFIRMED`. |
+| `PaidAt` | No | Capture timestamp (ISO-8601). Defaults to now. |
 
 ## Example request
 
@@ -66,7 +78,7 @@ The body is a single `OrderCreateRQ`.
 {
   "OrderCreateRQ": {
     "Document": { "Name": "OrderCreate", "ReferenceVersion": "1.0" },
-    "PointOfSale": { "SalesChannel": "WHITE_LABEL", "Seller": "AIRLINE", "Owner": "A3", "CountryCode": "GR" },
+    "PointOfSale": { "SalesChannel": "AIRLINE_WEBSITE", "Seller": "AIRLINE", "Owner": "A3", "CountryCode": "GR" },
     "Customer": {
       "PrimaryContact": {
         "Title": "Mr",
@@ -78,6 +90,9 @@ The body is a single `OrderCreateRQ`.
         "Address": { "Line1": "1 Example St", "City": "Athens", "PostalCode": "10558", "CountryCode": "GR" }
       }
     },
+    "Passengers": [
+      { "PassengerID": "PAX1", "PTC": "ADT", "Individual": { "GivenName": "Jane", "Surname": "Doe" } }
+    ],
     "Query": {
       "PricedOfferRef": { "OfferID": "2d1842ea-c534-4ff4-81e4-44dc34cf4b08", "Owner": "Arcube" },
       "OfferItems": [
@@ -85,13 +100,12 @@ The body is a single `OrderCreateRQ`.
       ]
     },
     "Payments": [
-      { "Mode": "AIRLINE_CAPTURED", "Currency": "USD", "Amount": 1.64, "decimal": 3, "airlineCaptureRef": "ALN-TRX-0001" }
+      { "Provider": "airline-psp", "ReferenceId": "PSP-REF-0001", "Currency": "USD", "Amount": 1.64 }
     ],
     "Metadata": {
       "SessionID": "159b2361-3bc8-420d-a0f8-ba55c33187e2",
       "Tenant": "6941cc3502a186f72ba55226",
-      "PricedSessionID": "e77589d0-bb90-4783-993c-c1e90b3864d7",
-      "PNR": "NEWPNR001"
+      "PricedSessionID": "e77589d0-bb90-4783-993c-c1e90b3864d7"
     }
   }
 }
@@ -101,13 +115,14 @@ The body is a single `OrderCreateRQ`.
 
 | Field | Description |
 | --- | --- |
-| `OrderCreateRS.Order.OrderID` | Arcube order id. |
-| `OrderCreateRS.Order.Status` | Order status (e.g. `pending`, `CONFIRMED`). |
+| `OrderCreateRS.Order.OrderID` | Arcube order id. In the no-PSP flow this equals the aggregation `TransactionRef`. |
+| `OrderCreateRS.Order.Status` | Order status (e.g. `confirmed`). |
 | `OrderCreateRS.Order.Owner` | `"Arcube"`. |
-| `OrderCreateRS.Order.TransactionRef` | Aggregation transaction id (provider booking reference). |
+| `OrderCreateRS.Order.TransactionRef` | Aggregation transaction id (provider booking reference). Use it for OrderCancel and to fetch the transaction. |
+| `OrderCreateRS.Order.PNR` | The record locator — the PNR you sent, or the one the order generated (no-PNR tenants). Equals the order's session id. |
 | `OrderCreateRS.Order.Items[]` | Every booked item: `OrderItemID`, `OfferItemRef`, `ServiceDefinitionRef`, `ServiceTypeCode`, `PriceDetail.TotalAmount`. |
 | `OrderCreateRS.Order.PriceSummary` | `{ Currency, GrandTotal }` for the whole order. |
-| `OrderCreateRS.Metadata` | `CorrelationID`, `PricedSessionID`, `CartSessionID`, `OrderKey`. |
+| `OrderCreateRS.Metadata` | `CorrelationID`, `PricedSessionID`, `TransactionRef`, `PNR`, `OrderKey`. |
 
 ### Example response
 
@@ -116,10 +131,11 @@ The body is a single `OrderCreateRQ`.
   "OrderCreateRS": {
     "Document": { "Name": "Arcube NDC-like OrderCreate Response", "ReferenceVersion": "1.0" },
     "Order": {
-      "OrderID": "ORD-20260708-122404-0zmdf9",
-      "Status": "pending",
+      "OrderID": "3a8d8d01-a92d-4028-8a27-5efd910bed49",
+      "Status": "confirmed",
       "Owner": "Arcube",
       "TransactionRef": "3a8d8d01-a92d-4028-8a27-5efd910bed49",
+      "PNR": "ARC000016",
       "Items": [
         {
           "OrderItemID": "ORDI-1",
@@ -134,7 +150,9 @@ The body is a single `OrderCreateRQ`.
     "Metadata": {
       "CorrelationID": "159b2361-3bc8-420d-a0f8-ba55c33187e2",
       "PricedSessionID": "e77589d0-bb90-4783-993c-c1e90b3864d7",
-      "OrderKey": "ndc-order:ORD-20260708-122404-0zmdf9"
+      "TransactionRef": "3a8d8d01-a92d-4028-8a27-5efd910bed49",
+      "PNR": "ARC000016",
+      "OrderKey": "ndc-order:3a8d8d01-a92d-4028-8a27-5efd910bed49"
     }
   }
 }
@@ -146,7 +164,7 @@ The body is a single `OrderCreateRQ`.
 | --- | --- | --- |
 | `Missing PricedSessionID` | Not sent | Send `Metadata.PricedSessionID` from OfferPrice. |
 | `Missing x-idempotency-key` | Header absent | Add `x-idempotency-key: <uuid>`. |
-| `Missing PNR` | `Metadata.PNR` absent | Send a real record locator. |
+| `Recommendation schedule not found` (404) | A stale/unknown `Metadata.PNR` was sent | Omit `Metadata.PNR` — the order generates its own. |
 | `Quote bundle not found or expired` | Correlation id inconsistent across the flow, or cart expired | Reuse one `x-correlation-id`; re-run within the cart TTL. |
 | `INVALID_ORIGIN` / `Not allowed by CORS` | White-label origin not configured | Ensure the environment is configured for `WHITE_LABEL`. |
 
