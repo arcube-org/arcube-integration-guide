@@ -507,10 +507,9 @@ const passengerDetails = {
     lastName: "Smith",
     email: "adam.smith@example.com",
     dateOfBirth: "1990-04-12",
-    phoneNumber: "+12025550147",
-    callingCode: "+1",
-    phone: "2025550147",
-    country_code_name: "US",
+    countryCode: "+1",
+    phoneNumber: "2025550147",
+    isValid: true,
     isPrimary: true
   },
   passengers: [
@@ -539,6 +538,8 @@ window.addEventListener("arcube:widget:ready", () => {
   });
 });
 ```
+
+All fields in the `customer` object are required. The `countryCode` must be provided as an international calling code, such as `+234`. The widget validates and formats the phone number using the supplied country code and returns the result in `isValid`. A valid phone number is required before Airport Transfer or Car Rental products can be added to the cart, as their providers require verified customer contact details to process the booking reliably.
 
 `customer` is used for the primary customer details form. `passengers` is used to prefill additional passenger forms for products that require traveler-level information. Mark the primary traveler with `isPrimary: true`.
 
