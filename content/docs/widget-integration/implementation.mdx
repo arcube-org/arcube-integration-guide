@@ -124,27 +124,67 @@ All options passed to `window.Widget.init`:
 
 ## Authentication and Token Flow
 
-This section describes the preferred widget authentication model for airline integrations. The goal is simple: the airline secret stays on the airline side, and the browser only ever receives a short-lived token.
+Before initializing the widget, the airline host page must obtain a short-lived widget token from the Arcube edge endpoint. Arcube uses the tenant ID, requesting origin and PNR to validate the request and issue a token for that booking session.
 
-When the host page needs the widget, the browser first asks an airline-controlled endpoint for a widget token. That request stays inside the airline environment. The airline secure layer - a backend service, CDN worker, or edge layer - builds a canonical string and signs it with **HMAC-SHA256** using the airline secret, then calls `POST ${arcube-url}/auth/edge/token` with the headers `X-Tenant-ID`, `X-Timestamp`, `X-Nonce`, and `X-Signature`. Arcube rebuilds the same canonical string, verifies the signature, checks that the tenant is known and the timestamp is still valid, and returns a short-lived token. The browser then passes that token to the widget, which uses it for later Arcube API calls.
+### Token Endpoints
 
-The canonical (signed) string typically contains the HTTP method, request path, tenant identifier, timestamp, and nonce. In the current model the widget token is valid for **1 hour**.
+| Environment | Endpoint |
+|---|---|
+| Development | `https://dev-edge.arcube.io/token` |
+| QA | `https://qa-edge.arcube.io/token` |
+| Production | `https://edge.arcube.io/token` |
 
-<img src="/images/widget/widget-token-sequence.jpg" alt="Token flow sequence diagram" style={{display: 'block', margin: '0 auto', width: '100%'}} />
+### Request
 
-<small style={{display: 'block', textAlign: 'center'}}>Figure 3: Secure token vending via the airline CDN/edge proxy.</small>
+Send a `POST` request with:
 
-The diagram below zooms in on the exact token-generation steps the Airline CDN/EDGE performs before calling Arcube: fetch the airline secret, attach the required headers, prepare the canonical string, sign it, and send the request with the `X-Signature` header. Arcube validates the signature and returns the token, which the host page then uses to render the widget.
+- `X-Tenant-ID`: the Arcube tenant ID provided to the airline
+- `Content-Type: application/json`
+- `pnr`: the booking PNR (six-character alphanumeric) in the request body
 
-<img src="/images/widget/widget-token-generation.png" alt="Detailed token generation and HMAC signing steps" style={{display: 'block', margin: '0 auto', width: '100%'}} />
+The request must come from an origin that has been allow-listed for the tenant.
 
-<small style={{display: 'block', textAlign: 'center'}}>Figure 4: Token generation and HMAC signing steps.</small>
+```bash
+curl -X POST https://edge.arcube.io/token \
+  -H "X-Tenant-ID: YOUR_TENANT_ID" \
+  -H "Origin: http://localhost:5173" \
+  -H "Content-Type: application/json" \
+  -d '{"pnr":"ABC123"}'
+```
 
-<Callout type="warn" title="Keep the secret server-side">
-  The airline secret and the signing logic must never reach the browser. The browser should only ever receive the short-lived widget token and the booking context the airline already owns.
+<Callout type="info" title="Origin header">
+  Browsers add the `Origin` header automatically. It should only be added manually when testing with curl or Postman.
 </Callout>
 
-Include the **PNR** in the JSON body so the token can be tied to that booking context. If a PNR does not exist yet, a session-level identifier is enough for the first step. Keep the token in memory, treat it as temporary, and tie it to the PNR where possible.
+Origin matching is exact. The scheme and subdomain are significant, so the following are treated as separate origins:
+
+- `https://example.com`
+- `https://www.example.com`
+- `https://booking.example.com`
+
+Contact Arcube to allow-list every production origin where the widget will be embedded.
+
+### Response
+
+```json
+{
+  "accessToken": "<widget-token>",
+  "expiresIn": "1h"
+}
+```
+
+The token is valid for 60 minutes and is scoped to the tenant and PNR provided in the request. Reuse it for the current widget session rather than requesting a new token for every action.
+
+Pass the returned token when initializing the widget:
+
+```javascript
+window.Widget.init({
+  // ...other configuration
+  token: accessToken
+});
+```
+
+The PNR used by subsequent widget requests must match the PNR associated with the token.
 
 ### PNR Feed to Arcube
 
