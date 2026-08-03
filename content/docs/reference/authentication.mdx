@@ -1,27 +1,24 @@
 ---
 title: Authentication
-description: OAuth2 Client Credentials flow for secure server-to-server access to Arcube APIs.
+description: Client credential login flow for secure server-to-server access to Arcube APIs.
 ---
 
-Arcube APIs use **OAuth2 Client Credentials** for secure server-to-server access.
-All requests to protected endpoints require a valid **Bearer token**.
+All NDC-like API calls require a **Bearer token**. Obtain one from the authentication endpoint
+using your credentials, then send it with every subsequent request.
 
 ---
 
-## 1. Token Endpoint
+## 1. Authentication
 
-**POST** `/oauth/token`
+**HTTP Method:** `POST`
+**URL:** `${arcube-url}/auth/api/login`
 
-### Request
+### Request body
 
-```http
-POST /oauth/token
-Content-Type: application/json
-
+```json
 {
-  "grant_type": "client_credentials",
-  "client_id": "<your-client-id>",
-  "client_secret": "<your-client-secret>"
+  "clientId": "<your-client-id>",
+  "clientSecret": "<your-client-secret>"
 }
 ```
 
@@ -29,9 +26,9 @@ Content-Type: application/json
 
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6...",
-  "token_type": "Bearer",
-  "expires_in": 3600
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresIn": "24h",
+  "tokenType": "Bearer"
 }
 ```
 
@@ -42,13 +39,12 @@ Content-Type: application/json
 Include the token in the request headers:
 
 ```http
-Authorization: Bearer <access_token>
+Authorization: Bearer <accessToken>
 ```
 
 ### Token Lifetime
 
-- Default expiry: **3600 seconds (1 hour)**
-- Clock skew tolerance: **±60 seconds**
+- Default expiry: **24 hours**
 - On expiry, API returns `401 UNAUTHENTICATED`
 - Clients should cache tokens and refresh when near expiry
 
