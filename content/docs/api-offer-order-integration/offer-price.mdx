@@ -53,10 +53,10 @@ Each entry supplies the fulfillment data for one selected service, matched by
 | `Input` | Category-specific object. See [Products](/docs/api-offer-order-integration/products) for the required fields per `ServiceTypeCode`. |
 
 <Callout type="warn" title="Product inputs are validated per category">
-  Each category enforces its own schema (e.g. eSIM requires `serviceDetails.Region`,
-  `CountryCode`, `Data Amount`, `Validity` and `metadata.passengers`). Missing fields fail with
-  `Basket input validation failed`. Car rental additionally requires a client-supplied
-  `ancillaryId`.
+  Each category enforces its own schema — but most fields (name, `serviceDetails`, vendor ids) are
+  resolved server-side from the shopping catalog, so you send very little (e.g. eSIM needs only
+  `metadata.passengers`; car rental needs the driver details). Missing required fields fail with
+  `Basket input validation failed`. See [Products](/docs/api-offer-order-integration/products).
 </Callout>
 
 ## Example request (single eSIM)
@@ -89,9 +89,6 @@ Each entry supplies the fulfillment data for one selected service, matched by
       {
         "ServiceDefinitionRef": "SVC-SIM-2d1842ea-c534-4f",
         "Input": {
-          "vendorReferenceId": "hallo-mobil-7days-1gb",
-          "description": "1 GB - 7 days",
-          "serviceDetails": { "Region": "DE", "CountryCode": "DE", "Data Amount": "1GB", "Validity": "7 days" },
           "metadata": { "passengers": [ { "firstName": "John", "lastName": "Doe", "email": "john@example.com" } ] }
         }
       }

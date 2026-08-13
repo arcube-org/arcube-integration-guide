@@ -32,6 +32,8 @@ originating status where available, prefixed `[Aggregation <status>]`.
 | `pointOfSale is required for pricing engine requests` | Missing `pointOfSale` in a product search input | Add `pointOfSale` inside the `ProductSearchInputs[].Input`. |
 | `AIRPORT_TRANSFER ProductSearchInput missing required fields: ...` | Required transfer fields absent | Provide `mode`, `num_passengers`, addresses, coordinates, `pickup_datetime`, currency, country codes. |
 | `CAR_RENTAL ProductSearchInput missing required fields: ...` | Required rental fields absent | Provide country codes, `pickup_at`/`dropoff_at`, `driver.age`/`residence`, `pickup_location`. |
+| `Airport transfer not supported for this session at this time of the trip` | The general recommendation on this `x-correlation-id` didn't offer airport transfer | Run a general AirShopping first on the same correlation id; if the category still isn't offered, it isn't available for this trip. |
+| `Car rental not supported for this session at this time of the trip` | The general recommendation on this `x-correlation-id` didn't offer car rental | Run a general AirShopping first on the same correlation id; if the category still isn't offered, it isn't available for this trip. |
 | Empty `OtherOffers` (no error) | No availability for the criteria | Use future dates and valid locations; try broader criteria. |
 | Slow / `timeout of 30000ms exceeded` | Upstream provider latency | Retry; if persistent it is a provider-side issue. |
 
@@ -55,7 +57,6 @@ originating status where available, prefixed `[Aggregation <status>]`.
 | `Recommendation schedule not found` (404) | A stale/unknown `Metadata.PNR` was sent | Send a valid record locator, or omit `Metadata.PNR` when your tenant is enabled for no-PNR ordering. |
 | `Quote bundle not found or expired` | Correlation id inconsistent across the flow (or across a multi-session cart's AirShopping calls), or cart expired | Reuse one `x-correlation-id` everywhere; re-run within the cart TTL. |
 | `Item <id> not found in bundle` | Wrong product identifier reached the provider | Usually resolved automatically; if seen, re-run the flow from AirShopping. |
-| `input must be a 24 character hex string ...` | Missing/invalid `ancillaryId` (car rental) | Send the correct 24-char hex `ancillaryId` in the car-rental `ProductInput`. |
 | `Missing or invalid origin header ... *.arcube.com` / `Not allowed by CORS` | White-label origin not configured for the environment | Confirm the environment is provisioned for `WHITE_LABEL`. |
 | `Transaction validation failed: items.0.vendor: Path 'vendor' is required` | Vendor not resolved for an item | Re-run from AirShopping; ensure the offer came from a valid search. |
 

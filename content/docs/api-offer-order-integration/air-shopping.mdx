@@ -215,10 +215,11 @@ The response separates commercial data (`OtherOffers`) from descriptive data
 Point-to-point transfer discovery. Uses `ProductSearchInputs` with `ProductType: "AIRPORT_TRANSFER"`.
 
 <Callout type="warn" title="Run a general AirShopping first, on the same correlation id">
-  Airport transfer results need a category product id that is resolved from the general
-  recommendation context. Issue a **general AirShopping** first (any itinerary) using the **same**
-  `x-correlation-id`, then the transfer product search. Otherwise OrderCreate later fails during
-  identity resolution.
+  Issue a **general AirShopping** first (any itinerary) using the **same** `x-correlation-id`, then
+  the transfer product search. The general recommendation determines the transfer **provider(s)**
+  available for this trip — they're resolved server-side, so **you don't send a `providers` field**.
+  If the general recommendation didn't offer airport transfer, the search returns
+  `400 Airport transfer not supported for this session at this time of the trip`.
 </Callout>
 
 ### Input fields
@@ -235,8 +236,10 @@ Point-to-point transfer discovery. Uses `ProductSearchInputs` with `ProductType:
 | `currency` | Yes | Shopping currency. |
 | `requested_currency` | Optional | Display/settlement currency (triggers conversion; requires white-label origin). |
 | `fromCountryCode` / `toCountryCode` | Yes | Country context. |
-| `providers` | Optional | Constrain to specific providers, e.g. `["mistertransfer","mozio"]`. |
 | `campaign` / `branch` | Optional | Merchandising / experiment context. |
+
+Providers are **not** a client input — they're resolved from the general recommendation on this
+session (see the callout above).
 
 ### Example request
 
@@ -261,7 +264,6 @@ Point-to-point transfer discovery. Uses `ProductSearchInputs` with `ProductType:
           "pickup_datetime": "2026-07-23 15:00",
           "currency": "USD",
           "requested_currency": "DOP",
-          "providers": ["mistertransfer", "mozio"],
           "start_coordinates": { "lat": 37.936175, "lng": 23.9465255 },
           "end_coordinates": { "lat": 37.9975628, "lng": 23.8027203 },
           "fromCountryCode": "GR",
@@ -285,6 +287,14 @@ service definition. `OtherServiceInformation` typically exposes `pickupAddress`,
 ## Car Rental AirShopping
 
 Dedicated rental search. Uses `ProductSearchInputs` with `ProductType: "CAR_RENTAL"`.
+
+<Callout type="warn" title="Run a general AirShopping first, on the same correlation id">
+  Issue a **general AirShopping** first (any itinerary) using the **same** `x-correlation-id`, then
+  the car-rental product search. The general recommendation determines the car-rental
+  **provider(s)** available for this trip — they're resolved server-side, so **you don't send a
+  `providers` field**. If the general recommendation didn't offer car rental, the search returns
+  `400 Car rental not supported for this session at this time of the trip`.
+</Callout>
 
 ### Input fields
 
