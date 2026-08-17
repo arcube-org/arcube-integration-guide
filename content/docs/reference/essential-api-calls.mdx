@@ -280,7 +280,159 @@ Retrieve recommendations for an already-ingested PNR. This is the **same endpoin
 
 ---
 
-## 6.3 Verify Prices
+## 6.3 Reprice Offers and Cart
+
+### Description
+
+Re-quote every offer in an existing recommendations bundle into a different currency, without re-running a search. Call this when the passenger changes their display currency.
+
+The response returns **all** offers converted, so the full list can be re-rendered, and - if the passenger has a cart - the cart updated to match and saved server-side. Arcube performs the conversion; the client does no FX of its own.
+
+<Callout type="info" title="Request URL Parameter">
+  Replace `${arcube-url}` with your assigned Arcube environment URL (e.g., `https://api.arcube.com`).
+</Callout>
+
+<Callout type="info" title="HTTP Method: POST">
+  **URL:** `${arcube-url}/aggregation-api/reprice`
+</Callout>
+
+<Callout title="Request Headers">
+  - `Authorization: Bearer <access_token>`
+  - `Content-Type: application/json`
+  - `x-correlation-id: <correlationId>` - **required**
+</Callout>
+
+<Callout type="warn" title="correlationId identifies both the bundle and the cart">
+  Send the same `correlationId` used for the original recommendations call. It is read from the header only - a value in the body is ignored. Without it the request is rejected.
+</Callout>
+
+<Callout type="info" title="HTTP Response">
+  `200 OK`
+</Callout>
+
+### Request Payload Sample
+
+```json
+{
+  "requestedCurrency": "AED"
+}
+```
+
+`requestedCurrency` is a 3-letter ISO 4217 code and is case-insensitive. Your tenant is resolved from the Bearer token, so it is not part of the payload.
+
+### Request Payload JSON Schema
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["requestedCurrency"],
+  "properties": {
+    "requestedCurrency": { "type": "string", "minLength": 3, "maxLength": 3 }
+  }
+}
+```
+
+### Response Payload Sample
+
+```json
+{
+  "correlationId": "d8a96601-768d-49b2-ab59-62ce7d35ad2e",
+  "requestedCurrency": "AED",
+  "updatedPrices": [
+    {
+      "id": "eb97ebb379f8d8fbd3b115ca1b494ce0",
+      "price": 813.01,
+      "currency": "AED",
+      "category": "AIRPORT_TRANSFER",
+      "extra": [
+        {
+          "id": "eb97ebb379f8d8fbd3b115ca1b494ce0_meet_and_greet",
+          "price": 19.12,
+          "currency": "AED"
+        }
+      ]
+    },
+    {
+      "id": "carbonclick_377c8978-5a94-4927-a7cd-9aa59d151276",
+      "price": 62.69,
+      "currency": "AED",
+      "category": "CARBON_OFFSET"
+    }
+  ],
+  "updatedCart": {
+    "correlationId": "d8a96601-768d-49b2-ab59-62ce7d35ad2e",
+    "selectedAncillaries": [
+      {
+        "id": "eb97ebb379f8d8fbd3b115ca1b494ce0",
+        "category": "AIRPORT_TRANSFER",
+        "price": 813.01,
+        "currency": "AED",
+        "quantity": 1
+      }
+    ],
+    "unavailableAncillaries": [
+      {
+        "id": "airalo_removed-package",
+        "category": "ESIMS",
+        "price": 99.99,
+        "currency": "USD",
+        "quantity": 1
+      }
+    ],
+    "createdAt": "2026-08-17T09:12:04.118Z",
+    "updatedAt": "2026-08-17T09:18:41.902Z",
+    "expiresAt": "2026-08-17T09:48:41.902Z"
+  }
+}
+```
+
+### Response Field Reference
+
+| Field | Description |
+|-------|-------------|
+| `updatedPrices[]` | **Every** offer in the bundle, converted. Ids match those returned by [6.2 Serve Recommendations](#62-serve-recommendations). |
+| `updatedPrices[].price` / `.currency` | Already in `requestedCurrency` - no further conversion needed. |
+| `updatedPrices[].extra[]` | Priced add-ons for that offer, same shape. Present only where the offer has them. |
+| `updatedCart` | The passenger's cart, updated and saved. `null` when no cart exists or it is empty. |
+| `updatedCart.selectedAncillaries[]` | Cart lines that were repriced. Every line is in `requestedCurrency`. |
+| `updatedCart.unavailableAncillaries[]` | Cart lines Arcube could no longer price, returned **unchanged** in their original currency. |
+
+<Callout type="warn" title="Handling unavailableAncillaries">
+  A line moves here when it is no longer in the bundle - typically the offer was withdrawn or the catalogue changed. It keeps its original price and currency and is **not** part of the repriced total. Surface it to the passenger as unavailable and prompt them to remove or re-select it; do not present it as purchasable.
+</Callout>
+
+<Callout type="info" title="updatedCart is null on a cart write failure">
+  The cart is saved on a best-effort basis. If the save does not succeed, `updatedCart` is returned as `null` while `updatedPrices` still succeeds, so the client is never handed a cart that was not persisted. Treat `null` as "no cart to render" and re-sync the cart before checkout.
+</Callout>
+
+### Error Responses
+
+```json
+{
+  "statusCode": 404,
+  "message": "Quote bundle not found or expired."
+}
+```
+
+| Status | Origin | Trigger |
+|--------|--------|---------|
+| 200 | arcube-backend | Repriced - inspect `updatedPrices` and `updatedCart` |
+| 400 | arcube-backend | `x-correlation-id` header missing |
+| 400 | arcube-backend | Malformed or missing `requestedCurrency` |
+| 400 | pricing-service | Currency not supported, or bundle integrity failure |
+| 401 | arcube-backend | Missing or invalid token |
+| 403 | pricing-service | Bundle belongs to another airline |
+| 404 | pricing-service | Bundle not found or expired |
+| 502 | arcube-backend | Pricing service unreachable |
+
+<Callout type="warn" title="Expired bundles">
+  A `404` means there are no prices to return and the cart is left untouched. Recover by calling [6.2 Serve Recommendations](#62-serve-recommendations) again for a fresh bundle.
+</Callout>
+
+---
+
+## 6.4 Verify Prices
 
 ### Description
 
@@ -554,7 +706,7 @@ Business error codes: `QUOTE_EXPIRED`, `AIRLINE_MISMATCH`, `MIXED_CURRENCY`, `UN
 
 ---
 
-## 6.4 Confirm Order
+## 6.5 Confirm Order
 
 ### Description
 

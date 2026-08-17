@@ -667,7 +667,7 @@ Before creating an order, a tenant may optionally perform a Price Verify call to
 - **Price validation** - verifies that the prices submitted by the tenant match the prices calculated by Arcube.
 - **Payment split calculation** - returns the amounts that must be captured on behalf of the airline and on behalf of Arcube.
 
-More information is available under [Reference → Essential API Calls → Verify Prices](/docs/reference/essential-api-calls#63-verify-prices).
+More information is available under [Reference → Essential API Calls → Verify Prices](/docs/reference/essential-api-calls#64-verify-prices).
 
 <Callout type="info" title="When Price Verify is needed">
   Price Verification is optional when the payment flow does not involve Split Payments. Arcube already has full visibility of the priced ancillaries through its pricing engine, so an additional price verification step is not required in standard non-split-payment flows.
@@ -685,13 +685,13 @@ Use this model for standalone pages, manage-my-booking, and lighter integrations
 
 When the widget is rendered with `pointOfSale: AIRLINE_WEBSITE`, the airline owns checkout and captures payment on its own PSP. **The airline is the Merchant of Record.** After capturing payment, the airline creates the order through `/transactions/widget-order-create`, passing proof of the charge in an `externalPSP` object. Arcube never collects payment in this model - it places the ancillary orders with the relevant providers and records the transaction.
 
-Immediately before charging the customer and creating the order, call [Verify Prices](/docs/reference/essential-api-calls#63-verify-prices) to confirm that the cart prices still match Arcube's authoritative bundle. Re-confirm with the user if any item has drifted.
+Immediately before charging the customer and creating the order, call [Verify Prices](/docs/reference/essential-api-calls#64-verify-prices) to confirm that the cart prices still match Arcube's authoritative bundle. Re-confirm with the user if any item has drifted.
 
 When sending the order payload, put the primary passenger/customer in `customer`. The `passengers` array should include only additional passengers and should exclude the primary passenger.
 
 #### Payment Proof (`externalPSP`)
 
-To create the order, the airline must pass back proof of the charge it already captured in an `externalPSP` object. The amount to report is the **Arcube-side capture** - the portion of the total captured on behalf of Arcube, as returned by the payment split in [Verify Prices](/docs/reference/essential-api-calls#63-verify-prices).
+To create the order, the airline must pass back proof of the charge it already captured in an `externalPSP` object. The amount to report is the **Arcube-side capture** - the portion of the total captured on behalf of Arcube, as returned by the payment split in [Verify Prices](/docs/reference/essential-api-calls#64-verify-prices).
 
 <Callout type="warn" title="externalPSP is required in Model B">
   When the airline is Merchant of Record, the order request is rejected with `400 MISSING_EXTERNAL_PSP` if `externalPSP` is absent or any required field is invalid. The response `details` array lists each offending field.
