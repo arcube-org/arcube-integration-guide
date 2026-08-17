@@ -354,10 +354,22 @@ The response returns **all** offers converted, so the full list can be re-render
       ]
     },
     {
+      "id": "tellisim_67eab83b-08be-4cd3-ab9a-e33b51026dbe",
+      "price": 55.53,
+      "currency": "AED",
+      "category": "ESIMS"
+    },
+    {
       "id": "carbonclick_377c8978-5a94-4927-a7cd-9aa59d151276",
       "price": 62.69,
       "currency": "AED",
       "category": "CARBON_OFFSET"
+    },
+    {
+      "id": "collinson_LHR_LHR10",
+      "price": 125.13,
+      "currency": "AED",
+      "category": "LOUNGE_ACCESS"
     }
   ],
   "updatedCart": {
@@ -366,26 +378,110 @@ The response returns **all** offers converted, so the full list can be re-render
       {
         "id": "eb97ebb379f8d8fbd3b115ca1b494ce0",
         "category": "AIRPORT_TRANSFER",
+        "vendor": "mozio",
         "price": 813.01,
         "currency": "AED",
-        "quantity": 1
+        "quantity": 1,
+        "description": "Airport transfer - DXB to Burj Khalifa",
+        "vendorReferenceId": "eb97ebb379f8d8fbd3b115ca1b494ce0",
+        "serviceDetails": {
+          "From": "Dubai International Airport (DXB)",
+          "To": "Burj Khalifa, Dubai, UAE"
+        },
+        "metadata": {
+          "passengers": [
+            { "firstName": "Alex", "lastName": "Morgan", "email": "alex.morgan@example.com" }
+          ]
+        },
+        "extra": [
+          {
+            "id": "eb97ebb379f8d8fbd3b115ca1b494ce0_meet_and_greet",
+            "price": 19.12,
+            "currency": "AED"
+          }
+        ]
+      },
+      {
+        "id": "tellisim_67eab83b-08be-4cd3-ab9a-e33b51026dbe",
+        "category": "ESIMS",
+        "vendor": "tellisim",
+        "price": 55.53,
+        "currency": "AED",
+        "quantity": 1,
+        "description": "eSIM - United Arab Emirates, 1 GB, 7 days",
+        "vendorReferenceId": "tellisim_67eab83b-08be-4cd3-ab9a-e33b51026dbe",
+        "serviceDetails": {
+          "Region": "United Arab Emirates",
+          "Data Amount": "1 GB",
+          "Validity": "7 days"
+        },
+        "metadata": {
+          "passengers": [
+            { "firstName": "Alex", "lastName": "Morgan", "email": "alex.morgan@example.com" }
+          ]
+        }
+      },
+      {
+        "id": "carbonclick_377c8978-5a94-4927-a7cd-9aa59d151276",
+        "category": "CARBON_OFFSET",
+        "vendor": "carbonclick",
+        "price": 62.69,
+        "currency": "AED",
+        "quantity": 1,
+        "description": "Carbon offset - LHR to DXB",
+        "vendorReferenceId": "carbonclick_377c8978-5a94-4927-a7cd-9aa59d151276",
+        "serviceDetails": {
+          "Project": "Tambopata Reserve"
+        },
+        "metadata": {
+          "passengers": [
+            { "firstName": "Alex", "lastName": "Morgan", "email": "alex.morgan@example.com" }
+          ]
+        }
+      },
+      {
+        "id": "collinson_LHR_LHR10",
+        "category": "LOUNGE_ACCESS",
+        "vendor": "dragonpass",
+        "price": 125.13,
+        "currency": "AED",
+        "quantity": 1,
+        "description": "Lounge access - LHR",
+        "vendorReferenceId": "collinson_LHR_LHR10",
+        "serviceDetails": {
+          "Airport Code": "LHR"
+        },
+        "metadata": {
+          "passengers": [
+            { "firstName": "Alex", "lastName": "Morgan", "email": "alex.morgan@example.com" }
+          ]
+        }
       }
     ],
     "unavailableAncillaries": [
       {
-        "id": "airalo_removed-package",
+        "id": "airalo_uae-mobile-7days-1gb",
         "category": "ESIMS",
+        "vendor": "airalo",
         "price": 99.99,
         "currency": "USD",
-        "quantity": 1
+        "quantity": 1,
+        "description": "eSIM - withdrawn from catalogue",
+        "vendorReferenceId": "uae-mobile-7days-1gb",
+        "serviceDetails": {},
+        "metadata": {}
       }
     ],
-    "createdAt": "2026-08-17T09:12:04.118Z",
-    "updatedAt": "2026-08-17T09:18:41.902Z",
-    "expiresAt": "2026-08-17T09:48:41.902Z"
+    "createdAt": "2026-08-17T11:33:02.085Z",
+    "updatedAt": "2026-08-17T11:33:04.505Z",
+    "expiresAt": "2026-08-17T12:03:04.505Z"
   }
 }
 ```
+
+<Callout type="info" title="updatedPrices is truncated above">
+  The sample shows only the four offers that appear in the cart. A real response contains **every** offer in the bundle - typically 50-150 entries, depending on how many categories were requested. Match cart lines to offers by `id`.
+</Callout>
 
 ### Response Field Reference
 
