@@ -5,7 +5,7 @@ description: Add selected offers to a cart and re-price them. Covers SelectedOff
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-`POST /ndc/offerprice`
+`POST /offerprice`
 
 OfferPrice takes the offers you selected from one or more AirShopping responses, builds a **cart**
 (basket) on Arcube's side, validates and re-prices them, and returns a `PricedSessionID` that
@@ -27,7 +27,7 @@ The body is a single `OfferPriceRQ`.
 | `Query.SelectedOffers[]` | Yes | The offers to cart. One entry per offer (see below). |
 | `Metadata.SessionID` | Yes | Set to the **CorrelationID** from AirShopping. Its presence selects the basket flow. |
 | `Metadata.Tenant` | Optional | Tenant id. |
-| `ProductInputs[]` | Yes | Per-product fulfillment inputs, keyed by `ServiceDefinitionRef` (see [Products](/docs/api-offer-order-integration/products)). |
+| `ProductInputs[]` | **No** | Per-product inputs, keyed by `ServiceDefinitionRef`. Omit it entirely unless a product needs something the search could not know — see [Products](/docs/api-offer-order-integration/products). |
 
 ### `SelectedOffers[]`
 
@@ -44,24 +44,40 @@ The body is a single `OfferPriceRQ`.
 
 ### `ProductInputs[]`
 
-Each entry supplies the fulfillment data for one selected service, matched by
+**Optional.** Each entry supplies data for one selected service, matched by
 `ServiceDefinitionRef`.
 
 | Field | Description |
 | --- | --- |
 | `ServiceDefinitionRef` | Must match a selected `OfferItems[].ServiceDefinitionRef`. |
-| `Input` | Category-specific object. See [Products](/docs/api-offer-order-integration/products) for the required fields per `ServiceTypeCode`. |
+| `Input` | Category-specific object. See [Products](/docs/api-offer-order-integration/products) for what each `ServiceTypeCode` takes. |
 
-<Callout type="warn" title="Product inputs are validated per category">
-  Each category enforces its own schema — but most fields (name, `serviceDetails`, vendor ids) are
-  resolved server-side from the shopping catalog, so you send very little (e.g. eSIM needs only
-  `metadata.passengers`; car rental needs the driver details). Missing required fields fail with
-  `Basket input validation failed`. See [Products](/docs/api-offer-order-integration/products).
+<Callout type="info" title="Most carts need no ProductInputs at all">
+  Product and vendor identifiers, `description`, `serviceDetails`, prices, quote tokens, search
+  dates, the car-rental driver and **the traveller list** are all resolved server-side from the
+  shopping session. eSIM, lounge access, carbon offset, baggage protection and car rental cart with
+  the field omitted entirely. Send an entry only to supply something the search could not know —
+  the fast-track visit slot, the airport-transfer flight, a parking lot's licence-plate field — or
+  to override a resolved default.
+</Callout>
+
+<Callout type="warn" title="What is still enforced">
+  Two things are checked and refused rather than allowed to fail at the vendor:
+
+  - a traveller with no email address, for the products delivered by email (eSIM, lounge,
+    fast-track);
+  - a missing `flight` on an airport transfer whose offer advertises `flightInfoRequired`.
+
+  Anything you do send is validated against its category schema; a mismatch fails with
+  `Basket input validation failed`.
 </Callout>
 
 ## Example request (single eSIM)
 
-```json title="POST /ndc/offerprice"
+The passengers were named once in the AirShopping request, so there is nothing left to send per
+product — `ProductInputs` is omitted entirely:
+
+```json title="POST /offerprice"
 {
   "OfferPriceRQ": {
     "Document": { "Name": "OfferPrice", "ReferenceVersion": "1.0" },
@@ -84,15 +100,7 @@ Each entry supplies the fulfillment data for one selected service, matched by
         }
       ]
     },
-    "Metadata": { "SessionID": "159b2361-3bc8-420d-a0f8-ba55c33187e2", "Tenant": "6941cc3502a186f72ba55226" },
-    "ProductInputs": [
-      {
-        "ServiceDefinitionRef": "SVC-SIM-2d1842ea-c534-4f",
-        "Input": {
-          "metadata": { "passengers": [ { "firstName": "John", "lastName": "Doe", "email": "john@example.com" } ] }
-        }
-      }
-    ]
+    "Metadata": { "SessionID": "159b2361-3bc8-420d-a0f8-ba55c33187e2", "Tenant": "6941cc3502a186f72ba55226" }
   }
 }
 ```
@@ -139,7 +147,7 @@ Each entry supplies the fulfillment data for one selected service, matched by
 
 ## Multi-product carts
 
-Send several `SelectedOffers` (and matching `ProductInputs`) in one call. They land in a single
+Send several `SelectedOffers` in one call (with a `ProductInputs` entry for any that needs one). They land in a single
 cart; the response returns one `PricedOffers[]` entry per item, and OrderCreate books them all.
 
 <Callout type="warn" title="One currency per cart">

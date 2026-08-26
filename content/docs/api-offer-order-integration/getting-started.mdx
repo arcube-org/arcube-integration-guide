@@ -11,7 +11,7 @@ This page gets you from zero to a booked ancillary as quickly as possible.
 
 - **Credentials** — a `clientId` and `clientSecret` issued by Arcube.
 - **Base URL** — your assigned NDC-like API environment, referred to below as `${arcube-url}`
-  (e.g. `https://api.arcube.com`). Arcube provides this per environment (sandbox / production).
+  (e.g. `https://qa-ndc-api.arcube.com`). Arcube provides this per environment.
 - An HTTP client capable of sending JSON with custom headers.
 
 ## Authentication
@@ -69,24 +69,24 @@ Authorization: Bearer <accessToken>
 | Method | Path | Description |
 | --- | --- | --- |
 | `POST` | `/auth/api/login` | Obtain a Bearer token |
-| `POST` | `/ndc/airshopping` | Discover ancillary offers |
-| `POST` | `/ndc/offerprice` | Cart + price selected offers |
-| `POST` | `/ndc/ordercreate` | Book the cart |
-| `POST` | `/ndc/orderview` | Retrieve a created order |
-| `POST` | `/ndc/orderlist` | List orders for a customer |
+| `POST` | `/airshopping` | Discover ancillary offers |
+| `POST` | `/offerprice` | Cart + price selected offers |
+| `POST` | `/ordercreate` | Book the cart |
+| `POST` | `/orderview` | Retrieve a created order |
+| `POST` | `/orderlist` | List orders for a customer |
 
 ## Minimal happy path
 
 The shortest route to a booking (an eSIM here). Each step's output feeds the next.
 
-**1. Discover** — `POST /ndc/airshopping` with a flight itinerary. Capture
+**1. Discover** — `POST /airshopping` with a flight itinerary. Capture
 `Metadata.CorrelationID`, `Metadata.ShoppingSessionID`, and pick an offer whose
 `ServiceDefinitionRef` starts with `SVC-SIM`.
 
-**2. Cart + price** — `POST /ndc/offerprice` with the selected offer and its
+**2. Cart + price** — `POST /offerprice` with the selected offer and its
 `ProductInputs`. Capture `OfferPriceRS.PricedSessionID` and `PricedOffers[0]`.
 
-**3. Book** — `POST /ndc/ordercreate` with the `PricedSessionID`, an `externalPSP`
+**3. Book** — `POST /ordercreate` with the `PricedSessionID`, an `externalPSP`
 payment block, and a customer. Include a real airline **PNR** unless your tenant is
 enabled for no-PNR ordering. Receive `OrderID` and `TransactionRef`.
 

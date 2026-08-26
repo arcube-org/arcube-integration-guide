@@ -28,9 +28,9 @@ produced by the previous one.
 
 | Step | Endpoint | Purpose | Produces |
 | --- | --- | --- | --- |
-| **1. AirShopping** | `POST /ndc/airshopping` | Discover available ancillary offers for a trip or product search | `ShoppingSessionID` |
-| **2. OfferPrice** | `POST /ndc/offerprice` | Add one or more selected offers to a cart and (re)price them | `PricedSessionID` |
-| **3. OrderCreate** | `POST /ndc/ordercreate` | Confirm payment and book the cart | `OrderID` + `TransactionRef` |
+| **1. AirShopping** | `POST /airshopping` | Discover available ancillary offers for a trip or product search | `ShoppingSessionID` |
+| **2. OfferPrice** | `POST /offerprice` | Add one or more selected offers to a cart and (re)price them | `PricedSessionID` |
+| **3. OrderCreate** | `POST /ordercreate` | Confirm payment and book the cart | `OrderID` + `TransactionRef` |
 
 ```text
 AirShopping ─▶ OfferPrice ─▶ OrderCreate
@@ -59,8 +59,15 @@ A single AirShopping response can surface offers across many categories. The cur
 | Baggage protection | `BAGGAGE_PROTECTION` | General AirShopping |
 | Airport transfer | `AIRPORT_TRANSFER` | Dedicated product search |
 | Car rental | `CAR_RENTAL` | Dedicated product search |
+| Airport parking | `PARKING` | Dedicated product search |
 
 See [Products](/docs/api-offer-order-integration/products) for per-category input requirements.
+
+<Callout type="info" title="Ask once, not twice">
+  Everything AirShopping establishes — product and vendor identifiers, descriptions, prices, quote
+  tokens, search parameters, the car-rental driver and the traveller list — is resolved
+  server-side and never requested again. Most products cart with **no** `ProductInputs` at all.
+</Callout>
 
 ## Key architectural concepts
 

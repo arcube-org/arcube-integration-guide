@@ -22,7 +22,7 @@ values you must carry forward. Field-level schemas live on the
 ### 1 — AirShopping
 
 ```http
-POST ${arcube-url}/ndc/airshopping
+POST ${arcube-url}/airshopping
 Authorization: Bearer ${token}
 Content-Type: application/json
 x-correlation-id: ${corr}
@@ -39,7 +39,7 @@ Body: a general AirShopping (see [AirShopping example](/docs/api-offer-order-int
 ### 2 — OfferPrice
 
 ```http
-POST ${arcube-url}/ndc/offerprice
+POST ${arcube-url}/offerprice
 Authorization: Bearer ${token}
 x-correlation-id: ${corr}
 ```
@@ -61,18 +61,7 @@ x-correlation-id: ${corr}
         }
       ]
     },
-    "Metadata": { "SessionID": "${corr}", "Tenant": "6941cc3502a186f72ba55226" },
-    "ProductInputs": [
-      {
-        "ServiceDefinitionRef": "${sdRef}",
-        "Input": {
-          "vendorReferenceId": "hallo-mobil-7days-1gb",
-          "description": "1 GB - 7 days",
-          "serviceDetails": { "Region": "DE", "CountryCode": "DE", "Data Amount": "1GB", "Validity": "7 days" },
-          "metadata": { "passengers": [ { "firstName": "John", "lastName": "Doe", "email": "john@example.com" } ] }
-        }
-      }
-    ]
+    "Metadata": { "SessionID": "${corr}", "Tenant": "6941cc3502a186f72ba55226" }
   }
 }
 ```
@@ -83,7 +72,7 @@ x-correlation-id: ${corr}
 ### 3 — OrderCreate
 
 ```http
-POST ${arcube-url}/ndc/ordercreate
+POST ${arcube-url}/ordercreate
 Authorization: Bearer ${token}
 x-correlation-id: ${corr}
 x-idempotency-key: ${new-uuid}
@@ -113,8 +102,8 @@ Response contains `Order.OrderID` and `Order.TransactionRef`.
 ## Multi-product order
 
 Cart several products in **one** OfferPrice and book them with **one** OrderCreate. Only the
-OfferPrice differs — send multiple `SelectedOffers` (each from the same AirShopping response) and
-matching `ProductInputs`.
+OfferPrice differs — send multiple `SelectedOffers`, each from the same AirShopping response.
+
 
 ```json title="OfferPrice — Query.SelectedOffers"
 [
@@ -127,7 +116,8 @@ matching `ProductInputs`.
 ]
 ```
 
-Provide a matching `ProductInputs[]` entry for each `ServiceDefinitionRef` (see
+No `ProductInputs` are needed here: lounge and carbon offset resolve everything from the session,
+and fast-track only needs one if you are pinning a visit slot (see
 [Products](/docs/api-offer-order-integration/products)). OfferPrice returns a `PricedSessionID`
 with three `PricedOffers`. OrderCreate (same as above) books the whole cart; the response lists
 all three `Items` and a combined `PriceSummary.GrandTotal`.
@@ -146,12 +136,12 @@ same `x-correlation-id`.
 
 ### 1 — AirShopping #1 (generates `${corr}`)
 
-`POST /ndc/airshopping` with `x-correlation-id: ${corr}`. Take a **lounge** offer from the
+`POST /airshopping` with `x-correlation-id: ${corr}`. Take a **lounge** offer from the
 response; keep its ids and `ShoppingSessionID` → `${ssidA}`.
 
 ### 2 — AirShopping #2 (reuse `${corr}`)
 
-`POST /ndc/airshopping` with the **same** `x-correlation-id: ${corr}`. Take a **fast-track** offer;
+`POST /airshopping` with the **same** `x-correlation-id: ${corr}`. Take a **fast-track** offer;
 keep its ids and `ShoppingSessionID` → `${ssidB}`.
 
 ### 3 — OfferPrice across both sessions

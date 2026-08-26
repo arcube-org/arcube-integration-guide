@@ -5,7 +5,7 @@ description: Confirm payment and book the priced cart. Request/response schema, 
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-`POST /ndc/ordercreate`
+`POST /ordercreate`
 
 OrderCreate books the cart referenced by a `PricedSessionID`. It checks out the cart, confirms the
 order, and fulfils it with the underlying providers — returning an `OrderID` and an aggregation
@@ -74,7 +74,7 @@ two fields are required — the rest default from the priced cart.
 
 ## Example request
 
-```json title="POST /ndc/ordercreate"
+```json title="POST /ordercreate"
 {
   "OrderCreateRQ": {
     "Document": { "Name": "OrderCreate", "ReferenceVersion": "1.0" },
@@ -120,9 +120,43 @@ two fields are required — the rest default from the priced cart.
 | `OrderCreateRS.Order.Owner` | `"Arcube"`. |
 | `OrderCreateRS.Order.TransactionRef` | Aggregation transaction id (provider booking reference). Use it for OrderCancel and to fetch the transaction. |
 | `OrderCreateRS.Order.PNR` | The record locator — the PNR you sent, or the one the order generated (no-PNR tenants). Equals the order's session id. |
-| `OrderCreateRS.Order.Items[]` | Every booked item: `OrderItemID`, `OfferItemRef`, `ServiceDefinitionRef`, `ServiceTypeCode`, `PriceDetail.TotalAmount`. |
+| `OrderCreateRS.Order.Items[]` | Every booked item: `OrderItemID`, `OfferItemRef`, `ServiceDefinitionRef`, `ServiceTypeCode`, `Quantity`, `Status`, `PriceDetail.TotalAmount`, plus the delivered artifact (see below). |
 | `OrderCreateRS.Order.PriceSummary` | `{ Currency, GrandTotal }` for the whole order. |
 | `OrderCreateRS.Metadata` | `CorrelationID`, `PricedSessionID`, `TransactionRef`, `PNR`, `OrderKey`. |
+
+### What the customer actually bought
+
+Beyond the price and the status, each item carries the vendor's own confirmation — the thing the
+passenger needs in order to use what they paid for. The block is named after the category and only
+appears once the line is `CONFIRMED`:
+
+| `ServiceTypeCode` | Block | Contains |
+| --- | --- | --- |
+| `ESIMS` | `Passengers[].Sims[]` | ICCID, activation code, QR, `InstallationGuideURL`. |
+| `LOUNGE_ACCESS` | `Passengers[].Passes[]` | Pass reference and validity. |
+| `FAST_TRACK` | `Passengers[].Vouchers[]` | E-pass id and per-passenger vouchers. |
+| `CARBON_OFFSET` | `CarbonOffset` | Certificate reference, project, tonnes offset. |
+| `AIRPORT_TRANSFER` | `Transfer` | `Booking` (reservation id, confirmation number, supplier contact), `Legs[]` (flight, vehicle, driver, meet-and-greet instructions), `CancellationPolicy`. |
+| `CAR_RENTAL` | `CarRental` | `Booking`, `Vehicle`, `Supplier`, `Driver`, `Itinerary`, `Mileage`, `Inclusions`, `Protections`, `Notices`, `Extras` payable at the desk, `CancellationPolicy`. |
+| `BAGGAGE_PROTECTION` | `BaggageProtection` | `Product`, `Coverage.Benefits[]`, `Terms` (payout trigger and report deadline, in hours), `Claims` (tracking URL), `Flight`, and `Policies[]` — one agreement per traveller. |
+| `PARKING` | `Parking` | `Booking`, `Reservation`, `Lot` (address, phone, timezone, directions, shuttle info, special conditions), `AmountDueAtLocation`, `CancellationPolicy`. |
+
+`Fulfillment` (`RequestedQuantity` / `DeliveredQuantity` / `FailedQuantity`) appears on any item the
+vendor delivers per unit, so a partially-fulfilled line is visible rather than implied.
+
+<Callout type="warn" title="Money still payable at delivery">
+  Two categories can leave the passenger owing money we did not collect: `Parking.AmountDueAtLocation`
+  and `CarRental.Extras[]` (mandatory desk charges such as airport surcharges). Surface both, or your
+  total understates the trip.
+</Callout>
+
+<Callout type="info" title="A PENDING line is not a failure">
+  Some suppliers confirm asynchronously — an on-request car-rental rate, or baggage protection.
+  OrderCreate waits for the vendor to settle before responding, but returns honestly as `PENDING` if
+  it does not settle in time. Poll
+  [OrderView](/docs/api-offer-order-integration/order-management) for the final state; the same
+  blocks appear there once the line confirms.
+</Callout>
 
 ### Example response
 
@@ -172,7 +206,7 @@ See [Errors](/docs/api-offer-order-integration/errors) for the full catalog.
 
 ## Retrieving orders
 
-- `POST /ndc/orderview` — retrieve a created order by id.
-- `POST /ndc/orderlist` — list a customer's orders (by tenant + email).
+- `POST /orderview` — retrieve a created order by id.
+- `POST /orderlist` — list a customer's orders (by tenant + email).
 
 See [Order Management](/docs/api-offer-order-integration/order-management).

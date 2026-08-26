@@ -5,7 +5,7 @@ description: Discover ancillary offers. Full request/response schema for the gen
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-`POST /ndc/airshopping`
+`POST /airshopping`
 
 AirShopping is the entry point of every journey. It returns the ancillary offers available for a
 trip (or a product-specific search) and creates a **ShoppingSession** whose id you carry into
@@ -15,9 +15,9 @@ There are two request shapes:
 
 - **General AirShopping** — driven by the flight itinerary (`CoreQuery.Segments`). Returns
   itinerary-derived ancillaries: eSIMs, lounges, carbon offset, fast-track, baggage protection.
-- **Product search** — driven by `ProductSearchInputs`. Required for **airport transfer** and
-  **car rental**, whose availability depends on parameters not derivable from an itinerary
-  (locations, timing, driver, geocoordinates).
+- **Product search** — driven by `ProductSearchInputs`. Required for **airport transfer**,
+  **car rental** and **airport parking**, whose availability depends on parameters not derivable
+  from an itinerary (locations, timing, driver, geocoordinates).
 
 ---
 
@@ -65,7 +65,10 @@ Each segment is one leg of the journey.
 | --- | --- | --- |
 | `PassengerID` | string | Unique id, referenced by `PassengerRefs`. |
 | `PTC` | string | Passenger Type Code: `ADT`, `CHD`, `INF`. |
+| `Individual.Title` | string | e.g. `Mr`, `Ms`. |
 | `Individual.GivenName` / `Individual.Surname` | string | Identity. |
+| `Email` | string | Optional. Contact address for this traveller. Supplying it here means **OfferPrice never asks for the passenger list again** — see [Products](/docs/api-offer-order-integration/products#where-the-traveller-list-comes-from). Also read from `ContactInformation.EmailAddress.EmailAddressValue`. |
+| `Phone.CountryCode` / `Phone.Number` | string | Optional contact number, split into dialling code and number. |
 | `Associations.InfantRef` / `Associations.AssociatedAdultRef` | string | Links infants ↔ adults. |
 | `LoyaltyProgram.ProgramCode` / `LoyaltyProgram.TierCode` | string | Optional loyalty enrichment for eligibility/personalization. |
 
@@ -83,7 +86,7 @@ Each segment is one leg of the journey.
 
 ### Example request
 
-```json title="POST /ndc/airshopping"
+```json title="POST /airshopping"
 {
   "AirShoppingRQ": {
     "Document": { "Name": "Arcube NDC-like AirShopping", "ReferenceVersion": "1.0" },
@@ -200,8 +203,10 @@ The response separates commercial data (`OtherOffers`) from descriptive data
 | Lounge access | `SVC-LNG` |
 | Carbon offset | `SVC-CO2` |
 | Fast-track | `SVC-FT` |
+| Baggage protection | `SVC-BAG` |
 | Airport transfer | `SVC-TRF` |
 | Car rental | `SVC-CAR` |
+| Airport parking | `SVC-PARK` |
 
 <Callout type="info" title="Prefer priced offers">
   Some entries can be zero-priced placeholders. When selecting programmatically, choose an offer
@@ -226,24 +231,29 @@ Point-to-point transfer discovery. Uses `ProductSearchInputs` with `ProductType:
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `airline_id` | Yes | Tenant/airline id for routing and eligibility. |
-| `pointOfSale` | Yes | Sales channel (e.g. `WHITE_LABEL`). Required by the pricing engine. |
 | `mode` | Yes | `one_way` or `round_trip`. |
 | `num_passengers` | Yes | Passenger count. |
 | `start_address` / `end_address` | Yes | Human-readable pickup/drop-off. |
 | `start_coordinates` / `end_coordinates` | Yes | `{ lat, lng }` for each endpoint. |
-| `pickup_datetime` | Yes | Requested pickup date/time. Use a **future** date. |
-| `currency` | Yes | Shopping currency. |
+| `pickup_datetime` | Yes | ISO-8601 **with an explicit UTC offset**, e.g. `"2026-12-24T13:00:00+02:00"`. Use a **future** date. |
+| `return_pickup_datetime` | Conditional | Same format. Required when `mode` is `round_trip`. |
+| `currency` | Optional | Shopping currency. Defaults from `Metadata`. |
 | `requested_currency` | Optional | Display/settlement currency (triggers conversion; requires white-label origin). |
 | `fromCountryCode` / `toCountryCode` | Yes | Country context. |
 | `campaign` / `branch` | Optional | Merchandising / experiment context. |
 
-Providers are **not** a client input — they're resolved from the general recommendation on this
-session (see the callout above).
+<Callout type="warn" title="Pickup times need an offset">
+  `"2026-12-24 13:00"` and `"2026-12-24T13:00"` are rejected — a transfer pickup is a real instant
+  and a naive time would be read in the wrong zone. Send the offset, or `Z`.
+</Callout>
+
+`airline_id`, `pointOfSale` and the transfer **providers** are **not** client inputs — the first
+two are taken from `Metadata.Tenant` / `Metadata.PointOfSale`, and the providers are resolved from
+the general recommendation on this session (see the callout above).
 
 ### Example request
 
-```json title="POST /ndc/airshopping"
+```json title="POST /airshopping"
 {
   "AirShoppingRQ": {
     "Document": { "Name": "Arcube NDC-like AirShopping", "ReferenceVersion": "1.0" },
@@ -255,13 +265,11 @@ session (see the callout above).
       {
         "ProductType": "AIRPORT_TRANSFER",
         "Input": {
-          "airline_id": "6941cc3502a186f72ba55226",
-          "pointOfSale": "WHITE_LABEL",
           "mode": "one_way",
           "num_passengers": 1,
           "start_address": "Athens International Airport (ATH), Spata, Greece",
           "end_address": "Cholargos, Greece",
-          "pickup_datetime": "2026-07-23 15:00",
+          "pickup_datetime": "2026-07-23T15:00:00+03:00",
           "currency": "USD",
           "requested_currency": "DOP",
           "start_coordinates": { "lat": 37.936175, "lng": 23.9465255 },
@@ -300,21 +308,19 @@ Dedicated rental search. Uses `ProductSearchInputs` with `ProductType: "CAR_RENT
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `airline_id` | Optional | Resolved from token if omitted. |
-| `pointOfSale` | Yes | Sales channel. Required by the pricing engine. |
-| `currency` | Yes | Shopping currency. |
+| `currency` | Optional | Shopping currency. Defaults from `Metadata`. |
 | `requested_currency` | Optional | Display/settlement currency. |
 | `fromCountryCode` / `toCountryCode` | Yes | Country context. |
 | `driver.age` | Yes | Driver age (eligibility / rate filtering). |
 | `driver.date_of_birth` | Yes | `YYYY-MM-DD`. |
 | `driver.residence` | Yes | Driver residence country code. |
-| `pickup_at` / `dropoff_at` | Yes | Rental start/end (ISO). Use **future** dates. |
+| `pickup_at` / `dropoff_at` | Yes | ISO-8601 **with an explicit UTC offset**, e.g. `"2026-12-25T10:00:00+00:00"`. Use **future** dates; `dropoff_at` must be after `pickup_at`. |
 | `pickup_location` | Yes | `{ iata }` or `{ id }`. |
 | `dropoff_location` | Optional | `{ iata }` or `{ id }`. Omit for pickup-location return. |
 
 ### Example request
 
-```json title="POST /ndc/airshopping"
+```json title="POST /airshopping"
 {
   "AirShoppingRQ": {
     "Document": { "Name": "Arcube NDC-like AirShopping", "ReferenceVersion": "1.0" },
@@ -326,15 +332,13 @@ Dedicated rental search. Uses `ProductSearchInputs` with `ProductType: "CAR_RENT
       {
         "ProductType": "CAR_RENTAL",
         "Input": {
-          "airline_id": "6941cc3502a186f72ba55226",
-          "pointOfSale": "WHITE_LABEL",
           "currency": "USD",
           "requested_currency": "DOP",
           "fromCountryCode": "MX",
           "toCountryCode": "MX",
           "driver": { "age": 37, "date_of_birth": "1989-07-06", "residence": "DO" },
-          "pickup_at": "2026-07-15T12:15:00",
-          "dropoff_at": "2026-07-24T18:00:00",
+          "pickup_at": "2026-07-15T12:15:00-05:00",
+          "dropoff_at": "2026-07-24T18:00:00-05:00",
           "pickup_location": { "iata": "CUN" }
         }
       }
@@ -348,12 +352,105 @@ Dedicated rental search. Uses `ProductSearchInputs` with `ProductType: "CAR_RENT
 
 One `OtherOffer` per rental option, each referencing a `SVC-CAR-...` service definition. The
 public `OtherServiceInformation` includes vehicle and location detail (car name, category,
-transmission, seats, pickup location). Internal identifiers required for booking (the rental rate
-id) are resolved automatically and carried into OfferPrice.
+transmission, seats, pickup location, rental days, mileage, cancellation type and whether the rate
+is instant-confirmation).
+
+The identifiers required for booking are resolved automatically and carried into OfferPrice — **as
+is the `driver` block**, so the driver's date of birth and residence are never asked for a second
+time.
+
+<Callout type="warn" title="Check `InstantConfirmation` before selling">
+  A rate whose `OtherServiceInformation.InstantConfirmation` is `false` is **on request**: the
+  supplier does not confirm at booking time and the order line can stay `PENDING` indefinitely. If
+  you need a guaranteed car, filter on this flag.
+</Callout>
+
+---
+
+## Airport Parking AirShopping
+
+Geo-based parking search around an airport. Uses `ProductSearchInputs` with
+`ProductType: "PARKING"`.
+
+<Callout type="warn" title="Run a general AirShopping first, on the same correlation id">
+  Issue a **general AirShopping** first using the **same** `x-correlation-id`, then the parking
+  product search. The general recommendation establishes that parking is on sale for this trip; if
+  it wasn't offered, the search returns
+  `400 Parking not supported for this session at this time of the trip`.
+</Callout>
+
+### Input fields
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `lat` / `lng` | Conditional | Search centre. Provide these **or** `airportIata`. |
+| `airportIata` | Conditional | 3-letter IATA code; Arcube resolves it to coordinates. |
+| `fromDate` / `toDate` | Yes | Stay start/end as **lot-local wall clock**, `"YYYY-MM-DD HH:mm:ss"`. `toDate` must be after `fromDate`. |
+| `numberOfSpots` | Optional | Spots to reserve. Defaults to `1`. |
+| `page` / `pageSize` | Optional | Pagination. Default `1` / `10`; `pageSize` max `50`. |
+| `currency` | Optional | Shopping currency. |
+| `requested_currency` | Optional | Display/settlement currency. |
+
+<Callout type="warn" title="Parking dates carry no timezone — deliberately">
+  Unlike airport transfer and car rental, parking times are the **lot's own wall clock**: the gate
+  opens at 21:20 by the lot's clock, wherever you are. An offset or a trailing `Z` is **rejected**
+  rather than stripped, because silently discarding it would shift the booking. `"T"` is accepted
+  as the separator and seconds may be omitted. Each returned product carries the lot's zone as
+  `locationInfo.timezone`, so you can still resolve the instant.
+</Callout>
+
+### Example request
+
+```json title="POST /airshopping"
+{
+  "AirShoppingRQ": {
+    "Document": { "Name": "Arcube NDC-like AirShopping", "ReferenceVersion": "1.0" },
+    "Party": {
+      "Sender": { "AgentUser": { "Name": "Arcube API Client" } },
+      "Recipient": { "SystemID": "ArcubeAggregationEngine" }
+    },
+    "ProductSearchInputs": [
+      {
+        "ProductType": "PARKING",
+        "Input": {
+          "lat": 39.051351,
+          "lng": -84.6671453,
+          "fromDate": "2026-08-28 21:20:00",
+          "toDate": "2026-09-05 21:20:00",
+          "numberOfSpots": 1,
+          "page": 1,
+          "pageSize": 10,
+          "requested_currency": "USD"
+        }
+      }
+    ],
+    "Metadata": { "PointOfSale": "AIRLINE_WEBSITE", "Tenant": "6941cc3502a186f72ba55226", "SessionID": "NDC-PARK" }
+  }
+}
+```
+
+### Response
+
+One `OtherOffer` per lot × parking type, each referencing a `SVC-PARK-...` service definition.
+`OtherServiceInformation` exposes `Lot`, `ParkingType`, `Address`, `City`, `Latitude`, `Longitude`,
+`Timezone`, `CheckIn`, `CheckOut`, `Spots`, `AmountDueAtLocation`, `QuoteTTLSeconds` and
+`CancellationPolicies`.
+
+<Callout type="info" title="Sold-out lots are not returned">
+  The supplier reports lots that have no availability for your dates. They are **omitted** rather
+  than published — an offer you cannot buy would only fail after the customer has paid — so the
+  offer count can be lower than the supplier's `totalLots`.
+</Callout>
+
+<Callout type="warn" title="Quotes are short-lived">
+  `QuoteTTLSeconds` is typically `300`. Cart the offer promptly; a stale quote is rejected at
+  booking.
+</Callout>
 
 <Callout type="info" title="Empty results are a valid response">
-  If a search returns zero offers, the criteria (dates, locations, availability) yielded nothing —
-  it is not an error. Verify dates are in the future and locations are valid.
+  If a search returns zero offers, the criteria (dates, location, availability) yielded nothing —
+  it is not an error. Verify dates are in the future and the coordinates are near an airport with
+  partner lots.
 </Callout>
 
 Continue to [OfferPrice](/docs/api-offer-order-integration/offer-price) to cart and price your

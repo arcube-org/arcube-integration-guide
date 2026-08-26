@@ -5,7 +5,7 @@ description: Cancel a single fulfilled item from an order and initiate its refun
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-`POST /ndc/ordercancel`
+`POST /ordercancel`
 
 OrderCancel cancels **one fulfilled item** from an existing order and initiates its refund.
 
@@ -20,7 +20,7 @@ order. Read it from OrderView (`CancellableItems`), then cancel the item by its 
 ## Step 1 — Find the cancellable item
 
 Call [OrderView](/docs/api-offer-order-integration/order-management) and read
-`Order.CancellableItems[]`. Each entry carries the real `ItemID` (what you pass to OrderCancel), the
+`Order.CancellableItems[]`. Each entry carries the `ItemID` — the same positional `ORDI-n` label as `Items[].OrderItemID`, and what you pass to OrderCancel — plus the
 item's live `Status`, a `Cancellable` flag, and the stored `CancellationPolicy`.
 
 ```json
@@ -30,7 +30,7 @@ item's live `Status`, a `Cancellable` flag, and the stored `CancellationPolicy`.
       "OrderID": "3a8d8d01-a92d-4028-8a27-5efd910bed49",
       "CancellableItems": [
         {
-          "ItemID": "a02661025303d603aaefdda56730f464",
+          "ItemID": "ORDI-1",
           "Name": "Airport Transfer ATH → Cholargos",
           "Status": "CONFIRMED",
           "Cancellable": true,
@@ -82,13 +82,13 @@ The body is a single `OrderCancelRQ`.
 | `Metadata.Tenant` | No | Tenant id. |
 | `Metadata.IdempotencyKey` | No | Client idempotency key. Generated automatically if omitted. |
 
-```json title="POST /ndc/ordercancel"
+```json title="POST /ordercancel"
 {
   "OrderCancelRQ": {
     "Document": { "Name": "OrderCancel", "ReferenceVersion": "1.0" },
     "Query": {
       "OrderID": "3a8d8d01-a92d-4028-8a27-5efd910bed49",
-      "OrderItems": [{ "OrderItemID": "a02661025303d603aaefdda56730f464" }]
+      "OrderItems": [{ "OrderItemID": "ORDI-1" }]
     },
     "Reason": "customer_request",
     "RequestedBy": "customer_request",
@@ -102,8 +102,7 @@ The body is a single `OrderCancelRQ`.
 Cancellations are idempotent. Supply a key via `Metadata.IdempotencyKey` or the `x-idempotency-key`
 header, or let the API generate one:
 
-- car rental (DiscoverCars) gets a key that is **stable per order** — the vendor keys the
-  cancellation on it
+- car rental gets a key that is **stable per order** — the supplier keys the cancellation on it
 - every other vendor gets a per-item, per-attempt key
 
 To safely retry, resend with the **same** idempotency key.
@@ -128,7 +127,7 @@ To safely retry, resend with the **same** idempotency key.
       "OrderID": "3a8d8d01-a92d-4028-8a27-5efd910bed49",
       "Cancellation": {
         "CancellationID": "cncl_9629233d-c15b-4764-837f-b740be045d50",
-        "ItemID": "a02661025303d603aaefdda56730f464",
+        "ItemID": "ORDI-1",
         "Status": "completed"
       },
       "Refund": { "RefundID": "3d0fa504-0b48-4e72-b503-8f6551bece8a", "Status": "REFUNDED", "Amount": 389.72, "Currency": "USD" },
@@ -153,7 +152,7 @@ To safely retry, resend with the **same** idempotency key.
     "Document": { "Name": "Arcube NDC-like OrderCancel Response", "ReferenceVersion": "1.0" },
     "Order": {
       "OrderID": "3a8d8d01-a92d-4028-8a27-5efd910bed49",
-      "Cancellation": { "ItemID": "airalo_hallo-mobil-7days-1gb", "Status": "REJECTED", "Refundable": false, "Reason": "non_refundable" }
+      "Cancellation": { "ItemID": "ORDI-1", "Status": "REJECTED", "Refundable": false, "Reason": "non_refundable" }
     },
     "Errors": [{ "Code": "CANCELLATION_REJECTED", "Message": "This item is not eligible for cancellation" }],
     "Metadata": { "CorrelationID": "b31e2850-57c6-4059-b756-917098be850c" }

@@ -9,7 +9,7 @@ After an order is created you can retrieve it individually or list a customer's 
 
 ## OrderView
 
-`POST /ndc/orderview` — retrieve a single order and its current status.
+`POST /orderview` — retrieve a single order and its current status.
 
 ### Request
 
@@ -18,7 +18,7 @@ After an order is created you can retrieve it individually or list a customer's 
 | `OrderViewRQ.OrderID` | Yes | The order identifier. Accepts either the **transaction id** returned by OrderCreate (`Order.OrderID` / `Order.TransactionRef`) or the order's **PNR / session id**. |
 | `OrderViewRQ.tenant` | No | Tenant context. |
 
-```json title="POST /ndc/orderview"
+```json title="POST /orderview"
 {
   "OrderViewRQ": { "OrderID": "1bf8e39a-5934-4f2e-a283-af1ff9c1e9db" }
 }
@@ -36,10 +36,13 @@ After an order is created you can retrieve it individually or list a customer's 
 | `Order.Status` | Roll-up status across the order's items (e.g. `CONFIRMED`, `PARTIALLY_CONFIRMED`, `REFUNDED`, `FAILED`). |
 | `Order.AssociatedRecords[]` | Linked records — the `PNR` and the underlying transaction id(s) (`TX`). |
 | `Order.Customer` / `Order.Passengers[]` | Buyer and traveller details. |
-| `Order.Items[]` | Each item: `OrderItemID`, `Name`, `ServiceTypeCode`, `Quantity`, `PriceDetail.TotalAmount`, `Status`. Item amounts are in **milles** (decimal = 3). |
-| `Order.PriceSummary` | `{ Currency, GrandTotal }` for the order (major units). |
-| `Order.CancellableItems[]` | Fulfilled items with the real `ItemID`, live `Status`, a `Cancellable` flag, and the booking-time `CancellationPolicy`. Pass an `ItemID` to [OrderCancel](/docs/api-offer-order-integration/order-cancel). |
+| `Order.Items[]` | One entry per booked line: `OrderItemID`, `Name`, `ServiceTypeCode`, `Quantity`, `Status`, `PriceDetail.TotalAmount`, `Metadata`, plus the **delivered product** (see below). |
+| `Order.PriceSummary` | `{ Currency, GrandTotal }` for the order. |
+| `Order.CancellableItems[]` | One entry per line with its live `Status`, a `Cancellable` flag and the booking-time `CancellationPolicy`. Pass an `ItemID` to [OrderCancel](/docs/api-offer-order-integration/order-cancel). |
 | `Metadata.CorrelationID` | Correlation id for traceability. |
+
+All money is in **major units** — `{ "amount": 33.17, "currency": "USD" }` means $33.17. (The
+mille-scaled `{ amount, decimal, currency }` form appears only in AirShopping offers.)
 
 An unknown id returns `400 Order not found`.
 
@@ -61,18 +64,21 @@ An unknown id returns `400 Order not found`.
       "Items": [
         {
           "OrderItemID": "ORDI-1",
-          "ServiceTypeCode": "AIRPORT_TRANSFER",
-          "Name": "Airport Transfer ATH → Cholargos",
-          "Quantity": 1,
-          "PriceDetail": { "TotalAmount": { "amount": 389720, "currency": "USD" } },
+          "ServiceTypeCode": "LOUNGE_ACCESS",
+          "Name": "Goldair Handling CIP Lounge",
+          "Quantity": 2,
+          "Metadata": { "passengers": [ "..." ] },
+          "Passengers": [ "... see the per-product sections below ..." ],
+          "Fulfillment": { "RequestedQuantity": 2, "DeliveredQuantity": 2, "FailedQuantity": 0 },
+          "PriceDetail": { "TotalAmount": { "amount": 33.17, "currency": "USD" } },
           "Status": "CONFIRMED"
         }
       ],
-      "PriceSummary": { "Currency": "USD", "GrandTotal": 389.72 },
+      "PriceSummary": { "Currency": "USD", "GrandTotal": 33.17 },
       "CancellableItems": [
         {
-          "ItemID": "d686aeeecb293ca2bc0e7d943dbe04e0",
-          "Name": "Airport Transfer ATH → Cholargos",
+          "ItemID": "ORDI-1",
+          "Name": "Goldair Handling CIP Lounge",
           "Status": "CONFIRMED",
           "Cancellable": true,
           "CancellationPolicy": {
@@ -90,14 +96,470 @@ An unknown id returns `400 Order not found`.
 }
 ```
 
-<Callout type="info" title="OrderItemID vs. ItemID">
-  `Items[].OrderItemID` is a positional label (`ORDI-1`, `ORDI-2`). The value you pass to
-  OrderCancel is the **`CancellableItems[].ItemID`** — the real fulfilled-item id.
+<Callout type="info" title="ItemID is the OrderItemID">
+  `CancellableItems[].ItemID` and `Items[].OrderItemID` are the **same** positional label
+  (`ORDI-1`, `ORDI-2`, ...), and that is what you pass to OrderCancel. Supplier-side item
+  identifiers are resolved for you and are not part of the response.
 </Callout>
+
+---
+
+## What each product returns
+
+Everything the customer needs in order to *use* what they bought is on `Items[]`, in a block named
+after the category. The same blocks appear on the
+[OrderCreate](/docs/api-offer-order-integration/order-create) response, so a retrieved order and a
+freshly booked one carry the same detail.
+
+| `ServiceTypeCode` | Where the deliverable lives | Level |
+| --- | --- | --- |
+| `ESIMS` | `Passengers[].ESIM` | per traveller |
+| `LOUNGE_ACCESS` | `Passengers[].LoungePass` | per traveller |
+| `FAST_TRACK` | `FastTrack` + `Passengers[].FastTrackVoucher` | item + per traveller |
+| `CARBON_OFFSET` | `CarbonOffset` | item |
+| `BAGGAGE_PROTECTION` | `BaggageProtection` (incl. `Policies[]`) | item, with a per-traveller array |
+| `AIRPORT_TRANSFER` | `Transfer` | item |
+| `CAR_RENTAL` | `CarRental` | item |
+| `PARKING` | `Parking` | item |
+
+<Callout type="info" title="A block appears only once the vendor has delivered">
+  While a line is `PENDING` — an on-request car-rental rate, an asynchronous baggage policy — there
+  is no confirmation to publish, so the block is absent and `Status` tells you why. Poll OrderView
+  until `Status` is `CONFIRMED`. A `FAILED` or `REFUNDED` line likewise carries no block; read
+  `StatusReason` and `Refund`.
+</Callout>
+
+<Callout type="warn" title="Partial delivery is visible, not implied">
+  `Fulfillment` (`RequestedQuantity` / `DeliveredQuantity` / `FailedQuantity`, plus `FailedReason`)
+  appears on every per-unit product. A line can be `CONFIRMED` overall while one unit failed — check
+  the counts rather than assuming all `Quantity` were delivered.
+</Callout>
+
+---
+
+### eSIM — `ESIMS`
+
+One eSIM per traveller, under `Passengers[]`.
+
+| Field | Description |
+| --- | --- |
+| `Passengers[].ESIM.iccid` | The SIM's unique identifier. |
+| `Passengers[].ESIM.qrcode` | The `LPA:1$...` activation string. Render it as a QR code for the traveller to scan. |
+| `Passengers[].ESIM.installLink` | One-tap install URL (iOS). |
+| `Passengers[].ESIM.vendorOrderId` | Supplier order reference, for support. |
+| `InstallationGuideURL` | Item-level. Step-by-step instructions to show alongside the QR. |
+
+```json
+{
+  "OrderItemID": "ORDI-1",
+  "ServiceTypeCode": "ESIMS",
+  "Name": "No stress! Stay connected to maps, messages, and rides with an eSIM.",
+  "Quantity": 2,
+  "Passengers": [
+    {
+      "firstName": "IOANNIS", "lastName": "NTANTIS", "email": "ioannis@example.com",
+      "ESIM": {
+        "iccid": "8948010010086721825",
+        "qrcode": "LPA:1$smdp.io$K2-35FV4F-8P9358",
+        "installLink": "https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=LPA%3A1%24smdp.io%24K2-35FV4F-8P9358",
+        "vendorOrderId": "d5e6f58a-b1f6-4714-9fd7-d7d71ae8e799"
+      }
+    },
+    {
+      "firstName": "NIKOS", "lastName": "GKANTIS", "email": "nikos@example.com",
+      "ESIM": {
+        "iccid": "8948010010086721833",
+        "qrcode": "LPA:1$smdp.io$K2-35FV4G-1I8FQTI",
+        "installLink": "https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=...",
+        "vendorOrderId": "f1d6d9a3-4bfa-4f63-8213-0da00d1c8b73"
+      }
+    }
+  ],
+  "Fulfillment": { "RequestedQuantity": 2, "DeliveredQuantity": 2, "FailedQuantity": 0 },
+  "InstallationGuideURL": "https://www.arcube.com/esim/detailed-instructions",
+  "PriceDetail": { "TotalAmount": { "amount": 1.52, "currency": "USD" } },
+  "Status": "CONFIRMED"
+}
+```
+
+---
+
+### Lounge access — `LOUNGE_ACCESS`
+
+One pass per traveller, under `Passengers[]`.
+
+| Field | Description |
+| --- | --- |
+| `Passengers[].LoungePass.epassId` | The pass id. |
+| `Passengers[].LoungePass.qrValue` | The string to render as a QR at the lounge door. |
+| `Passengers[].LoungePass.validFrom` / `.validTo` | Validity window (ISO-8601). |
+| `Passengers[].LoungePass.usages` | `{ available, used }` — how many entries remain. |
+| `Passengers[].LoungePass.vendorOrderId` | Supplier reference, for support. |
+| `Passengers[].LoungePass.error` | Present only when **that** pass failed while the line as a whole confirmed. |
+
+```json
+{
+  "OrderItemID": "ORDI-1",
+  "ServiceTypeCode": "LOUNGE_ACCESS",
+  "Name": "Goldair Handling CIP Lounge",
+  "Quantity": 2,
+  "Passengers": [
+    {
+      "firstName": "IOANNIS", "lastName": "NTANTIS", "email": "ioannis@example.com",
+      "LoungePass": {
+        "epassId": "8100782739876072",
+        "qrValue": "LS/250826/2408261535/2411262359/8100782739876072/ALS/16/MR IOANNIS NTANTIS/0/fddb6a",
+        "vendorOrderId": "8100782739876072",
+        "validFrom": "2026-08-24T15:35:00Z",
+        "validTo": "2026-11-24T23:59:00Z",
+        "usages": { "available": 1, "used": 0 }
+      }
+    }
+  ],
+  "Fulfillment": { "RequestedQuantity": 2, "DeliveredQuantity": 2, "FailedQuantity": 0 },
+  "PriceDetail": { "TotalAmount": { "amount": 33.17, "currency": "USD" } },
+  "Status": "CONFIRMED"
+}
+```
+
+---
+
+### Fast-track — `FAST_TRACK`
+
+Delivered at two levels: **one e-pass covers the whole line** (with `Usages.available` equal to
+the quantity), and each traveller additionally gets their own voucher.
+
+| Field | Description |
+| --- | --- |
+| `FastTrack.EPass.EPassID` | The line's e-pass, presented at the lane. |
+| `FastTrack.EPass.Usages` | `{ available }` — entries remaining on the pass. |
+| `FastTrack.EPass.ValidFrom` / `.ValidTo` | Validity window, when the supplier states one. |
+| `FastTrack.Name` / `.Terminal` / `.AirportCode` / `.AirportName` | Which lane, and where. |
+| `FastTrack.Location` | Prose directions to the lane entrance. |
+| `FastTrack.VisitDate` / `.LaneEntryTime` | The booked slot. |
+| `FastTrack.FlightNumber` | The flight the slot is tied to. |
+| `Passengers[].FastTrackVoucher` | `{ value, type }` — the per-traveller voucher. |
+
+```json
+{
+  "OrderItemID": "ORDI-1",
+  "ServiceTypeCode": "FAST_TRACK",
+  "Name": "Athens International Airport - Main Terminal, ATH",
+  "Quantity": 3,
+  "FastTrack": {
+    "EPass": { "EPassID": "8576741664678064", "VendorOrderID": "FT20260825BRB29W9", "Usages": { "available": 3 } },
+    "Name": "Athens International Airport",
+    "Terminal": "Main Terminal",
+    "AirportCode": "ATH",
+    "AirportName": "Athens International Airport",
+    "Location": "Landside - Intra Schengen Area at the security screening/check points",
+    "VisitDate": "2026-12-23T09:00",
+    "LaneEntryTime": "09:00 - 09:30",
+    "FlightNumber": "DM5801",
+    "BookedAt": "2026-08-25T15:30:46Z"
+  },
+  "Passengers": [
+    {
+      "firstName": "IOANNIS", "lastName": "NTANTIS", "email": "ioannis@example.com",
+      "FastTrackVoucher": { "value": "857204364843140", "type": 1 }
+    }
+  ],
+  "PriceDetail": { "TotalAmount": { "amount": 11.41, "currency": "USD" } },
+  "Status": "CONFIRMED"
+}
+```
+
+---
+
+### Carbon offset — `CARBON_OFFSET`
+
+Bought once for the trip, so the certificate is item-level rather than per traveller.
+
+| Field | Description |
+| --- | --- |
+| `CarbonOffset.Reference` | The certificate reference to show the customer. |
+| `CarbonOffset.VendorOrderID` | Supplier order id. |
+| `CarbonOffset.Project` | `{ Code, Name, Type?, CountryCode? }` — the project funded. |
+| `CarbonOffset.CO2eKg` | Kilograms of CO₂e offset. |
+| `CarbonOffset.Passengers` | Travellers the offset covers. |
+| `CarbonOffset.CustomerImpact` | `{ LifetimeOffsetKg, LifetimeContributions }` — the customer's running total across all their offsets. |
+| `CarbonOffset.ConfirmedAt` | When the certificate was issued. |
+
+```json
+{
+  "OrderItemID": "ORDI-1",
+  "ServiceTypeCode": "CARBON_OFFSET",
+  "Name": "Tambopata-Bahuaja Biodiversity Reserve (REDD+)",
+  "Quantity": 1,
+  "CarbonOffset": {
+    "Reference": "IA1A9P3M",
+    "VendorOrderID": "1b7ac0c4-50b3-4207-adff-45761db766d4",
+    "Project": { "Code": "TAMBOPATA_RESERVE_PE", "Name": "Tambopata-Bahuaja Biodiversity Reserve (REDD+)" },
+    "Passengers": 1,
+    "CustomerImpact": { "LifetimeOffsetKg": 7476.18, "LifetimeContributions": 25 },
+    "ConfirmedAt": "2026-08-25T15:31:16Z"
+  },
+  "PriceDetail": { "TotalAmount": { "amount": 4.65, "currency": "USD" } },
+  "Status": "CONFIRMED"
+}
+```
+
+---
+
+### Baggage protection — `BAGGAGE_PROTECTION`
+
+Item-level, with `Policies[]` as the per-traveller array — one agreement is issued per insured
+person.
+
+| Field | Description |
+| --- | --- |
+| `BaggageProtection.Product` | `{ Type, Code, Name, ReferenceLabel, TermsURL }`. `ReferenceLabel` is what the supplier calls the policy number, so support and the customer use the same words. |
+| `BaggageProtection.Coverage.HeadlineCode` | Which benefit to lead with in the UI. |
+| `BaggageProtection.Coverage.Benefits[]` | `{ Code, Label, Unit, Amount, Currency }`. `Unit` is `MONEY` (format with `Currency`) or `COUNT` (a bare number). |
+| `BaggageProtection.Terms.PayoutTriggerHours` | The guarantee: bag not returned within this many hours and the passenger is paid. |
+| `BaggageProtection.Terms.ReportDeadlineHours` | The window the passenger must report inside, or lose the guarantee. |
+| `BaggageProtection.Claims.TrackingURL` / `.Email` | Where the passenger goes when a bag is missing. |
+| `BaggageProtection.Flight` | The itinerary the cover is attached to — one per booking, not per policy. |
+| `BaggageProtection.Policies[]` | `{ PolicyNumber, CustomerReference, Status, IssuedAt, Passenger }` — one per traveller. |
+
+```json
+{
+  "OrderItemID": "ORDI-1",
+  "ServiceTypeCode": "BAGGAGE_PROTECTION",
+  "Name": "Baggage Protection - Gold Service ($1000)",
+  "Quantity": 3,
+  "BaggageProtection": {
+    "Product": {
+      "Type": "DELAY_GUARANTEE",
+      "Code": "GOLD",
+      "Name": "Gold Service",
+      "ReferenceLabel": "Service Agreement Number",
+      "TermsURL": "https://www.blueribbonbags.com/ServiceAgreement?lang=en"
+    },
+    "Coverage": {
+      "Issuance": "PER_PASSENGER",
+      "ValidityScope": "PNR",
+      "HeadlineCode": "PER_BAG_LIMIT",
+      "Benefits": [
+        { "Code": "PER_BAG_LIMIT", "Label": "Coverage per bag", "Unit": "MONEY", "Amount": 1000, "Currency": "USD" },
+        { "Code": "MAX_BAGS_PER_POLICY", "Label": "Bags covered per policy", "Unit": "COUNT", "Amount": 2 }
+      ]
+    },
+    "Terms": { "PayoutTriggerHours": 96, "ReportDeadlineHours": 24, "IsTransferable": false, "Notes": [ "..." ] },
+    "Claims": { "TrackingURL": "https://www.blueribbonbags.com/tracking", "Email": "info@blueribbonbags.com" },
+    "Flight": { "PNR": "ARC00007E", "AirlineCode": "DM", "FlightNumber": "DM5801", "DepartureDate": "2026-12-23", "ArrivalDate": "2027-01-11" },
+    "Policies": [
+      {
+        "PolicyNumber": "ARCAP14075110",
+        "CustomerReference": "8befe67f-...-BRB-1",
+        "Status": "CONFIRMED",
+        "IssuedAt": "2026-08-25T14:14:46Z",
+        "Passenger": { "PassengerID": "PAX1", "GivenName": "IOANNIS", "Surname": "NTANTIS", "FullName": "IOANNIS NTANTIS", "Email": "ioannis@example.com" }
+      }
+    ]
+  },
+  "Fulfillment": { "RequestedQuantity": 3, "DeliveredQuantity": 3, "FailedQuantity": 0 },
+  "Status": "CONFIRMED"
+}
+```
+
+<Callout type="warn" title="Failed policies stay in the array">
+  A policy that could not be issued appears with `Status: "FAILED"`, a `StatusReason`, and **no**
+  `PolicyNumber` or `IssuedAt`. Read the array rather than assuming every traveller is covered —
+  `Fulfillment` gives you the counts.
+</Callout>
+
+<Callout type="info" title="No CancellationPolicy on this block">
+  Baggage protection carries no product-level cancellation terms. Refundability for the line is
+  reported on `Order.CancellableItems[]`.
+</Callout>
+
+---
+
+### Airport transfer — `AIRPORT_TRANSFER`
+
+Item-level: a transfer is one vehicle for the whole party.
+
+| Field | Description |
+| --- | --- |
+| `Transfer.Booking.ReservationID` | The supplier reservation. |
+| `Transfer.Booking.ConfirmationNumber` | What the passenger quotes to the driver or to support. |
+| `Transfer.Booking.Supplier` | `{ Name, Phone, Email }` — the operator to call on the day. |
+| `Transfer.CancellationPolicy` | `{ Text, Refundable, RefundPercentage, CutoffHours, Tiers[] }`. |
+| `Transfer.Legs[]` | One per direction (`outbound`, `return`). |
+| `Transfer.Legs[].PickupLocation` / `.DropoffLocation` / `.PickupTime` | Where and when. |
+| `Transfer.Legs[].Flight` | The flight the leg is tracked against. |
+| `Transfer.Legs[].Vehicle` | Class, capacity, bags. |
+| `Transfer.Legs[].Driver` | Driver details, once the supplier has assigned one. |
+| `Transfer.Legs[].MeetAndGreet` | `{ Included, Mode, Instructions, ContactNumber, SignText, Images }` — **how the passenger finds the driver**. |
+| `Transfer.Legs[].IncludedWaitingMinutes` | Free waiting time, which starts once the tracked flight lands. |
+| `Transfer.Legs[].SpecialRequests` / `.DistanceKm` / `.EstimatedDurationMinutes` / `.LiveStatus` | Trip detail. |
+
+```json
+{
+  "OrderItemID": "ORDI-1",
+  "ServiceTypeCode": "AIRPORT_TRANSFER",
+  "Name": "Manchester Airport (MAN) → Piccadilly Gardens - Business",
+  "Quantity": 1,
+  "Transfer": {
+    "Booking": {
+      "ReservationID": "c469798458da4898aaa5b7fe502d0efd",
+      "SecondaryReservationID": "e6458bf8a87e42beab8de7233d9313ad",
+      "ConfirmationNumber": "7423082",
+      "Supplier": { "Name": "ICS, Book A Limo", "Phone": "+18002665254", "Email": "reservations@bookalimo.com" }
+    },
+    "CancellationPolicy": { "Text": "Free cancellation up to 48 hours before pickup", "Refundable": true, "RefundPercentage": 100, "CutoffHours": 48, "Tiers": [ { "HoursBefore": 48, "RefundPercentage": 100 } ] },
+    "Legs": [
+      {
+        "Direction": "outbound",
+        "PickupLocation": "Manchester International Airport",
+        "DropoffLocation": "Piccadilly Gardens, Manchester M1 1RG, UK",
+        "PickupTime": "2026-12-25T13:00:00+00:00",
+        "Flight": { "Airline": "XY", "FlightNumber": "DM5801" },
+        "Vehicle": { "Class": "Business", "MaxPassengers": 3, "MaxBags": 3 },
+        "MeetAndGreet": { "Included": true, "Mode": "MEET_AND_GREET", "Instructions": "...", "ContactNumber": "+18002665254", "SignText": "..." },
+        "IncludedWaitingMinutes": 60,
+        "EstimatedDurationMinutes": 35
+      }
+    ]
+  },
+  "PriceDetail": { "TotalAmount": { "amount": 297.88, "currency": "USD" } },
+  "Status": "CONFIRMED"
+}
+```
+
+<Callout type="info" title="Quoting the booking to the operator">
+  Use `ReservationID` and `ConfirmationNumber` — these are the references the operator and their
+  support desk recognise.
+</Callout>
+
+---
+
+### Car rental — `CAR_RENTAL`
+
+Item-level: one vehicle for the booking.
+
+| Field | Description |
+| --- | --- |
+| `CarRental.Booking` | `{ Reference, Status: { Code, Label }, IsOnRequest, ContactEmail }`. |
+| `CarRental.Vehicle` | Name, category, transmission, seats, doors, image, `Specs`. |
+| `CarRental.Supplier` | Desk operator name and contact. |
+| `CarRental.Driver` | The named driver. |
+| `CarRental.Itinerary` | `{ Pickup: { DateTime, Location }, Dropoff: { ... } }`. `Location.Instructions` is **how the driver finds the desk**. |
+| `CarRental.Mileage` | `{ Unlimited, Limit }`. |
+| `CarRental.Inclusions[]` / `CarRental.Protections[]` | What the rate already covers. |
+| `CarRental.Notices[]` | The supplier's binding terms — **including the credit-card pre-authorisation**, without which the traveller is refused the car. |
+| `CarRental.Extras[]` | **Mandatory charges payable at the desk** (airport surcharge, winter tyres). Not part of what Arcube collected. |
+| `CarRental.CancellationPolicy` | Refund terms. |
+
+```json
+{
+  "OrderItemID": "ORDI-1",
+  "ServiceTypeCode": "CAR_RENTAL",
+  "Name": "Alfa Romeo Giulietta - MAN, 15 days",
+  "Quantity": 1,
+  "CarRental": {
+    "Booking": { "Reference": "B93362160", "Status": { "Code": "CONFIRMED", "Label": "Confirmed" }, "IsOnRequest": false, "ContactEmail": "driver@example.com" },
+    "Vehicle": { "Name": "Alfa Romeo Giulietta", "Category": "Compact", "Transmission": "Manual", "Seats": 5 },
+    "Supplier": { "Name": "TESTCOMPANY" },
+    "Itinerary": {
+      "Pickup": { "DateTime": "2026-12-25T10:00:00+00:00", "Location": { "Name": "Manchester Airport", "Instructions": "..." } },
+      "Dropoff": { "DateTime": "2027-01-09T10:00:00+00:00", "Location": { "Name": "Manchester Airport" } }
+    },
+    "Mileage": { "Unlimited": true },
+    "Inclusions": [ { "Name": "Collision Damage Waiver" }, { "Name": "Theft Protection" } ],
+    "Notices": [ { "Name": "Deposit", "Description": "A credit card in the driver's name is required at pick-up." } ],
+    "Extras": [],
+    "CancellationPolicy": { "Refundable": true, "RefundPercentage": 100, "CutoffHours": 48 }
+  },
+  "PriceDetail": { "TotalAmount": { "amount": 524.88, "currency": "USD" } },
+  "Status": "CONFIRMED"
+}
+```
+
+<Callout type="warn" title="Surface Notices and Extras">
+  Both are money or conditions the customer meets at the counter. A UI that shows only the price
+  paid will strand the traveller at the desk.
+</Callout>
+
+---
+
+### Airport parking — `PARKING`
+
+Item-level: one reservation covers every spot.
+
+| Field | Description |
+| --- | --- |
+| `Parking.Booking` | `{ ReservationID, Status, OrderDate }`. `ReservationID` is what a cancellation is issued against. |
+| `Parking.Reservation` | `{ Number, CheckIn, CheckOut, Days, Spots, ParkingType, MinimumBookingDays, ExtraFields[] }`. |
+| `Parking.Lot.Name` / `.Address` / `.City` / `.Phone` | Which lot, and how to reach it. |
+| `Parking.Lot.Timezone` | The lot's zone. **`CheckIn` / `CheckOut` are lot-local wall clock**, so pair them with this to get an instant. |
+| `Parking.Lot.Directions` | Map link. |
+| `Parking.Lot.ShuttleInfo` / `.ShuttleDetails` | How the driver gets from the lot to the terminal. Supplier-authored HTML, carried verbatim. |
+| `Parking.Lot.SpecialConditions` / `.Description` | Supplier-authored HTML. |
+| `Parking.Lot.PrintedReceiptRequired` | Some lots refuse entry without a printed receipt. |
+| `Parking.AmountDueAtLocation` | `{ Amount, Currency }` — **payable on arrival, in the lot's currency**, and not collected by Arcube. |
+| `Parking.CancellationPolicy` | Refund terms as the vendor stated them at booking. |
+
+```json
+{
+  "OrderItemID": "ORDI-1",
+  "ServiceTypeCode": "PARKING",
+  "Name": "Covered, Self · Cincinnati",
+  "Quantity": 1,
+  "Parking": {
+    "Booking": { "ReservationID": "RAR833691", "Status": "CONFIRMED", "OrderDate": "2026-08-25T14:57:36Z" },
+    "Reservation": {
+      "Number": "RAR833691",
+      "CheckIn": "2026-08-28 21:20:00",
+      "CheckOut": "2026-09-05 21:20:00",
+      "Days": 8,
+      "Spots": 1,
+      "ParkingType": "Covered, Self",
+      "ExtraFields": [ { "Label": "License Plate", "Value": "ABC-1234" } ]
+    },
+    "Lot": {
+      "Name": "Holiday Inn Express & Suites (CVG)",
+      "Address": "1055 Vandercar Way, Florence, KY",
+      "City": "Florence",
+      "Phone": "000-000-0000",
+      "Timezone": "America/New_York",
+      "Directions": "https://www.google.com/maps/search/?api=1&query=39.1031182,-84.5120196",
+      "SpecialConditions": "<p>Oversized vehicles pay a surcharge.</p>",
+      "PrintedReceiptRequired": false
+    },
+    "AmountDueAtLocation": { "Amount": 61.2, "Currency": "USD" },
+    "CancellationPolicy": {
+      "Text": "Free cancellation any time before your stay begins",
+      "Refundable": true,
+      "RefundPercentage": 100,
+      "CutoffHours": 0,
+      "Tiers": [ { "HoursBefore": 0, "RefundPercentage": 100 } ]
+    }
+  },
+  "PriceDetail": { "TotalAmount": { "amount": 104.15, "currency": "USD" } },
+  "Status": "CONFIRMED"
+}
+```
+
+---
+
+## What is never returned
+
+The order response carries what the customer needs to use their purchase. It does not carry:
+
+- **Cost and margin data** — what Arcube or the airline paid or earned on the line.
+- **Supplier and provider identities** — the underlying vendor behind an offer is not named.
+- **Supplier-side identifiers** — search and quote references, rate and location keys, and any
+  deep links into a supplier's own systems.
+
+`Items[].Metadata` echoes the context you supplied at OfferPrice (passengers, the fast-track slot,
+parking extra fields) with those keys stripped.
+
 
 ## OrderList
 
-`POST /ndc/orderlist` — list all orders for a customer within a tenant.
+`POST /orderlist` — list all orders for a customer within a tenant.
 
 ### Request
 
@@ -106,7 +568,7 @@ An unknown id returns `400 Order not found`.
 | `OrderListRQ.tenant` | Yes | Tenant identifier. |
 | `OrderListRQ.email` | Yes | Customer email to filter by. |
 
-```json title="POST /ndc/orderlist"
+```json title="POST /orderlist"
 {
   "OrderListRQ": { "tenant": "69e8d990bad67022c672b7bf", "email": "jane.doe@example.com" }
 }

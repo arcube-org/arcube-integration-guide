@@ -5,170 +5,276 @@ description: Per-category reference for every ancillary — service type code, d
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-Every sellable category and the **OfferPrice `ProductInput`** it requires. In every case the
-`ProductInputs[].ServiceDefinitionRef` must equal the selected offer's `ServiceDefinitionRef`.
+Every sellable category and the **OfferPrice `ProductInput`** it takes.
 
-| Category | `ServiceTypeCode` | Ref prefix | Discovery |
-| --- | --- | --- | --- |
-| eSIM | `ESIMS` | `SVC-SIM` | General AirShopping |
-| Lounge access | `LOUNGE_ACCESS` | `SVC-LNG` | General AirShopping |
-| Carbon offset | `CARBON_OFFSET` | `SVC-CO2` | General AirShopping |
-| Fast-track | `FAST_TRACK` | `SVC-FT` | General AirShopping |
-| Baggage protection | `BAGGAGE_PROTECTION` | `SVC-BAG` | General AirShopping |
-| Airport transfer | `AIRPORT_TRANSFER` | `SVC-TRF` | Product search (+ general first) |
-| Car rental | `CAR_RENTAL` | `SVC-CAR` | Product search |
+| Category | `ServiceTypeCode` | Ref prefix | Discovery | OfferPrice input | Delivered on the order as |
+| --- | --- | --- | --- | --- | --- |
+| eSIM | `ESIMS` | `SVC-SIM` | General AirShopping | *none* | `Passengers[].ESIM` |
+| Lounge access | `LOUNGE_ACCESS` | `SVC-LNG` | General AirShopping | *none* | `Passengers[].LoungePass` |
+| Carbon offset | `CARBON_OFFSET` | `SVC-CO2` | General AirShopping | *none* | `CarbonOffset` |
+| Fast-track | `FAST_TRACK` | `SVC-FT` | General AirShopping | visit slot | `FastTrack` + `Passengers[].FastTrackVoucher` |
+| Baggage protection | `BAGGAGE_PROTECTION` | `SVC-BAG` | General AirShopping | *none* | `BaggageProtection` |
+| Airport transfer | `AIRPORT_TRANSFER` | `SVC-TRF` | Product search (+ general first) | flight, when required | `Transfer` |
+| Car rental | `CAR_RENTAL` | `SVC-CAR` | Product search (+ general first) | *none* | `CarRental` |
+| Airport parking | `PARKING` | `SVC-PARK` | Product search (+ general first) | lot extra fields | `Parking` |
+
+<Callout type="info" title="Where the answer comes back">
+  The last column is where the delivered product lands on the OrderCreate and OrderView responses.
+  Field-by-field detail for every block is in
+  [Order Management → What each product returns](/docs/api-offer-order-integration/order-management#what-each-product-returns).
+</Callout>
+
+<Callout type="info" title="Nothing is asked for twice">
+  Anything AirShopping already knows is resolved server-side and never requested again:
+  product and vendor identifiers, `description`, `serviceDetails`, prices, quote tokens, search
+  dates, the driver's details, and **the traveller list**. `ProductInputs` is optional — omit it
+  entirely and most products still cart. Send an entry only to supply something the search could
+  not know, or to override a resolved default.
+</Callout>
+
+## Where the traveller list comes from
+
+Every product that is delivered to a person — eSIM, lounge, fast-track, baggage protection —
+takes its recipients from the **AirShopping `DataLists.PassengerList`**. You already send that
+list to get offers, so it is not requested again.
+
+Add contact details to the passenger and there is nothing left to send at OfferPrice:
+
+```json title="AirShoppingRQ.DataLists.PassengerList"
+{
+  "Passenger": [
+    {
+      "PassengerID": "PAX1",
+      "PTC": "ADT",
+      "Individual": { "Title": "Mr", "GivenName": "John", "Surname": "Doe" },
+      "Email": "john@example.com",
+      "Phone": { "CountryCode": "+30", "Number": "6981164559" }
+    }
+  ]
+}
+```
+
+`Email` and `Phone` are optional additions to the NDC passenger. They are also read from
+`ContactInformation.EmailAddress.EmailAddressValue` / `ContactInformation.Phone.PhoneNumber` if
+you prefer the long form.
+
+**A defaulted list is capped at the quantity bought.** A party of three buying one lounge pass
+gets it issued to the lead traveller — not to three people who were never paid for. To choose
+different recipients, send them explicitly:
+
+```json
+{ "metadata": { "passengers": [ { "firstName": "Jane", "lastName": "Doe", "email": "jane@example.com" } ] } }
+```
+
+A list you send is used exactly as sent, and is **not** truncated.
+
+<Callout type="warn" title="Email is required for emailed products">
+  eSIM, lounge access and fast-track are delivered by email, so every traveller needs an address.
+  If a passenger has none — in the AirShopping list or in an explicit `metadata.passengers` —
+  OfferPrice returns an error naming the traveller, so you can correct it before the customer
+  pays rather than after.
+</Callout>
 
 ---
 
 ## eSIM — `ESIMS`
 
-**OfferPrice `Input`:**
+**OfferPrice `Input`: none.** Recipients come from the AirShopping passenger list; the region,
+country, data amount and validity come from the catalog.
+
+```json
+{}
+```
+
+Optional override — send a different recipient list:
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `metadata.passengers[]` | Yes | `[{ firstName, lastName, email }]` — recipient(s). |
+| `metadata.passengers[]` | Optional | `[{ firstName, lastName, email }]`. Overrides the AirShopping list. |
 
-`description` and `serviceDetails` (Region, Country, Data Amount, Validity) are resolved from the
-shopping catalog — you don't send them.
-
-```json
-{
-  "metadata": { "passengers": [ { "firstName": "John", "lastName": "Doe", "email": "john@example.com" } ] }
-}
-```
+**On the order:** one `Passengers[].ESIM` per traveller (ICCID, activation `qrcode`, `installLink`), plus an item-level `InstallationGuideURL` — see [OrderView](/docs/api-offer-order-integration/order-management#esim--esims).
 
 ---
 
 ## Lounge access — `LOUNGE_ACCESS`
 
-**OfferPrice `Input`:**
+**OfferPrice `Input`: none.** Recipients come from the AirShopping passenger list; the lounge
+name, terminal, airport and location come from the catalog.
+
+```json
+{}
+```
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `metadata.passengers[]` | Yes | `[{ firstName, lastName, email }]`. |
+| `metadata.passengers[]` | Optional | Overrides the AirShopping list. |
 
-`description` and `serviceDetails` (Lounge Name, Terminal, Airport Code/Name, Location) are
-resolved from the shopping catalog — you don't send them.
-
-```json
-{
-  "metadata": { "passengers": [ { "firstName": "John", "lastName": "Doe", "email": "john@example.com" } ] }
-}
-```
+**On the order:** one `Passengers[].LoungePass` per traveller (`qrValue`, validity window, remaining `usages`) — see [OrderView](/docs/api-offer-order-integration/order-management#lounge-access--lounge_access).
 
 ---
 
 ## Carbon offset — `CARBON_OFFSET`
 
-**OfferPrice `Input`:**
-
-Nothing is required from the client — `description` and the Project Name are resolved from the
-catalog, and the offset is placed from Arcube's recommendation. The fields below are **optional**
-and, when sent, only enrich the receipt.
+**OfferPrice `Input`: none.** The project and description come from the catalog, and the offset
+is placed from Arcube's own recommendation.
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `serviceDetails.Route` | Optional | Itinerary, e.g. `"CUN → MAN"`. |
+| `serviceDetails.Route` | Optional | Itinerary, e.g. `"CUN → MAN"`. Enriches the receipt. |
 | `serviceDetails.Passengers` | Optional | Passenger count. |
-| `metadata.perPassengerPrice` | Optional | Number. |
-| `metadata.perPassengerCO2` | Optional | Number. |
-| `metadata.co2Unit` | Optional | e.g. `"KG"`. |
-| `metadata.totalPassengersInBooking` | Optional | Integer. |
-| `metadata.passengersInQuote` | Optional | Integer. |
+| `metadata.perPassengerCO2` / `.co2Unit` / `.perPassengerPrice` | Optional | Receipt enrichment. |
 
-```json
-{
-  "serviceDetails": { "Route": "CUN → MAN", "Passengers": 1 },
-  "metadata": { "perPassengerPrice": 864.34, "perPassengerCO2": 616.68, "co2Unit": "KG", "totalPassengersInBooking": 1, "passengersInQuote": 1 }
-}
-```
+**On the order:** an item-level `CarbonOffset` block (certificate `Reference`, `Project`, `CO2eKg`) — see [OrderView](/docs/api-offer-order-integration/order-management#carbon-offset--carbon_offset).
 
 ---
 
 ## Fast-track — `FAST_TRACK`
 
+Recipients come from the AirShopping passenger list. The one thing the search cannot know is
+**which slot** the passenger wants — fast-track is booked for a specific time.
+
 | Field | Required | Description |
 | --- | --- | --- |
-| `metadata` | Yes | Object, e.g. `{ passengers: [{ firstName, lastName, email }] }`. |
+| `visitDate` | Recommended | `YYYY-MM-DD`. |
+| `visitTime` | Recommended | `HH:mm`. |
+| `visitTimeRange` / `visitDateTime` | Optional | Alternative slot spellings. |
+| `metadata.passengers[]` | Optional | Overrides the AirShopping list. |
 
-`description` and `serviceDetails` (Fast Track Name, Terminal, Airport Code/Name, Location) are
-resolved from the shopping catalog — you don't send them.
+Slot fields are accepted at the top level or inside `metadata`; both are echoed onward.
 
 ```json
-{
-  "metadata": { "passengers": [ { "firstName": "John", "lastName": "Doe", "email": "john@example.com" } ] }
-}
+{ "visitDate": "2026-12-23", "visitTime": "11:52" }
 ```
+
+**On the order:** an item-level `FastTrack` block (the line's e-pass, lane location, booked slot) plus a `Passengers[].FastTrackVoucher` each — see [OrderView](/docs/api-offer-order-integration/order-management#fast-track--fast_track).
 
 ---
 
 ## Baggage protection — `BAGGAGE_PROTECTION`
 
-| Field | Required | Description |
-| --- | --- | --- |
-| `metadata` | Yes | Object (e.g. `{ productCode, ProductCode, PassengerList, productId }`). |
-
-`description` and `serviceDetails` are resolved from the shopping catalog — you don't send them.
+**OfferPrice `Input`: none.** The insured travellers come from the AirShopping passenger list, and
+the cover level, per-bag limit and product code come from the catalog.
 
 ```json
-{
-  "metadata": { "productCode": "BRB1", "PassengerList": [ { "firstName": "John", "lastName": "Doe" } ] }
-}
+{}
 ```
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `metadata.passengers[]` | Optional | `[{ title, firstName, lastName, email, phone, callingCode }]`. Overrides the AirShopping list. |
+
+<Callout type="warn" title="One policy per traveller">
+  Baggage protection is issued per insured person, so `Quantity` is the number of policies.
+  Naming **fewer** travellers than policies is supported — the remaining policies are issued to
+  the booker. Naming **more** is rejected: the surplus travellers would appear on the order
+  without being covered.
+</Callout>
+
+<Callout type="info" title="Travellers go in `metadata.passengers`">
+  This is the only key read for the insured list. Any other key is ignored, and the policies are
+  then issued to the booker — so a list sent under a different name fails silently rather than
+  returning an error. If you do not need to override the AirShopping passenger list, send no
+  input at all.
+</Callout>
+
+**On the order:** a `BaggageProtection` block with `Policies[]` — one agreement per traveller — plus `Terms`, `Claims` and `Coverage.Benefits[]` — see [OrderView](/docs/api-offer-order-integration/order-management#baggage-protection--baggage_protection).
 
 ---
 
 ## Airport transfer — `AIRPORT_TRANSFER`
 
 <Callout type="warn" title="Discovery requires a general AirShopping first">
-  Run a general AirShopping on the **same** `x-correlation-id` before the transfer product search
-  (see [AirShopping](/docs/api-offer-order-integration/air-shopping#airport-transfer-airshopping)).
-  It provides the vendor context the transfer search needs.
+  Run a general AirShopping on the **same** `x-correlation-id` before the transfer product search.
+  It provides the vendor context the search needs.
 </Callout>
 
-`description`, `serviceDetails` (From / To / Vehicle) and `vendorReferenceId` are resolved from the
-transfer search — you don't send them. You supply only booking context.
-
-**OfferPrice `Input`:**
+The route, vehicle, trip mode, passenger count, pickup time and coordinates are all resolved from
+the transfer search — you don't re-send the query. The **flight** is the one thing the search never
+knew.
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `metadata` | Optional | Booking context, e.g. `{ passengers: 1, flight: { airline, flight_number } }`. Include the flight for airport pickups. |
-| `serviceDetails` | Optional | May carry `start_coordinates` / `end_coordinates`. |
+| `flight` | Conditional | `{ airline, flight_number }`. **Required** when the offer's `OtherServiceInformation.flightInfoRequired` is `true`. |
+| `returnFlight` | Conditional | `{ airline, flight_number }` for the return leg. Required on a `round_trip` whose offer requires flight info. |
+| `returnPickupDatetime` | Optional | Overrides the return pickup resolved from the search. |
+| `optionalAmenities` | Optional | Selected extras. |
+| `serviceDetails.start_coordinates` / `.end_coordinates` | Optional | Override the searched coordinates, e.g. to add `countryCode` / `timeZoneId`. |
 
 ```json
 {
-  "metadata": { "passengers": 1, "flight": { "airline": "AA", "flight_number": "1234" } }
+  "flight":       { "airline": "XY", "flight_number": "DM5801" },
+  "returnFlight": { "airline": "XY", "flight_number": "DM5803" }
 }
 ```
+
+<Callout type="warn" title="The flight is enforced, not advisory">
+  An airport pickup without it books a ride the driver cannot track — no arrival monitoring, and
+  none of the free waiting time that only starts once the flight lands. OfferPrice refuses the
+  cart rather than letting that surface at the kerb.
+</Callout>
+
+**On the order:** a `Transfer` block: `Booking` (reservation + supplier contact), `Legs[]` (flight, vehicle, driver, meet-and-greet instructions) and `CancellationPolicy` — see [OrderView](/docs/api-offer-order-integration/order-management#airport-transfer--airport_transfer).
 
 ---
 
 ## Car rental — `CAR_RENTAL`
 
-`description`, `serviceDetails` and `vendorReferenceId` are resolved from the car-search catalog —
-you don't send them. You supply only the driver contact details.
+<Callout type="warn" title="Discovery requires a general AirShopping first">
+  Run a general AirShopping on the **same** `x-correlation-id` before the car-rental search.
+</Callout>
 
-**OfferPrice `Input`:**
+**OfferPrice `Input`: none.** The vehicle, dates, locations and rate id come from the car-search
+catalog, and the driver's **date of birth** and **residence** are resolved from the search's own
+`driver` block — the search could not have priced the rate without them.
+
+```json
+{}
+```
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `driverDateOfBirth` | Yes | `YYYY-MM-DD`. |
-| `driverPhoneCountry` | Yes | e.g. `"+30"`. |
-| `driverPhoneNumber` | Yes | Driver contact number. |
-| `metadata` | Optional | Object. |
+| `driverPhoneCountry` / `driverPhoneNumber` | Optional | Used to render the confirmation; never sent to the supplier. The booker's number stands in when absent. |
+| `driverDateOfBirth` | Optional | `YYYY-MM-DD`. Overrides the searched driver. |
+| `driverResidence` | Optional | Country code. Overrides the searched driver. |
+| `metadata.extras[]` | Optional | `[{ id, quantity }]` — desk extras selected from the offer. |
+
+**On the order:** a `CarRental` block: `Booking`, `Vehicle`, `Itinerary` (with desk instructions), `Notices` and `Extras` payable at the counter — see [OrderView](/docs/api-offer-order-integration/order-management#car-rental--car_rental).
+
+---
+
+## Airport parking — `PARKING`
+
+<Callout type="warn" title="Discovery requires a general AirShopping first">
+  Run a general AirShopping on the **same** `x-correlation-id` before the parking search — it
+  establishes that parking is on sale for this trip. Otherwise the search returns
+  `400 Parking not supported for this session at this time of the trip`.
+</Callout>
+
+The lot, parking type, stay dates, spot count and the supplier's quote token all come from the
+parking search. The only client input is whatever the **lot itself** asks the driver for.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `metadata.extraFields` | Conditional | Keys come from the lot's own `extra_fields[]`, e.g. `{ "License Plate": "ABC-1234", "Car Make/Model": "Toyota Corolla" }`. |
 
 ```json
-{
-  "driverDateOfBirth": "1989-07-06",
-  "driverPhoneCountry": "+30",
-  "driverPhoneNumber": "6981164559"
-}
+{ "metadata": { "extraFields": { "License Plate": "ABC-1234" } } }
 ```
 
-<Callout type="info" title="Descriptive fields are resolved for you">
-  Arcube resolves the vendor/product identifiers **and** the descriptive fields (`description`,
-  `serviceDetails`) from the shopping catalog captured at AirShopping — so you only send the fields
-  listed above (recipient/passenger data and any genuine booking-context). The only per-product
-  extras are car rental's driver details.
+<Callout type="warn" title="Quantity must be 1">
+  Spots are chosen at **search** time via `numberOfSpots`, and the quoted `amountDueNow` already
+  covers all of them for the whole stay. An `OfferItems[].Quantity` above 1 is rejected, because
+  it would charge twice for one reservation. To book more spots, re-run the search with a higher
+  `numberOfSpots`.
 </Callout>
+
+<Callout type="info" title="Money payable at the lot">
+  A lot may charge part of the price on arrival. That amount is published on the offer as
+  `OtherServiceInformation.AmountDueAtLocation` and returned on the order as
+  `Parking.AmountDueAtLocation` — it is **not** part of what Arcube collects, so surface it or
+  your total understates the trip.
+</Callout>
+
+**On the order:** a `Parking` block: `Booking`, `Reservation` (stay dates, spots, your extra
+fields), `Lot` (address, phone, timezone, directions, shuttle info) and `AmountDueAtLocation` — see
+[OrderView](/docs/api-offer-order-integration/order-management#airport-parking--parking).
