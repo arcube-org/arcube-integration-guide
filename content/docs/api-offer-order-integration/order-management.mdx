@@ -570,7 +570,7 @@ parking extra fields) with those keys stripped.
 
 ```json title="POST /orderlist"
 {
-  "OrderListRQ": { "tenant": "69e8d990bad67022c672b7bf", "email": "jane.doe@example.com" }
+  "OrderListRQ": { "tenant": "<your-tenant-id>", "email": "jane.doe@example.com" }
 }
 ```
 
@@ -593,7 +593,7 @@ required; omitting either returns `400`. A customer with no orders returns an em
 {
   "OrderListRS": {
     "Document": { "Name": "Arcube NDC-like OrderList Response", "ReferenceVersion": "1.0" },
-    "Tenant": "69e8d990bad67022c672b7bf",
+    "Tenant": "<your-tenant-id>",
     "Email": "jane.doe@example.com",
     "Orders": [
       {

@@ -38,6 +38,13 @@ Every product that is delivered to a person — eSIM, lounge, fast-track, baggag
 takes its recipients from the **AirShopping `DataLists.PassengerList`**. You already send that
 list to get offers, so it is not requested again.
 
+If your search named no travellers — an
+[itinerary-less search](/docs/api-offer-order-integration/air-shopping#searching-before-the-flight-is-booked)
+carrying only a `PassengerCount` — there is no list to inherit, so send the recipients here
+instead, as `ProductInputs[].Input.metadata.passengers` in the shape shown below. OfferPrice
+returns an error naming your correlation id if a person-delivered product has no travellers, so
+you find out before taking payment.
+
 Add contact details to the passenger and there is nothing left to send at OfferPrice:
 
 ```json title="AirShoppingRQ.DataLists.PassengerList"

@@ -11,10 +11,14 @@ AirShopping is the entry point of every journey. It returns the ancillary offers
 trip (or a product-specific search) and creates a **ShoppingSession** whose id you carry into
 [OfferPrice](/docs/api-offer-order-integration/offer-price).
 
-There are two request shapes:
+There are three request shapes:
 
 - **General AirShopping** — driven by the flight itinerary (`CoreQuery.Segments`). Returns
   itinerary-derived ancillaries: eSIMs, lounges, carbon offset, fast-track, baggage protection.
+- **Itinerary-less AirShopping** — driven by `CoreQuery.OriginDestinations` or
+  `CoreQuery.DestinationStay`. For shopping *before* a flight is chosen: a route, or just a
+  country and a length of stay. See
+  [Searching before the flight is booked](#searching-before-the-flight-is-booked).
 - **Product search** — driven by `ProductSearchInputs`. Required for **airport transfer**,
   **car rental** and **airport parking**, whose availability depends on parameters not derivable
   from an itinerary (locations, timing, driver, geocoordinates).
@@ -45,7 +49,9 @@ The body is a single `AirShoppingRQ` object with five sections.
 
 #### `CoreQuery.Segments[]`
 
-Each segment is one leg of the journey.
+Each segment is one leg of the journey. `Segments` is one of three ways to describe the trip —
+use it when the flights are known. If they are not, see
+[Searching before the flight is booked](#searching-before-the-flight-is-booked).
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -60,6 +66,9 @@ Each segment is one leg of the journey.
 | `PassengerRefs[]` | string[] | Passenger ids travelling on this leg. |
 
 #### `DataLists.PassengerList.Passenger[]`
+
+Required when you send `CoreQuery.Segments`. Optional on the itinerary-less shapes, where
+`Metadata.PassengerCount` stands in for it.
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -76,12 +85,17 @@ Each segment is one leg of the journey.
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `PointOfSale` | string | Sales channel — `AIRLINE_WEBSITE`, `WHITE_LABEL`, ... |
+| `PointOfSale` | string | **Required.** Sales channel — one of `AIRLINE_WEBSITE`, `WHITE_LABEL`, `AGENT_DESK`, `EMAIL`, `WIDGET`. |
 | `Tenant` | string | Arcube tenant id (optional; resolved from token). |
 | `SessionID` | string | Your client-side reference for the search. |
+| `PassengerCount` | integer | Optional. Party size, when you are not sending a `PassengerList`. Defaults to `1`. |
+| `ServiceTypeCodes[]` | string[] | Optional. Restricts the search to these categories, e.g. `["ESIMS"]`. Narrowing here is faster than filtering the response, because unlisted categories are never requested from their suppliers. |
+| `Currency` | string | Optional. ISO currency for the returned prices. |
 
-<Callout type="warn" title="PointOfSale must use underscores">
-  `AIRLINE_WEBSITE`, not `AIRLINE-WEBSITE`. A hyphenated value is rejected by the pricing engine.
+<Callout type="warn" title="PointOfSale is required, and uses underscores">
+  Send `AIRLINE_WEBSITE`, not `AIRLINE-WEBSITE` — a hyphenated value is rejected by the pricing
+  engine. Omitting `PointOfSale` altogether is also rejected, with a message listing the accepted
+  channels.
 </Callout>
 
 ### Example request
@@ -113,7 +127,7 @@ Each segment is one leg of the journey.
         ]
       }
     },
-    "Metadata": { "PointOfSale": "AIRLINE_WEBSITE", "Tenant": "6941cc3502a186f72ba55226", "SessionID": "NDC-001" }
+    "Metadata": { "PointOfSale": "AIRLINE_WEBSITE", "Tenant": "<your-tenant-id>", "SessionID": "NDC-001" }
   }
 }
 ```
@@ -208,10 +222,192 @@ The response separates commercial data (`OtherOffers`) from descriptive data
 | Car rental | `SVC-CAR` |
 | Airport parking | `SVC-PARK` |
 
-<Callout type="info" title="Prefer priced offers">
-  Some entries can be zero-priced placeholders. When selecting programmatically, choose an offer
-  whose `PriceDetail.TotalAmount.SimpleCurrencyPrice.amount > 0`.
+#### Three of these are adverts, not offers
+
+Airport transfer, car rental and airport parking depend on details an itinerary cannot supply —
+addresses, dates, a driver. The general AirShopping therefore returns **one entry per category**
+whose only job is to tell you the category is available for this trip:
+
+| | `Name` | Price on the entry |
+| --- | --- | --- |
+| `SVC-TRF` | Airport Transfers | `0.00` — no quote exists yet |
+| `SVC-CAR` | Car Rental | a **"from"** price, for ranking |
+| `SVC-PARK` | Airport Parking | a **"from"** price, for ranking |
+
+These cannot be bought. To get real, sellable offers, run the product search for that category —
+[Airport Transfer](#airport-transfer-airshopping), [Car Rental](#car-rental-airshopping) or
+[Airport Parking](#airport-parking-airshopping) — on the **same** `x-correlation-id`, and select
+from what it returns.
+
+<Callout type="warn" title="Do not select these by price">
+  A price above zero is not the test: car rental and parking adverts carry a real-looking "from"
+  amount. Selecting one is rejected at OfferPrice with a message naming the search to run.
+  Everything else in the response — eSIMs, lounges, fast track, carbon offset, baggage
+  protection — is sellable straight from this call.
 </Callout>
+
+---
+
+## Searching before the flight is booked
+
+Not every journey starts with a chosen flight. A traveller browsing "Greece for a week" has no
+segments, no dates and often no names, but they can still be shown eSIMs, car hire, parking and
+baggage cover.
+
+Two `CoreQuery` shapes cover that, and both are alternatives to `Segments` — send exactly one.
+
+| You know | Use | Section |
+| --- | --- | --- |
+| The flights | `Segments` | [General AirShopping](#general-airshopping) |
+| The route, not the flights | `OriginDestinations` | [below](#corequeryorigindestinations) |
+| Only a country and a duration | `DestinationStay` | [below](#corequerydestinationstay) |
+
+If more than one is present, `Segments` wins, then `OriginDestinations`, then
+`DestinationStay`.
+
+### `CoreQuery.OriginDestinations[]`
+
+A route with unknown flights. Entry `[0]` is the outbound; add an entry `[1]` to make it a
+round trip.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `Departure.AirportCode` | string | 3-letter IATA origin. |
+| `Departure.CountryCode` | string | 2-letter ISO country, as an alternative to the airport. |
+| `Departure.Date` | string | Optional. `YYYY-MM-DD`. |
+| `Arrival.AirportCode` | string | 3-letter IATA destination. |
+| `Arrival.CountryCode` | string | 2-letter ISO country, as an alternative to the airport. |
+
+```json title="One way, ATH → MAN"
+"CoreQuery": {
+  "OriginDestinations": [
+    { "Departure": { "AirportCode": "ATH", "Date": "2026-10-15" }, "Arrival": { "AirportCode": "MAN" } }
+  ]
+}
+```
+
+On a round trip the return leg may restate its endpoints; if it does not, they are taken as the
+outbound reversed — so the second entry usually carries nothing but a date.
+
+```json title="Round trip"
+"CoreQuery": {
+  "OriginDestinations": [
+    { "Departure": { "AirportCode": "ATH", "Date": "2026-10-15" }, "Arrival": { "AirportCode": "MAN" } },
+    { "Departure": { "Date": "2026-10-22" } }
+  ]
+}
+```
+
+#### Searching by country
+
+When the traveller has picked a country but not an airport, send `CountryCode` instead of
+`AirportCode`. Arcube resolves each country to a servable airport and tells you which ones it
+chose, in `Metadata.ResolvedAirports`:
+
+```json title="Request"
+"CoreQuery": {
+  "OriginDestinations": [
+    { "Departure": { "CountryCode": "GR" }, "Arrival": { "CountryCode": "GB" } }
+  ]
+}
+```
+
+```json title="Response — Metadata"
+"ResolvedAirports": {
+  "Outbound": { "From": { "AirportCode": "ATH" }, "To": { "AirportCode": "MAN" } }
+}
+```
+
+Show those codes to the traveller, or use them to re-run a narrower search once they commit to a
+city.
+
+<Callout type="info" title="A country resolves to one airport, and not always a large one">
+  Arcube picks a single servable airport per country, and the choice varies between searches —
+  `GR` may resolve to Athens on one call and to a regional airport on the next. Products sold at
+  the airport itself, **lounge access** and **fast track**, are only offered where that airport
+  has inventory, so a country-only search often returns none. Name the airport in
+  `Departure.AirportCode` / `Arrival.AirportCode` as soon as the traveller has chosen one.
+</Callout>
+
+<Callout type="warn" title="Countries resolve in pairs">
+  If either end is a `CountryCode`, both ends need one. A request mixing an `AirportCode` at one
+  end with a `CountryCode` at the other is rejected.
+</Callout>
+
+### `CoreQuery.DestinationStay`
+
+The least you can search on: a country, and how long the traveller is staying. No origin, no
+airport, no dates.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `CountryCode` | string | **Required.** 2-letter ISO country. |
+| `DurationDays.Min` | integer | **Required.** Shortest stay, in whole days. |
+| `DurationDays.Max` | integer | Optional. Longest stay; defaults to `Min`. |
+
+```json title="Greece, three to five days"
+"CoreQuery": {
+  "DestinationStay": { "CountryCode": "GR", "DurationDays": { "Min": 3, "Max": 5 } }
+}
+```
+
+This shape names no airport at all, and none can be added, so airport-scoped products — **lounge
+access** and **fast track** — are never returned on it. That is the expected answer, not a
+failure. eSIMs, car rental, parking and baggage protection are all returned.
+
+To offer lounges or fast track, switch to `OriginDestinations` and give a real
+`AirportCode` — a country code alone resolves to an arbitrary airport that usually has neither.
+
+### Travellers on an itinerary-less search
+
+Shopping does not need names. Send `Metadata.PassengerCount` for the party size and leave
+`DataLists.PassengerList` out entirely:
+
+```json
+"Metadata": { "PointOfSale": "AIRLINE_WEBSITE", "PassengerCount": 2 }
+```
+
+Sending a full `PassengerList` is still allowed and still preferred where you have it, because
+its contact details are what let OfferPrice stop asking — see
+[Where the traveller list comes from](/docs/api-offer-order-integration/products#where-the-traveller-list-comes-from).
+
+<Callout type="info" title="Shopping without names moves the ask to OfferPrice">
+  Products delivered to a person — eSIM, lounge, fast track, baggage protection — need a name and
+  an email to issue. If the search carried no `PassengerList`, there is nothing to inherit, so
+  send the travellers once at OfferPrice as
+  `ProductInputs[].Input.metadata.passengers`. OfferPrice returns a clear error naming your
+  correlation id if they are missing, so this never surfaces after the customer has paid.
+</Callout>
+
+### Full example
+
+```json title="POST /airshopping — a route, a party size, no names"
+{
+  "AirShoppingRQ": {
+    "Document": { "Name": "Arcube NDC-like AirShopping", "ReferenceVersion": "1.0" },
+    "Party": {
+      "Sender": { "AgentUser": { "Name": "Arcube API Client" } },
+      "Recipient": { "SystemID": "ArcubeAggregationEngine" }
+    },
+    "CoreQuery": {
+      "OriginDestinations": [
+        { "Departure": { "AirportCode": "ATH", "Date": "2026-10-15" }, "Arrival": { "AirportCode": "MAN" } },
+        { "Departure": { "Date": "2026-10-22" } }
+      ]
+    },
+    "Metadata": {
+      "PointOfSale": "AIRLINE_WEBSITE",
+      "Tenant": "<your-tenant-id>",
+      "PassengerCount": 2,
+      "ServiceTypeCodes": ["ESIMS", "CAR_RENTAL"]
+    }
+  }
+}
+```
+
+The response is the same `AirShoppingRS` as the itinerary search — same `OtherOffers`, same
+`DataLists.ServiceDefinitionList`, same `ShoppingSessionID` — so everything downstream is
+unchanged.
 
 ---
 
@@ -237,14 +433,20 @@ Point-to-point transfer discovery. Uses `ProductSearchInputs` with `ProductType:
 | `start_coordinates` / `end_coordinates` | Yes | `{ lat, lng }` for each endpoint. |
 | `pickup_datetime` | Yes | ISO-8601 **with an explicit UTC offset**, e.g. `"2026-12-24T13:00:00+02:00"`. Use a **future** date. |
 | `return_pickup_datetime` | Conditional | Same format. Required when `mode` is `round_trip`. |
-| `currency` | Optional | Shopping currency. Defaults from `Metadata`. |
-| `requested_currency` | Optional | Display/settlement currency (triggers conversion; requires white-label origin). |
+| `currency` | Yes | Shopping currency. Does **not** decide the currency you get back — see below. |
+| `requested_currency` | Optional | The currency the offers are returned in. Set this to control what the traveller sees. |
 | `fromCountryCode` / `toCountryCode` | Yes | Country context. |
 | `campaign` / `branch` | Optional | Merchandising / experiment context. |
 
 <Callout type="warn" title="Pickup times need an offset">
   `"2026-12-24 13:00"` and `"2026-12-24T13:00"` are rejected — a transfer pickup is a real instant
   and a naive time would be read in the wrong zone. Send the offset, or `Z`.
+</Callout>
+
+<Callout type="info" title="`currency` alone will not change the currency you get back">
+  `currency` is the shopping currency; the offers still come back in the vendor's. To receive
+  offers in a particular currency, send **`requested_currency`** as well. Sending
+  `currency: "EUR"` on its own returns USD offers.
 </Callout>
 
 `airline_id`, `pointOfSale` and the transfer **providers** are **not** client inputs — the first
@@ -279,7 +481,7 @@ the general recommendation on this session (see the callout above).
         }
       }
     ],
-    "Metadata": { "PointOfSale": "WHITE_LABEL", "Tenant": "6941cc3502a186f72ba55226", "SessionID": "NDC-TRF" }
+    "Metadata": { "PointOfSale": "WHITE_LABEL", "Tenant": "<your-tenant-id>", "SessionID": "NDC-TRF" }
   }
 }
 ```
@@ -343,7 +545,7 @@ Dedicated rental search. Uses `ProductSearchInputs` with `ProductType: "CAR_RENT
         }
       }
     ],
-    "Metadata": { "PointOfSale": "WHITE_LABEL", "Tenant": "6941cc3502a186f72ba55226", "SessionID": "NDC-CAR" }
+    "Metadata": { "PointOfSale": "WHITE_LABEL", "Tenant": "<your-tenant-id>", "SessionID": "NDC-CAR" }
   }
 }
 ```
@@ -424,7 +626,7 @@ Geo-based parking search around an airport. Uses `ProductSearchInputs` with
         }
       }
     ],
-    "Metadata": { "PointOfSale": "AIRLINE_WEBSITE", "Tenant": "6941cc3502a186f72ba55226", "SessionID": "NDC-PARK" }
+    "Metadata": { "PointOfSale": "AIRLINE_WEBSITE", "Tenant": "<your-tenant-id>", "SessionID": "NDC-PARK" }
   }
 }
 ```

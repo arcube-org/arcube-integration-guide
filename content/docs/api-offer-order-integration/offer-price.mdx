@@ -26,7 +26,7 @@ The body is a single `OfferPriceRQ`.
 | `Party.Sender.AgentUser.Name` | Yes | Calling system name. |
 | `Query.SelectedOffers[]` | Yes | The offers to cart. One entry per offer (see below). |
 | `Metadata.SessionID` | Yes | Set to the **CorrelationID** from AirShopping. Its presence selects the basket flow. |
-| `Metadata.Tenant` | Optional | Tenant id. |
+| `Metadata.Tenant` | **Yes** | Tenant id. |
 | `ProductInputs[]` | **No** | Per-product inputs, keyed by `ServiceDefinitionRef`. Omit it entirely unless a product needs something the search could not know — see [Products](/docs/api-offer-order-integration/products). |
 
 ### `SelectedOffers[]`
@@ -100,7 +100,7 @@ product — `ProductInputs` is omitted entirely:
         }
       ]
     },
-    "Metadata": { "SessionID": "159b2361-3bc8-420d-a0f8-ba55c33187e2", "Tenant": "6941cc3502a186f72ba55226" }
+    "Metadata": { "SessionID": "159b2361-3bc8-420d-a0f8-ba55c33187e2", "Tenant": "<your-tenant-id>" }
   }
 }
 ```

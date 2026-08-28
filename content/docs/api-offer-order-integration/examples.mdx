@@ -61,7 +61,7 @@ x-correlation-id: ${corr}
         }
       ]
     },
-    "Metadata": { "SessionID": "${corr}", "Tenant": "6941cc3502a186f72ba55226" }
+    "Metadata": { "SessionID": "${corr}", "Tenant": "<your-tenant-id>" }
   }
 }
 ```
@@ -90,7 +90,7 @@ x-idempotency-key: ${new-uuid}
       "OfferItems": [ { "OfferItemID": "${pricedOfferItemId}", "ServiceDefinitionRef": "${sdRef}", "Quantity": 1 } ]
     },
     "Payments": [ { "Provider": "airline-psp", "ReferenceId": "PSP-REF-0001", "Currency": "USD", "Amount": 1.64 } ],
-    "Metadata": { "SessionID": "${corr}", "Tenant": "6941cc3502a186f72ba55226", "PricedSessionID": "${psid}" }
+    "Metadata": { "SessionID": "${corr}", "Tenant": "<your-tenant-id>", "PricedSessionID": "${psid}" }
   }
 }
 ```
