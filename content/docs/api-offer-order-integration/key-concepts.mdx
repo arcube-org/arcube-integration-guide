@@ -71,8 +71,8 @@ It must be one of Arcube's allowed values. The two most common:
 
 ### White-label origin requirement
 
-When `PointOfSale` is `WHITE_LABEL` (or a currency conversion is requested via
-`requested_currency`), the booking transaction is validated against an allowed **Origin**. Your
+When `PointOfSale` is `WHITE_LABEL` (or the journey's `Metadata.Currency` requires a conversion),
+the booking transaction is validated against an allowed **Origin**. Your
 NDC-like API instance must be configured with a valid Arcube origin so that OrderCreate is
 accepted. Arcube handles this server-side per environment — there is nothing to send in the
 request body, but confirm your environment is configured for white-label if you use it.
@@ -84,10 +84,16 @@ request body, but confirm your environment is configured for white-label if you 
 - The **`/transactions/create`** money fields Arcube sends downstream are integer minor units
   (major × 100). You do not build these yourself — OrderCreate derives them from the cart.
 - A single cart (basket) must use **one currency**.
+- You set that currency **once**, as
+  [`AirShoppingRQ.Metadata.Currency`](/docs/api-offer-order-integration/air-shopping#one-currency-per-journey).
+  It governs the offers, every product search on the same correlation id, the cart and the order.
+  There is no per-product currency field.
 
 <Callout type="warn" title="One currency per basket">
-  OfferPrice rejects a cart that mixes currencies (`Mixed currencies are not supported`). When
-  carting multiple products together, select offers that price in the same currency.
+  OfferPrice rejects a cart that mixes currencies (`Mixed currencies are not supported`). Setting
+  `Metadata.Currency` once is what prevents this — the one exception is **carbon offset**, which
+  its supplier prices in `EUR` and which is not converted, so cart it in a `EUR` journey or on its
+  own.
 </Callout>
 
 ## The cart (basket) model

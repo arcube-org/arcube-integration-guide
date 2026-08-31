@@ -90,12 +90,34 @@ Required when you send `CoreQuery.Segments`. Optional on the itinerary-less shap
 | `SessionID` | string | Your client-side reference for the search. |
 | `PassengerCount` | integer | Optional. Party size, when you are not sending a `PassengerList`. Defaults to `1`. |
 | `ServiceTypeCodes[]` | string[] | Optional. Restricts the search to these categories, e.g. `["ESIMS"]`. Narrowing here is faster than filtering the response, because unlisted categories are never requested from their suppliers. |
-| `Currency` | string | Optional. ISO currency for the returned prices. |
+| `Currency` | string | The currency this journey is priced in — **the only place currency is set**. Applies to every product, including the transfer, car rental and parking searches. Defaults to `USD`, and the response echoes back the one in force. |
 
 <Callout type="warn" title="PointOfSale is required, and uses underscores">
   Send `AIRLINE_WEBSITE`, not `AIRLINE-WEBSITE` — a hyphenated value is rejected by the pricing
   engine. Omitting `PointOfSale` altogether is also rejected, with a message listing the accepted
   channels.
+</Callout>
+
+#### One currency per journey
+
+`Metadata.Currency` is the only place a currency is set, and it governs everything in the journey
+— the offers in this response, the transfer, car rental and parking searches you run on the same
+correlation id, the cart, and the order. There is no per-product currency field.
+
+The response echoes the currency in force, so a caller who sent none does not have to infer it:
+
+```json title="Response — Metadata"
+"Metadata": { "CorrelationID": "…", "Currency": "USD" }
+```
+
+This is what keeps a cart priceable: every item in one must share a currency, and declaring it
+once makes a mixed cart impossible to build by accident.
+
+<Callout type="info" title="Carbon offset is quoted in EUR">
+  Carbon offset is priced by its supplier in euros and is not converted, so it is returned in
+  `EUR` whatever the journey's currency. Every other product follows `Metadata.Currency`. Because
+  a cart cannot mix currencies, buy carbon offset either in a `EUR` journey or in a cart of its
+  own.
 </Callout>
 
 ### Example request
@@ -433,8 +455,7 @@ Point-to-point transfer discovery. Uses `ProductSearchInputs` with `ProductType:
 | `start_coordinates` / `end_coordinates` | Yes | `{ lat, lng }` for each endpoint. |
 | `pickup_datetime` | Yes | ISO-8601 **with an explicit UTC offset**, e.g. `"2026-12-24T13:00:00+02:00"`. Use a **future** date. |
 | `return_pickup_datetime` | Conditional | Same format. Required when `mode` is `round_trip`. |
-| `currency` | Yes | Shopping currency. Does **not** decide the currency you get back — see below. |
-| `requested_currency` | Optional | The currency the offers are returned in. Set this to control what the traveller sees. |
+
 | `fromCountryCode` / `toCountryCode` | Yes | Country context. |
 | `campaign` / `branch` | Optional | Merchandising / experiment context. |
 
@@ -443,10 +464,9 @@ Point-to-point transfer discovery. Uses `ProductSearchInputs` with `ProductType:
   and a naive time would be read in the wrong zone. Send the offset, or `Z`.
 </Callout>
 
-<Callout type="info" title="`currency` alone will not change the currency you get back">
-  `currency` is the shopping currency; the offers still come back in the vendor's. To receive
-  offers in a particular currency, send **`requested_currency`** as well. Sending
-  `currency: "EUR"` on its own returns USD offers.
+<Callout type="info" title="Currency is not set here">
+  Transfer offers are returned in the journey's currency, from
+  [`Metadata.Currency`](#metadata). There is no currency field on this input.
 </Callout>
 
 `airline_id`, `pointOfSale` and the transfer **providers** are **not** client inputs — the first
@@ -472,8 +492,6 @@ the general recommendation on this session (see the callout above).
           "start_address": "Athens International Airport (ATH), Spata, Greece",
           "end_address": "Cholargos, Greece",
           "pickup_datetime": "2026-07-23T15:00:00+03:00",
-          "currency": "USD",
-          "requested_currency": "DOP",
           "start_coordinates": { "lat": 37.936175, "lng": 23.9465255 },
           "end_coordinates": { "lat": 37.9975628, "lng": 23.8027203 },
           "fromCountryCode": "GR",
@@ -510,8 +528,7 @@ Dedicated rental search. Uses `ProductSearchInputs` with `ProductType: "CAR_RENT
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `currency` | Optional | Shopping currency. Does **not** decide the currency you get back — see below. |
-| `requested_currency` | Optional | The currency the offers are returned in. Set this to control what the traveller sees. Also accepted as `Metadata.RequestedCurrency`. |
+
 | `fromCountryCode` / `toCountryCode` | Yes | Country context. |
 | `driver.age` | Yes | Driver age (eligibility / rate filtering). |
 | `driver.date_of_birth` | Yes | `YYYY-MM-DD`. |
@@ -520,11 +537,9 @@ Dedicated rental search. Uses `ProductSearchInputs` with `ProductType: "CAR_RENT
 | `pickup_location` | Yes | `{ iata }` or `{ id }`. |
 | `dropoff_location` | Optional | `{ iata }` or `{ id }`. Omit for pickup-location return. |
 
-<Callout type="info" title="`currency` alone will not change the currency you get back">
-  `currency` is the shopping currency; the offers still come back in the vendor's. To receive
-  offers in a particular currency, send **`requested_currency`** as well. Sending
-  `currency: "EUR"` on its own returns USD offers — and the resulting order is genuinely in USD,
-  not EUR relabelled, so anything you record from it should say USD.
+<Callout type="info" title="Currency is not set here">
+  Car rental offers are returned in the journey's currency, from
+  [`Metadata.Currency`](#metadata). There is no currency field on this input.
 </Callout>
 
 ### Example request
@@ -541,8 +556,6 @@ Dedicated rental search. Uses `ProductSearchInputs` with `ProductType: "CAR_RENT
       {
         "ProductType": "CAR_RENTAL",
         "Input": {
-          "currency": "USD",
-          "requested_currency": "DOP",
           "fromCountryCode": "MX",
           "toCountryCode": "MX",
           "driver": { "age": 37, "date_of_birth": "1989-07-06", "residence": "DO" },
@@ -597,8 +610,7 @@ Geo-based parking search around an airport. Uses `ProductSearchInputs` with
 | `fromDate` / `toDate` | Yes | Stay start/end as **lot-local wall clock**, `"YYYY-MM-DD HH:mm:ss"`. `toDate` must be after `fromDate`. |
 | `numberOfSpots` | Optional | Spots to reserve. Defaults to `1`. |
 | `page` / `pageSize` | Optional | Pagination. Default `1` / `10`; `pageSize` max `50`. |
-| `currency` | Optional | Shopping currency. Does **not** decide the currency you get back. |
-| `requested_currency` | Optional | The currency the offers are returned in. Send this, not `currency`, to control what the traveller sees. |
+
 
 <Callout type="warn" title="Parking dates carry no timezone — deliberately">
   Unlike airport transfer and car rental, parking times are the **lot's own wall clock**: the gate
@@ -628,8 +640,7 @@ Geo-based parking search around an airport. Uses `ProductSearchInputs` with
           "toDate": "2026-09-05 21:20:00",
           "numberOfSpots": 1,
           "page": 1,
-          "pageSize": 10,
-          "requested_currency": "USD"
+          "pageSize": 10
         }
       }
     ],
