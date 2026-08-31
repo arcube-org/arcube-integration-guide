@@ -510,8 +510,8 @@ Dedicated rental search. Uses `ProductSearchInputs` with `ProductType: "CAR_RENT
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `currency` | Optional | Shopping currency. Defaults from `Metadata`. |
-| `requested_currency` | Optional | Display/settlement currency. |
+| `currency` | Optional | Shopping currency. Does **not** decide the currency you get back — see below. |
+| `requested_currency` | Optional | The currency the offers are returned in. Set this to control what the traveller sees. Also accepted as `Metadata.RequestedCurrency`. |
 | `fromCountryCode` / `toCountryCode` | Yes | Country context. |
 | `driver.age` | Yes | Driver age (eligibility / rate filtering). |
 | `driver.date_of_birth` | Yes | `YYYY-MM-DD`. |
@@ -519,6 +519,13 @@ Dedicated rental search. Uses `ProductSearchInputs` with `ProductType: "CAR_RENT
 | `pickup_at` / `dropoff_at` | Yes | ISO-8601 **with an explicit UTC offset**, e.g. `"2026-12-25T10:00:00+00:00"`. Use **future** dates; `dropoff_at` must be after `pickup_at`. |
 | `pickup_location` | Yes | `{ iata }` or `{ id }`. |
 | `dropoff_location` | Optional | `{ iata }` or `{ id }`. Omit for pickup-location return. |
+
+<Callout type="info" title="`currency` alone will not change the currency you get back">
+  `currency` is the shopping currency; the offers still come back in the vendor's. To receive
+  offers in a particular currency, send **`requested_currency`** as well. Sending
+  `currency: "EUR"` on its own returns USD offers — and the resulting order is genuinely in USD,
+  not EUR relabelled, so anything you record from it should say USD.
+</Callout>
 
 ### Example request
 
@@ -590,8 +597,8 @@ Geo-based parking search around an airport. Uses `ProductSearchInputs` with
 | `fromDate` / `toDate` | Yes | Stay start/end as **lot-local wall clock**, `"YYYY-MM-DD HH:mm:ss"`. `toDate` must be after `fromDate`. |
 | `numberOfSpots` | Optional | Spots to reserve. Defaults to `1`. |
 | `page` / `pageSize` | Optional | Pagination. Default `1` / `10`; `pageSize` max `50`. |
-| `currency` | Optional | Shopping currency. |
-| `requested_currency` | Optional | Display/settlement currency. |
+| `currency` | Optional | Shopping currency. Does **not** decide the currency you get back. |
+| `requested_currency` | Optional | The currency the offers are returned in. Send this, not `currency`, to control what the traveller sees. |
 
 <Callout type="warn" title="Parking dates carry no timezone — deliberately">
   Unlike airport transfer and car rental, parking times are the **lot's own wall clock**: the gate
