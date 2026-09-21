@@ -66,6 +66,9 @@ The body is a single `OfferPriceRQ`.
 
   - a traveller with no email address, for the products delivered by email (eSIM, lounge,
     fast-track);
+  - a missing **visit slot** on a fast-track line — a lane is booked for a time, and
+    [ServiceDetails](/docs/api-offer-order-integration/service-details) tells you which times it
+    can serve;
   - a missing `flight` on an airport transfer whose offer advertises `flightInfoRequired`.
 
   Anything you do send is validated against its category schema; a mismatch fails with

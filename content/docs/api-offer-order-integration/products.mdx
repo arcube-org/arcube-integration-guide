@@ -12,7 +12,7 @@ Every sellable category and the **OfferPrice `ProductInput`** it takes.
 | eSIM | `ESIMS` | `SVC-SIM` | General AirShopping | *none* | `Passengers[].ESIM` |
 | Lounge access | `LOUNGE_ACCESS` | `SVC-LNG` | General AirShopping | *none* | `Passengers[].LoungePass` |
 | Carbon offset | `CARBON_OFFSET` | `SVC-CO2` | General AirShopping | *none* | `CarbonOffset` |
-| Fast-track | `FAST_TRACK` | `SVC-FT` | General AirShopping | visit slot | `FastTrack` + `Passengers[].FastTrackVoucher` |
+| Fast-track | `FAST_TRACK` | `SVC-FT` | General AirShopping | **visit slot (required)** | `FastTrack` + `Passengers[].FastTrackVoucher` |
 | Baggage protection | `BAGGAGE_PROTECTION` | `SVC-BAG` | General AirShopping | *none* | `BaggageProtection` |
 | Airport transfer | `AIRPORT_TRANSFER` | `SVC-TRF` | Product search (+ general first) | flight, when required | `Transfer` |
 | Car rental | `CAR_RENTAL` | `SVC-CAR` | Product search (+ general first) | *none* | `CarRental` |
@@ -138,13 +138,14 @@ is placed from Arcube's own recommendation.
 ## Fast-track — `FAST_TRACK`
 
 Recipients come from the AirShopping passenger list. The one thing the search cannot know is
-**which slot** the passenger wants — fast-track is booked for a specific time.
+**which slot** the passenger wants — a lane is booked for a time, not for a day.
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `visitDate` | Recommended | `YYYY-MM-DD`. |
-| `visitTime` | Recommended | `HH:mm`. |
-| `visitTimeRange` / `visitDateTime` | Optional | Alternative slot spellings. |
+| `visitDate` | **Yes**, with `visitTime` | `YYYY-MM-DD`. |
+| `visitTime` | **Yes**, with `visitDate` | `HH:mm`, in the **airport's** local time. |
+| `visitDateTime` | Alternative | `YYYY-MM-DDTHH:mm` — send this *instead of* the pair. |
+| `visitTimeRange` | Optional | e.g. `"10:00 - 10:30"`. |
 | `metadata.passengers[]` | Optional | Overrides the AirShopping list. |
 
 Slot fields are accepted at the top level or inside `metadata`; both are echoed onward.
@@ -152,6 +153,17 @@ Slot fields are accepted at the top level or inside `metadata`; both are echoed 
 ```json
 { "visitDate": "2026-12-23", "visitTime": "11:52" }
 ```
+
+<Callout type="warn" title="A cart without a slot is rejected">
+  OfferPrice refuses a fast-track line that carries no slot, rather than letting it through to
+  fail at the supplier after the customer has paid. Send `visitDate` + `visitTime`, or
+  `visitDateTime`.
+</Callout>
+
+**The slot has to be one the lane can actually serve.** Opening hours, how far ahead the booking
+must be made, and how many travellers one booking may cover differ per lane —
+[ServiceDetails](/docs/api-offer-order-integration/service-details) returns them for the offer
+you are showing.
 
 **On the order:** an item-level `FastTrack` block (the line's e-pass, lane location, booked slot) plus a `Passengers[].FastTrackVoucher` each — see [OrderView](/docs/api-offer-order-integration/order-management#fast-track--fast_track).
 

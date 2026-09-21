@@ -1,0 +1,126 @@
+---
+title: ServiceDetails
+description: Opening hours, booking rules and terms for one fast-track lane or lounge, so you can offer a slot the supplier will accept.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+`POST /servicedetails`
+
+AirShopping tells you a fast-track lane exists and what it costs. It does not tell you **when the
+lane is open**, how far ahead the slot must be chosen, or how many travellers one booking covers —
+those differ per lane, and fetching them for every offer in a search would mean a call per lane.
+
+ServiceDetails fetches them for the one offer you are showing.
+
+You need it because [fast-track requires a visit slot](/docs/api-offer-order-integration/products#fast-track--fast_track),
+and a slot outside the lane's hours is accepted by every check we make and then refused by the
+supplier — after the customer has paid.
+
+## Request
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `ServiceDefinitionRef` | Yes | The offer's ref, exactly as AirShopping returned it. |
+| `ShoppingSessionID` | Optional | Which search the offer came from. Omit it and the offer is resolved from the searches on this `x-correlation-id`. |
+
+Send the same **`x-correlation-id`** you used for AirShopping.
+
+```json title="POST /servicedetails"
+{
+  "ServiceDetailsRQ": {
+    "ServiceDefinitionRef": "SVC-FT-dragonpass_MAN_C10585"
+  }
+}
+```
+
+## Response
+
+```json title="ServiceDetailsRS"
+{
+  "ServiceDetailsRS": {
+    "Document": { "Name": "Arcube NDC-like ServiceDetails Response", "ReferenceVersion": "1.0" },
+    "ServiceDefinitionRef": "SVC-FT-dragonpass_MAN_C10585",
+    "ServiceTypeCode": "FAST_TRACK",
+    "Name": "Manchester International Airport",
+    "Location": {
+      "AirportCode": "MAN",
+      "AirportName": "Manchester Airport",
+      "City": "Manchester",
+      "CountryCode": "GB",
+      "Terminal": "Terminal 3",
+      "Description": "FastTrack is located at the entrance to Security",
+      "Timezone": "Europe/London",
+      "Coordinates": "53.3502,-2.2799"
+    },
+    "OpeningHours": [
+      { "Day": "Monday", "Opens": "03:00", "Closes": "23:00", "Type": "STANDARD" }
+    ],
+    "BookingRules": {
+      "Bookable": true,
+      "Cancellable": true,
+      "MinimumHoursBeforeVisit": 0,
+      "CancellationCutoffHours": 24,
+      "MaxPassengersPerBooking": 6
+    },
+    "Terms": {
+      "ChildPolicy": "Children aged 10 and under can use the service free of charge.",
+      "Notices": "…"
+    },
+    "MediaLinks": ["https://…"],
+    "LastUpdated": "2026-09-21T16:29:46+00:00"
+  }
+}
+```
+
+### `OpeningHours[]`
+
+| Field | Description |
+| --- | --- |
+| `Day` | `Monday` … `Sunday`. |
+| `Opens` / `Closes` | `HH:mm`. |
+| `Type` | `STANDARD`, or a supplier-specific variant for irregular days. |
+
+<Callout type="warn" title="Hours are in the airport's time, not yours">
+  `OpeningHours` and the `visitTime` you send are both in the timezone named by
+  `Location.Timezone` — not UTC and not the traveller's. Sending a slot in the wrong zone is the
+  easiest way to book a lane that is shut.
+</Callout>
+
+### `BookingRules`
+
+| Field | Description |
+| --- | --- |
+| `Bookable` | Whether the lane can be booked at all right now. |
+| `Cancellable` | Whether a booking can later be cancelled. |
+| `MinimumHoursBeforeVisit` | How far ahead of the slot the booking must be made. `0` means up to the moment. |
+| `CancellationCutoffHours` | How far ahead of the slot a cancellation must be requested. |
+| `MaxPassengersPerBooking` | Most travellers one booking may cover. Split a larger party across several. |
+
+## Which offers it applies to
+
+Fast-track lanes and lounges — the categories that are a bookable resource with hours of their
+own. Ask for any other category and the call is rejected, because everything those products need
+is already on the AirShopping offer.
+
+<Callout type="info" title="Not every supplier publishes rules">
+  Some lounges are sold through catalogues that carry no opening hours. Those return **404** with
+  a message saying so — it means the offer has no slot to choose and can be bought on the
+  AirShopping details alone, not that anything is wrong.
+</Callout>
+
+## Typical flow
+
+1. **AirShopping** — take a `SVC-FT` offer.
+2. **ServiceDetails** — read `OpeningHours` and `BookingRules`; show the traveller only slots the
+   lane can serve, and cap the party at `MaxPassengersPerBooking`.
+3. **OfferPrice** — send the chosen slot as
+   `ProductInputs[].Input.visitDate` + `visitTime`.
+4. **OrderCreate** — as usual.
+
+## Errors
+
+| Status | Meaning |
+| --- | --- |
+| `400` | `ServiceDefinitionRef` missing, or the category is not a bookable resource. |
+| `404` | The ref is not in this session, the session has expired, or the supplier publishes no rules for it. |

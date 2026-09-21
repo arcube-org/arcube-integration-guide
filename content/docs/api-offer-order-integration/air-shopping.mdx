@@ -113,11 +113,10 @@ The response echoes the currency in force, so a caller who sent none does not ha
 This is what keeps a cart priceable: every item in one must share a currency, and declaring it
 once makes a mixed cart impossible to build by accident.
 
-<Callout type="info" title="Carbon offset is quoted in EUR">
-  Carbon offset is priced by its supplier in euros and is not converted, so it is returned in
-  `EUR` whatever the journey's currency. Every other product follows `Metadata.Currency`. Because
-  a cart cannot mix currencies, buy carbon offset either in a `EUR` journey or in a cart of its
-  own.
+<Callout type="info" title="Every sellable offer follows it">
+  There is no product that opts out. The only entries that carry a different currency are the
+  [category adverts](#three-of-these-are-adverts-not-offers) for transfer, car rental and parking,
+  whose "from" prices are unconverted — and those cannot be bought anyway.
 </Callout>
 
 ### Example request

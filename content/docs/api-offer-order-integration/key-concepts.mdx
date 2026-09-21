@@ -91,9 +91,8 @@ request body, but confirm your environment is configured for white-label if you 
 
 <Callout type="warn" title="One currency per basket">
   OfferPrice rejects a cart that mixes currencies (`Mixed currencies are not supported`). Setting
-  `Metadata.Currency` once is what prevents this — the one exception is **carbon offset**, which
-  its supplier prices in `EUR` and which is not converted, so cart it in a `EUR` journey or on its
-  own.
+  `Metadata.Currency` once is what prevents this: every sellable offer in the journey comes back
+  in that currency, so a mixed cart is not something you can build by accident.
 </Callout>
 
 ## The cart (basket) model
