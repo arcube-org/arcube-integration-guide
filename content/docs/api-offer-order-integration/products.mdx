@@ -162,8 +162,8 @@ Slot fields are accepted at the top level or inside `metadata`; both are echoed 
 
 **The slot has to be one the lane can actually serve.** Opening hours, how far ahead the booking
 must be made, and how many travellers one booking may cover differ per lane —
-[ServiceDetails](/docs/api-offer-order-integration/service-details) returns them for the offer
-you are showing.
+[Fast Track lane details](/docs/api-offer-order-integration/air-shopping#fast-track-lane-details)
+returns them for the offer you are showing.
 
 **On the order:** an item-level `FastTrack` block (the line's e-pass, lane location, booked slot) plus a `Passengers[].FastTrackVoucher` each — see [OrderView](/docs/api-offer-order-integration/order-management#fast-track--fast_track).
 
