@@ -588,6 +588,64 @@ time.
 
 ---
 
+## Lounge access details
+
+Lounge offers (`SVC-LNG-…`) come back from the general AirShopping fully described. There is no
+product search and no second call: everything needed to display a lounge — and to write a rate
+card for it — is already on the offer.
+
+### The reference is stable for the life of the lounge
+
+A lounge's `ServiceDefinitionRef` is derived from the lounge itself, not from the search, so the
+same lounge keeps the same ref across searches, sessions and days:
+
+```
+SVC-LNG-19186189bfd0c721    Goldair Handling CIP Lounge, ATH Terminal B
+```
+
+Store it. You can map a lounge to your own catalogue once, and re-book the same lounge later
+without shopping again and matching on the display name. The ref is opaque — do not parse it, and
+do not expect it to contain the airport or the supplier.
+
+### Entry rules, hours and amenities
+
+`OtherServiceInformation.loungeInfo` carries the lounge's own rules:
+
+| Field | What it is |
+| --- | --- |
+| `conditions` | Admission rules in the supplier's own words. **This is where the child policy lives** — e.g. "Children under 6 years are admitted free - All children must be accompanied by an adult". Free text. |
+| `terminal` | Terminal the lounge sits in, e.g. `"Terminal B"`. |
+| `area` | Area within the terminal, where the supplier distinguishes one. |
+| `nearestGate` | Nearest gate, for wayfinding. |
+| `openingHours` | Hours as one display string, e.g. `"03:30 - 22:30 Monday & Sunday."` |
+| `businessHours[]` | The same hours per day: `{ day, times: { type, detail } }`, where `day` is 1 = Monday to 7 = Sunday. |
+| `amenities[]` | `{ code, name }` pairs, e.g. `{ "code": "WIFI", "name": "Wi-Fi" }`. |
+| `maxStayMinutes` | Longest stay a pass allows, where the supplier states it separately. |
+| `routeTypes[]` | Which journeys the lounge admits. |
+| `tier` | The supplier's own tier for the lounge. |
+
+Blank fields are omitted rather than sent empty, so test for presence before rendering.
+
+<Callout type="warn" title="`conditions` is prose, not a rule engine">
+  It is published exactly as the supplier wrote it, and the wording differs per lounge. Show it to
+  the traveller and quote it in a rate card; do not pattern-match it to decide whether a child
+  travels free, because a parser that is right most of the time will quietly misstate an admission
+  policy. Some lounges publish no `conditions` at all — treat that as "ask the supplier", not as
+  "no restrictions".
+</Callout>
+
+<Callout type="info" title="`extra.loungeInfo` is the old path">
+  The same fields also appear under `OtherServiceInformation.extra.loungeInfo`, which is a
+  verbatim supplier passthrough kept so existing integrations keep working. Read `loungeInfo`:
+  `extra` is not a contract and its shape follows whatever the supplier sends.
+</Callout>
+
+Two more fields sit beside it on `OtherServiceInformation`: `locationInfo` (airport, city,
+coordinates, timezone) and `validityPeriod` — whole months the pass stays valid once issued,
+which differs by supplier.
+
+---
+
 ## Fast Track lane details
 
 `POST /servicedetails`
@@ -668,12 +726,12 @@ Send the same **`x-correlation-id`** you used for AirShopping.
 Then cart it with the chosen slot as `ProductInputs[].Input.visitDate` + `visitTime` — see
 [Fast-track](/docs/api-offer-order-integration/products#fast-track--fast_track).
 
-<Callout type="info" title="Lounges may not publish rules">
-  The same call works for lounge offers (`SVC-LNG-…`), but some lounges are sold through
-  catalogues that carry no opening hours. Those return **404** with a message saying so — it means
-  the offer has no slot to choose and can be bought on the AirShopping details alone, not that
-  anything is wrong. Ask for any other category and the call is rejected, because everything those
-  products need is already on the offer.
+<Callout type="info" title="Lounges do not need this call">
+  The same call accepts a lounge ref (`SVC-LNG-…`) and answers it from the shopping session, with
+  no request to the supplier. It returns nothing you do not already have: a lounge has no slot to
+  choose, so its rules ship on the AirShopping offer — see
+  [Lounge access details](#lounge-access-details). Ask for any other category and the call is
+  rejected, because everything those products need is already on the offer.
 </Callout>
 
 ---
