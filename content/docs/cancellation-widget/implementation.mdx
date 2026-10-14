@@ -1,95 +1,388 @@
 ---
 title: Implementation
-description: Technical guide for embedding and configuring the Arcube Cancellation Widget.
+description: Technical guide for embedding, configuring and styling the Arcube Cancellation Widget.
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-## Embedding the Widget
+## Prerequisites
 
-The cancellation widget is embedded as an iframe. The PNR is passed as a URL query parameter.
+Before integrating, make sure you have:
 
-```html
-<iframe
-  src="https://<tenant>.arcube.com?pnr=ABC123"
-  style="width: 100%; min-height: 500px; border: none;"
-  title="Order Management"
-></iframe>
+- **Tenant ID** - your Arcube tenant identifier.
+- **Cancellation widget URL** - provided by Arcube, referred to below as `CANCELLATION_WIDGET_URL`.
+- **Allow-listed origins** - every origin that will request tokens and embed the widget, registered with Arcube.
+
+---
+
+## Getting a Widget Token
+
+The widget needs a short-lived widget token for the passenger's PNR. It is the same token the [Arcube widget](/docs/widget-integration/implementation#authentication-and-token-flow) uses, requested from the same edge endpoint:
+
+| Environment | Endpoint |
+|---|---|
+| Development | `https://dev-edge.arcube.io/token` |
+| QA | `https://qa-edge.arcube.io/token` |
+| Production | `https://edge.arcube.io/token` |
+
+Send a `POST` request with your tenant ID in the `X-Tenant-ID` header and the PNR in the body. The request must come from an origin allow-listed for your tenant.
+
+```bash
+curl -X POST https://edge.arcube.io/token \
+  -H "X-Tenant-ID: YOUR_TENANT_ID" \
+  -H "Origin: https://www.airline.com" \
+  -H "Content-Type: application/json" \
+  -d '{"pnr":"ABC123"}'
 ```
 
-Replace `<tenant>` with the airline's assigned subdomain (e.g., `airline` for `airline.arcube.com`).
+```json
+{
+  "accessToken": "<widget-token>",
+  "expiresIn": "1h"
+}
+```
 
-The `pnr` parameter is required. Without it, the widget will not display real data.
+The token is valid for 60 minutes and opens only the orders for that PNR with your airline. The PNR you pass to the widget must be the same PNR the token was issued for.
 
-<Callout type="info" title="Tenant Resolution">
-  The iframe's origin domain determines which airline tenant is used. Each airline is assigned a dedicated subdomain by Arcube during onboarding.
+<Callout type="warn" title="Token expiry">
+  The widget does not renew its token. Request a new token each time the page loads the widget, and reload the iframe with a fresh token if the passenger keeps the page open for more than 60 minutes. With an expired token the widget cannot load orders or cancel, and shows an error.
 </Callout>
 
 ---
 
-## Order Item Statuses
+## Embedding the Widget
 
-The widget displays items differently based on their status:
+Load the widget in an iframe with the PNR and the token as query parameters, and resize the iframe when the widget reports its height:
 
-| Status | Display | Cancel Eligible |
-|--------|---------|-----------------|
-| `PENDING` | Orange "Pending" badge | No |
-| `CONFIRMED` | Green "Confirmed" badge | Yes (if policy allows) |
-| `COMPLETED` | Green "Completed" badge | Yes (if policy allows) |
-| `DELIVERED` | Blue "Delivered" badge | No |
-| `CANCELLED` | Gray "Cancelled" badge with message | No |
-| `FAILED` | Red "Failed" badge with auto-refund notice | No |
-| `REFUNDED` | Purple "Refunded" badge with confirmation | No |
-| `REFUND_MANUAL_REVIEW` | Orange "Under Review" badge | No |
-| `CANCELLATION_INITIATED` | Orange "Cancelling" badge | No |
+```html
+<iframe
+  id="arcube-cancellation-widget"
+  src="https://CANCELLATION_WIDGET_URL/?pnr=ABC123&token=WIDGET_TOKEN"
+  title="Manage add-ons"
+  scrolling="no"
+  style="display: block; width: 100%; height: 480px; border: 0;"
+></iframe>
+
+<script>
+  const WIDGET_ORIGIN = "https://CANCELLATION_WIDGET_URL";
+  const frame = document.getElementById("arcube-cancellation-widget");
+
+  window.addEventListener("message", (event) => {
+    if (event.origin !== WIDGET_ORIGIN) return;
+    const message = event.data || {};
+
+    // Grow the iframe to the widget's content, so your page owns the only scrollbar.
+    if (message.type === "ARCUBE_WIDGET_HEIGHT") {
+      frame.style.height = `${message.height}px`;
+    }
+
+    // An add-on was cancelled: refresh anything on your page that shows it.
+    if (message.type === "ARCUBE_WIDGET_CANCELLED") {
+      console.log("Cancelled", message.itemId, message.reference);
+    }
+  });
+</script>
+```
+
+### Query Parameters
+
+| Parameter | Required | Description |
+|---|---|---|
+| `pnr` | Yes | The booking PNR. Orders are matched exactly, so pass it as it was booked (usually upper case). |
+| `token` | Yes | The widget token issued for that PNR. |
+| `accent` | No | Brand colour for the primary button and highlights, for example `%23B3122E` (`#B3122E`). |
+| `font` | No | Font family, for example `Manrope, Arial, sans-serif`. The widget runs in its own frame, so the font must be installed on the passenger's device or loaded by a stylesheet you give the widget. |
+| `radius` | No | Corner radius in pixels, for example `12`. |
+| `theme` | No | Name of a stylesheet Arcube hosts for you. See [Styling and Branding](#styling-and-branding). |
+| `cssUrl` | No | URL of your own stylesheet. See [Styling and Branding](#styling-and-branding). |
+
+Without `pnr` and `token` the widget shows "Missing required parameters: pnr and token."
+
+---
+
+## Events
+
+The widget and your page talk through `postMessage`. Always check `event.origin` against the widget URL before acting on a message.
+
+| Message | Direction | When |
+|---|---|---|
+| `ARCUBE_WIDGET_READY` | Widget → page | The widget has loaded and can accept `ARCUBE_WIDGET_STYLE`. |
+| `ARCUBE_WIDGET_HEIGHT` | Widget → page | The content height changed. `height` is in pixels; set the iframe to it. |
+| `ARCUBE_WIDGET_CANCELLED` | Widget → page | An add-on was cancelled. Carries `transactionId`, `itemId`, `status` and `reference`. |
+| `ARCUBE_WIDGET_STYLE` | Page → widget | Styling from your page. See [Styling and Branding](#styling-and-branding). |
+
+---
+
+## What the Passenger Sees
+
+The widget lists the add-ons for the PNR, one section per order, newest first. Each section shows the order reference, the purchase date and a **Receipt** link that downloads the order's PDF receipt.
+
+Each add-on row shows:
+
+- **When** - the service date and time, in the local time of the service location (for example the pickup time at the airport). Add-ons without a service time, such as eSIMs, leave this blank.
+- **What** - the add-on's name and details, for example "Transfer to Lexington Hotel" and "Private SUV · 2 travellers".
+- **Cancellation terms or status** - one line, described below.
+- **Price** - what the passenger paid. Cancelled add-ons are greyed out with the price struck through.
+
+### Cancellation Terms
+
+For an add-on that can be cancelled online, the line shows Arcube's current terms:
+
+| Line | Meaning | Cancel shown |
+|---|---|---|
+| Checking cancellation options… | The terms are being checked. | No |
+| Free cancellation until 13 Dec, 04:30 | Cancelling now refunds the full price. | Yes |
+| 50% refund if cancelled before 12 Dec, 04:30 | Cancelling now refunds part of the price. | Yes |
+| Non-refundable, with a **Cancel** link | It can be cancelled, but nothing is refunded. | Yes, after the passenger ticks "I understand I won't get a refund." |
+| Free cancellation ended 12 Oct, 11:00 | The cancellation window has passed. | No |
+| Non-refundable | The supplier does not allow cancelling. | No |
+| Contact support to cancel | The cancellation has to be handled by support. | No |
+| Can't be cancelled online | The add-on is not cancellable online (see [Cancellation Eligibility](#cancellation-eligibility)). | No |
+| Cancellation options unavailable right now | The terms could not be checked. The passenger can try again later. | No |
+
+Deadlines are shown in the local time of the service location.
+
+### Statuses
+
+Add-ons that are not live show their status instead of terms:
+
+| Status | Line shown |
+|---|---|
+| `CONFIRMED` | The cancellation terms above. |
+| `PENDING` | Waiting for the provider to confirm |
+| `CANCELLATION_INITIATED` | Cancellation in progress |
+| `CANCELLED` | Cancelled |
+| `REFUNDED` | Cancelled · refunded |
+| `REFUND_MANUAL_REVIEW` | Cancelled · refund under review |
+| `FAILED` | Couldn't be booked · refund on its way |
+| `COMPLETED`, `DELIVERED` | Can't be cancelled online |
 
 ---
 
 ## Cancellation Eligibility
 
-An item's "Cancel Booking" button appears only when both conditions are met:
+The **Cancel** link appears only when all of these hold:
 
-1. The item status is `CONFIRMED` or `COMPLETED`
-2. The item's cancellation policy is refundable
+1. The add-on's status is `CONFIRMED`.
+2. It is an airport transfer, car rental or parking booking. eSIMs, lounge access, fast track, carbon offsets and baggage protection can't be cancelled from the widget.
+3. Arcube confirms the add-on can be cancelled at that moment. The terms are checked when the page loads and again immediately before cancelling.
 
-If either condition is not met, the widget shows a "Not eligible for cancellation" message instead.
+If the terms change between the two checks, for example because the free-cancellation deadline passed while the page was open, nothing is cancelled. The panel shows either the reason the add-on can no longer be cancelled, or the new refund, which the passenger must confirm again.
 
 ---
 
-## Theming
+## Cancelling an Add-on
 
-The widget accepts an optional theme configuration to match the airline's brand. Theme tokens are applied as CSS custom properties on the widget container.
+1. The passenger selects **Cancel** on an add-on. A panel opens under it with the refund ("Full refund", "Partial refund" or "No refund") and the amount.
+2. The passenger confirms with **Cancel and refund USD 48.00**, or **Cancel without refund** after ticking the acknowledgement. **Keep it** closes the panel.
+3. The widget shows the outcome under the add-on:
+   - "Transfer cancelled. USD 48.00 is on its way back to the card you paid with and should appear within 5–10 business days. Reference cncl_…"
+   - "Transfer cancelled. Your booking has been released. No refund was due." after a cancellation without refund.
+   - "Cancellation received. We're checking the refund with the provider and will process it shortly." when the cancellation needs a manual review.
+4. The widget sends `ARCUBE_WIDGET_CANCELLED` to your page.
 
-| Token | CSS Variable | Default | Description |
-|-------|-------------|---------|-------------|
-| `background` | `--w-bg` | `#FAFAF8` | Widget background |
-| `surface` | `--w-surface` | `#FFFFFF` | Card/header backgrounds |
-| `border` | `--w-border` | `#E6E4DF` | Outer borders |
-| `divider` | `--w-divider` | `#EDECEA` | Inner dividers |
-| `textPrimary` | `--w-text-primary` | `#111110` | Primary text |
-| `textSecondary` | `--w-text-secondary` | `#6B6966` | Secondary text |
-| `textMuted` | `--w-text-muted` | `#9B9896` | Muted/label text |
-| `accentColor` | `--w-blue` | `#2563EB` | Links and accents |
-| `rowHover` | `--w-row-hover` | `#F5F4F1` | Row hover background |
-| `expandedBg` | `--w-expanded-bg` | `#F5F4F1` | Expanded row background |
-| `fontFamily` | `--font-sans` | `IBM Plex Sans` | Body font |
-| `fontMono` | `--font-mono` | `IBM Plex Mono` | Monospace font (prices, IDs) |
-| `borderRadius` | `--w-radius` | `6px` | Border radius |
+Refunds go back to the card the passenger paid with. A cancelled add-on can't be restored; the passenger can book it again.
 
-To apply a custom theme, the airline provides a theme configuration that maps to these tokens. The default theme uses a warm, neutral palette that works well as a baseline.
+---
+
+## Styling and Branding
+
+Every element of the widget can be restyled to match your brand. The widget's default styles have the lowest priority (they sit in a CSS cascade layer), so your CSS overrides them with ordinary selectors. You do not need `!important`, and should not use it.
+
+From lowest to highest priority:
+
+1. The widget's defaults.
+2. Tokens from the `accent`, `font` and `radius` query parameters.
+3. Tokens sent by `ARCUBE_WIDGET_STYLE`.
+4. Stylesheets: a `theme` hosted by Arcube, then your `cssUrl`, then a stylesheet or CSS text sent by `ARCUBE_WIDGET_STYLE`.
+
+### Ways to Supply Styling
+
+**Query parameters** - quick colour, font and corner changes:
+
+```text
+https://CANCELLATION_WIDGET_URL/?pnr=ABC123&token=WIDGET_TOKEN&accent=%23B3122E&font=Manrope&radius=12
+```
+
+**A theme hosted by Arcube** - send Arcube your stylesheet and pass the theme name you are given:
+
+```text
+https://CANCELLATION_WIDGET_URL/?pnr=ABC123&token=WIDGET_TOKEN&theme=your-airline
+```
+
+**Your own stylesheet** - pass its URL in `cssUrl`. It is loaded only over HTTPS, and only from the origin of the page embedding the widget or from an origin Arcube has allow-listed for you (for example your CDN). Any other URL is ignored.
+
+```text
+https://CANCELLATION_WIDGET_URL/?pnr=ABC123&token=WIDGET_TOKEN&cssUrl=https%3A%2F%2Fwww.airline.com%2Fwidget.css
+```
+
+The widget learns the embedding page's origin from the browser. If your page sends `Referrer-Policy: no-referrer`, some browsers withhold it, so host the stylesheet on an origin Arcube has allow-listed, or send it with `ARCUBE_WIDGET_STYLE`.
+
+**From your page** - after the widget sends `ARCUBE_WIDGET_READY`, post `ARCUBE_WIDGET_STYLE`. Every field is optional; sending a field again replaces what you sent before, and an empty value clears it. CSS text is limited to 200 KB.
+
+```javascript
+window.addEventListener("message", (event) => {
+  if (event.origin !== WIDGET_ORIGIN) return;
+  if (event.data?.type === "ARCUBE_WIDGET_READY") {
+    frame.contentWindow.postMessage(
+      {
+        type: "ARCUBE_WIDGET_STYLE",
+        tokens: { accent: "#B3122E", "--arc-panel-bg": "#FFF8F6" },
+        cssUrl: "https://cdn.airline.com/arcube/cancellation-widget.css",
+        css: ".arc-title { font-weight: 800; }",
+      },
+      WIDGET_ORIGIN,
+    );
+  }
+});
+```
+
+### Design Tokens
+
+Set any of these on `:root` in your stylesheet, or by name in the `tokens` of `ARCUBE_WIDGET_STYLE`. The `tokens` object also accepts `accent`, `accentText`, `font`, `radius`, `background` and `text` as short names.
+
+| Token | Default | Used for |
+|---|---|---|
+| `--arc-font` | Helvetica Neue, Helvetica, Arial | All text |
+| `--arc-font-size` | `15px` | Base text size |
+| `--arc-title-size` / `--arc-title-weight` / `--arc-title-tracking` | `32px` / `500` / `-0.02em` | "Add-ons" heading |
+| `--arc-heading-size` / `--arc-heading-weight` | `17px` / `600` | Order headings |
+| `--arc-item-title-size` / `--arc-item-title-weight` | `16px` / `500` | Add-on names |
+| `--arc-bg` | `#ffffff` | Background |
+| `--arc-text` | `#1a1a19` | Main text |
+| `--arc-text-muted` | `#6b6a65` | Secondary text and labels |
+| `--arc-text-faint` | `#8a8984` | Cancelled add-ons |
+| `--arc-text-soft` | `#5d5c57` | Panel notes |
+| `--arc-accent` | `#1c4ac9` | Primary button, focus ring, loading spinner |
+| `--arc-accent-text` | `#ffffff` | Text on the primary button |
+| `--arc-positive` | `#2f6b4a` | Free and partial cancellation terms |
+| `--arc-danger` | `#b3261e` | Errors |
+| `--arc-rule-strong` | `#1a1a19` | Line under each order heading |
+| `--arc-rule` | `#ecebe7` | Lines between add-ons |
+| `--arc-underline` | `#cfcec8` | Underline of text buttons |
+| `--arc-panel-bg` | `#f6f5f2` | Refund panel and confirmation |
+| `--arc-disabled-bg` / `--arc-disabled-text` | `#e6e5e0` / `#8f8e88` | Disabled primary button |
+| `--arc-ack-border` | `#9a9993` | Unticked acknowledgement box |
+| `--arc-focus` | `var(--arc-accent)` | Keyboard focus ring |
+| `--arc-radius` | `8px` | Base corner radius |
+| `--arc-panel-radius` | `var(--arc-radius)` | Refund panel corners |
+| `--arc-button-radius` | `calc(var(--arc-radius) * 0.6)` | Button corners |
+| `--arc-button-height` | `46px` | Button height |
+| `--arc-max-width` | `760px` | Content width |
+| `--arc-padding` / `--arc-padding-mobile` | `48px 32px 56px` / `32px 20px 40px` | Space around the content |
+| `--arc-section-gap` | `48px` | Space between orders |
+| `--arc-when-width` / `--arc-when-width-mobile` | `72px` / `52px` | Date column |
+| `--arc-column-gap` / `--arc-column-gap-mobile` | `24px` / `14px` | Gap between columns |
+| `--arc-item-padding` | `22px 0` | Space around each add-on |
+| `--arc-panel-padding` | `22px 24px` | Space inside the refund panel |
+
+The mobile values apply when the iframe is narrower than 560px.
+
+### Elements
+
+Every part of the widget has a stable class:
+
+```text
+.arc-widget                      root
+  .arc-shell                     centred content column
+    .arc-header
+      .arc-header__intro
+        .arc-title               "Add-ons"
+        .arc-subtitle
+      .arc-booking
+        .arc-booking__label      "Booking"
+        .arc-booking__value      the PNR
+    .arc-orders
+      .arc-order                 one per order
+        .arc-order__header
+          .arc-order__heading
+            .arc-order__title    "Order 43635DF8"
+            .arc-order__meta     "Purchased 2 Oct 2026"
+          .arc-receipt
+        .arc-items
+          .arc-item              one per add-on
+            .arc-item__when
+              .arc-item__date
+              .arc-item__time
+            .arc-item__body
+              .arc-item__title
+              .arc-item__meta
+              .arc-item__policy  cancellation terms
+              .arc-item__status  status line
+            .arc-item__aside
+              .arc-item__price
+              .arc-cancel-link
+            .arc-panel           refund panel (.arc-panel--blocked when it can no longer be cancelled)
+              .arc-panel__head
+                .arc-panel__label
+                .arc-panel__amount
+              .arc-panel__note
+              .arc-ack           "I understand I won't get a refund"
+                .arc-ack__box
+                .arc-ack__text
+              .arc-panel__error
+              .arc-panel__actions
+                .arc-confirm
+                .arc-keep
+            .arc-done            confirmation after cancelling
+              .arc-done__text
+                .arc-done__title
+                .arc-done__ref
+              .arc-done__close
+    .arc-footnote
+    .arc-state                   loading, error or empty (.arc-state--loading, --error, --empty)
+      .arc-spinner
+      .arc-state__text
+      .arc-retry
+```
+
+Shared building blocks: `.arc-link` (underlined text buttons such as Cancel, Receipt and Done), `.arc-button`, `.arc-button--primary` and `.arc-button--quiet`. The primary button carries `aria-busy="true"` while a cancellation is being sent.
+
+### State Attributes
+
+Each `.arc-item` describes its state in data attributes, so you can style each case:
+
+| Attribute | Values |
+|---|---|
+| `data-state` | `active`, `pending`, `cancelling`, `cancelled`, `failed` |
+| `data-policy` | `checking`, `free`, `partial`, `no-refund`, `expired`, `nonrefundable`, `review`, `unavailable`, `none` (matching the [terms table](#cancellation-terms)) |
+| `data-category` | The add-on's category, for example `AIRPORT_TRANSFER`, `CAR_RENTAL`, `PARKING`, `ESIMS`, `LOUNGE_ACCESS` |
+| `data-open` | `true` while the add-on's refund panel or confirmation is showing |
+
+The refund panel carries `data-refund` (`full`, `partial` or `none`).
+
+```css
+:root {
+  --arc-font: Manrope, "Helvetica Neue", Arial, sans-serif;
+  --arc-accent: #b3122e;
+  --arc-radius: 16px;
+}
+
+.arc-order__title {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.arc-item[data-policy="free"] .arc-item__policy::before {
+  content: "✓ ";
+}
+
+.arc-item[data-state="cancelled"] {
+  opacity: 0.7;
+}
+```
+
+Class names, data attributes and tokens are part of the widget's public interface, so your stylesheet can rely on them.
 
 ---
 
 ## Error Handling
 
-The widget handles errors gracefully at each stage:
-
-- **Invalid or unrecognized PNR:** The widget displays a clear error message explaining the specific reason (e.g., "PNR is not registered").
-- **Data fetch failures:** If transactions cannot be loaded, the widget shows a "Failed to fetch transactions" message and allows the passenger to retry.
-- **Cancellation failures:** If a cancellation request fails, the error message is shown inline within the expanded row. The passenger can retry or go back to order details.
-- **No data:** If the PNR has no associated transactions, the widget shows "No data found".
-
-Session expiry and recovery are handled transparently - the passenger will not see any interruption during normal use.
+- **Orders can't be loaded** (for example an expired token or a network failure): "We couldn't load your add-ons." with the reason and a **Try again** button. An expired token needs a new token and a reload of the iframe.
+- **No add-ons on the PNR:** "There are no add-ons on this booking yet."
+- **Missing parameters:** "Missing required parameters: pnr and token."
+- **A cancellation fails:** the reason is shown in red inside the refund panel. The passenger can try again; a retry does not cancel twice.
+- **The terms can't be checked:** the add-on shows "Cancellation options unavailable right now" and offers no Cancel.
 
 ---
 

@@ -1,24 +1,22 @@
 ---
 title: Cancellation Widget
-description: Embed a self-service cancellation experience for ancillary orders into your post-booking pages.
+description: Let passengers see the add-ons they bought and cancel eligible ones from your post-booking pages.
 ---
 
-The Cancellation Widget is a lightweight, iframe-embeddable interface that allows passengers to view and manage their ancillary service orders after booking. It handles order display, cancellation policy enforcement, and refund initiation - all within a branded experience that matches the airline's look and feel.
+The Cancellation Widget shows a passenger every add-on bought under their booking (transfers, car rentals, parking, lounge access, eSIMs and more) and lets them cancel the ones that can still be cancelled. It shows the refund before the passenger confirms, cancels the booking with the supplier and starts the refund, all inside your page and styled to match your brand.
 
-Airlines embed the widget on their "Manage My Trip" or order management pages. The passenger's PNR is passed via URL parameter, and the widget takes care of the rest.
+Airlines embed it on their "Manage my booking" or trip pages. Your page requests a short-lived token for the passenger's PNR, then loads the widget in an iframe with that PNR and token.
 
 ---
 
 ## How It Works
 
-The cancellation flow follows these steps:
-
-1. The airline embeds the widget as an iframe on their post-booking page, passing the passenger's PNR as a URL parameter.
-2. The widget authenticates automatically using the iframe's origin subdomain to resolve the airline tenant.
-3. The widget fetches all transactions associated with the PNR and displays them grouped by booking.
-4. The passenger can expand any order item to view service details and the cancellation policy.
-5. If the item is eligible for cancellation (confirmed/completed status and a refundable policy), the passenger can submit a cancellation request.
-6. The widget displays the result - either a successful cancellation with refund timeline, or a "needs review" status for manual processing.
+1. Your page requests a widget token for the passenger's PNR from the Arcube edge endpoint. The token is valid for 60 minutes and opens only that PNR's orders with your airline.
+2. Your page embeds the widget in an iframe, passing the PNR and the token.
+3. The widget lists every add-on order for the PNR, one section per purchase, with the purchase date and a receipt download.
+4. For each add-on that can be cancelled online, the widget asks Arcube whether it can be cancelled right now and for what refund, and shows the terms on the row, for example "Free cancellation until 13 Dec, 04:30".
+5. The passenger selects **Cancel**, reviews the refund in a panel under the add-on, and confirms. The widget checks the terms again immediately before cancelling: if the deadline has passed or the refund has changed in the meantime, nothing is cancelled and the passenger is told why.
+6. The widget shows the outcome (cancelled with the refund on its way, or received and under review) and notifies your page.
 
 <img src="/images/cancellation-widget/cancellation-flow.svg" alt="Cancellation widget flow from embed to refund confirmation" style={{display: 'block', margin: '0 auto', width: '100%'}} />
 
@@ -28,13 +26,15 @@ The cancellation flow follows these steps:
 
 ## Customization
 
-The widget supports full visual customization through a theming system. Airlines can override colors, typography, border styles, and spacing to match their brand identity. See the [Implementation](/docs/cancellation-widget/implementation) guide for the full list of theme tokens.
+Every part of the widget can be restyled with your own CSS: colours, fonts, spacing, corner radius, and the look of each state, such as free cancellation, non-refundable or cancelled. Your rules override the widget's defaults with ordinary selectors, without `!important`. See [Styling and Branding](/docs/cancellation-widget/implementation#styling-and-branding) in the Implementation guide.
 
 ---
 
 ## Security
 
-- Passenger sessions are scoped to a single PNR and expire automatically
-- Tenant identity is resolved from the widget's origin subdomain - no tenant ID or secret is exposed client-side
-- All communication is over HTTPS
-- Duplicate cancellation submissions are prevented automatically
+- Tokens are issued by the Arcube edge for one tenant and one PNR, last 60 minutes, and are only issued to origins allow-listed for your tenant.
+- A token opens only the orders for its own PNR with your airline.
+- Whether an add-on can be cancelled, and the refund, are decided by Arcube at the moment of cancelling, not by the page.
+- An add-on is cancelled at most once: repeated clicks and retries do not cancel or refund it twice.
+- Custom stylesheets are only loaded from origins you control (see [Styling and Branding](/docs/cancellation-widget/implementation#styling-and-branding)).
+- All communication is over HTTPS.
