@@ -579,9 +579,72 @@ window.addEventListener("arcube:widget:ready", () => {
 });
 ```
 
-All fields in the `customer` object are required. The `countryCode` must be provided as an international calling code, such as `+234`. The widget validates and formats the phone number using the supplied country code and returns the result in `isValid`. A valid phone number is required before Airport Transfer or Car Rental products can be added to the cart, as their providers require verified customer contact details to process the booking reliably.
+Pass the customer values you already have, as shown above. For missing information, use `ASK` or `OVERRIDE` as described below. When supplying a phone number, provide `countryCode` as an international calling code, such as `+234`. The widget validates and formats the phone number using the supplied country code and returns the result in `isValid`. Airport Transfer and Car Rental providers require a valid contact number for the booking.
 
 `customer` is used for the primary customer details form. `passengers` is used to prefill additional passenger forms for products that require traveler-level information. Mark the primary traveler with `isPrimary: true`.
+
+#### Handling Missing Passenger Details
+
+If the airline booking flow does not collect a passenger field, or makes it optional, choose how the widget should handle that field:
+
+| Value | Behaviour |
+|-------|-----------|
+| An actual value | Prefills the field with the information you already have. |
+| `"ASK"` | Asks the user for the missing information before adding an item to the cart. The field is required and must pass validation. |
+| `"OVERRIDE"` | Does not ask for the field. The airline integration supplies the information later, before order creation if required. |
+
+Use these exact uppercase strings for `title`, `firstName`, `lastName`, `email`, `dateOfBirth`, `countryCode`, and `phoneNumber` in `customer` or any entry in `passengers`. The widget checks each passenger separately and shows only the missing fields marked `ASK`. Once completed and validated, those details are reused for subsequent selections in the widget session.
+
+Example: names are known, the widget collects the fields marked `ASK`, and the airline integration supplies emails later.
+
+```javascript
+const passengerDetails = {
+  customer: {
+    id: "pax_1",
+    title: "ASK",
+    firstName: "Adam",
+    lastName: "Smith",
+    email: "OVERRIDE",
+    dateOfBirth: "ASK",
+    countryCode: "ASK",
+    phoneNumber: "ASK",
+    isPrimary: true
+  },
+  passengers: [
+    {
+      id: "pax_1",
+      title: "ASK",
+      firstName: "Adam",
+      lastName: "Smith",
+      email: "OVERRIDE",
+      dateOfBirth: "ASK",
+      countryCode: "ASK",
+      phoneNumber: "ASK",
+      isPrimary: true
+    },
+    {
+      id: "pax_2",
+      title: "ASK",
+      firstName: "Sarah",
+      lastName: "Smith",
+      email: "OVERRIDE",
+    }
+  ]
+};
+
+window.addEventListener("arcube:widget:ready", () => {
+  sendToWidget({
+    type: "PASSENGER_DETAILS_UPDATED",
+    payload: passengerDetails
+  });
+});
+```
+
+Keep each passenger's `id` unique and stable, with the same ID for the customer and their corresponding passenger entry.
+
+<Callout type="info" title="Recommendation">
+  We recommend setting both `phoneNumber` and `countryCode` to `"ASK"` whenever the airline booking flow has not collected a valid phone number, as a valid contact number is required on the Arcube side.
+</Callout>
 
 ### Cart Persistence
 
