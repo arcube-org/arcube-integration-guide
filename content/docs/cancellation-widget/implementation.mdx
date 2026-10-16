@@ -11,7 +11,7 @@ Before integrating, make sure you have:
 
 - **Tenant ID** - your Arcube tenant identifier.
 - **Cancellation widget URL** - provided by Arcube, referred to below as `CANCELLATION_WIDGET_URL`.
-- **Allow-listed origins** - every origin that will request tokens and embed the widget, registered with Arcube.
+- **Allow-listed origins** - every origin your pages request widget tokens from, registered with Arcube.
 
 ---
 
@@ -96,7 +96,7 @@ Load the widget in an iframe with the PNR and the token as query parameters, and
 | `theme` | No | Name of a stylesheet Arcube hosts for you. See [Styling and Branding](#styling-and-branding). |
 | `cssUrl` | No | URL of your own stylesheet. See [Styling and Branding](#styling-and-branding). |
 
-Without `pnr` and `token` the widget shows "Missing required parameters: pnr and token."
+Without `pnr` and `token` the widget shows "Missing required parameters: pnr and token." That page sends no messages to your page, so the iframe keeps its initial height, and it ignores the styling parameters.
 
 ---
 
@@ -108,7 +108,7 @@ The widget and your page talk through `postMessage`. Always check `event.origin`
 |---|---|---|
 | `ARCUBE_WIDGET_READY` | Widget → page | The widget has loaded and can accept `ARCUBE_WIDGET_STYLE`. |
 | `ARCUBE_WIDGET_HEIGHT` | Widget → page | The content height changed. `height` is in pixels; set the iframe to it. |
-| `ARCUBE_WIDGET_CANCELLED` | Widget → page | An add-on was cancelled. Carries `transactionId`, `itemId`, `status` and `reference`. |
+| `ARCUBE_WIDGET_CANCELLED` | Widget → page | An add-on was cancelled, or its cancellation was received for review. Carries `transactionId`, `itemId`, `status` (`completed` when the supplier confirmed the cancellation, otherwise a review status such as `NEEDS_REVIEW`) and `reference` (the cancellation reference, `cncl_…`). |
 | `ARCUBE_WIDGET_STYLE` | Page → widget | Styling from your page. See [Styling and Branding](#styling-and-branding). |
 
 ---
@@ -133,14 +133,14 @@ For an add-on that can be cancelled online, the line shows Arcube's current term
 | Checking cancellation options… | The terms are being checked. | No |
 | Free cancellation until 13 Dec, 04:30 | Cancelling now refunds the full price. | Yes |
 | 50% refund if cancelled before 12 Dec, 04:30 | Cancelling now refunds part of the price. | Yes |
-| Non-refundable, with a **Cancel** link | It can be cancelled, but nothing is refunded. | Yes, after the passenger ticks "I understand I won't get a refund." |
+| Non-refundable, with a **Cancel** link | It can be cancelled, but nothing is refunded. | Yes. Confirming needs the passenger to tick "I understand I won't get a refund." |
 | Free cancellation ended 12 Oct, 11:00 | The cancellation window has passed. | No |
 | Non-refundable | The supplier does not allow cancelling. | No |
 | Contact support to cancel | The cancellation has to be handled by support. | No |
-| Can't be cancelled online | The add-on is not cancellable online (see [Cancellation Eligibility](#cancellation-eligibility)). | No |
-| Cancellation options unavailable right now | The terms could not be checked. The passenger can try again later. | No |
+| Can't be cancelled online | The add-on is not cancellable online (see [Cancellation Eligibility](#cancellation-eligibility)), or Arcube's rules don't allow cancelling it online. | No |
+| Cancellation options unavailable right now | The terms could not be checked. Reloading the widget checks again. | No |
 
-Deadlines are shown in the local time of the service location.
+Deadlines are shown in the local time of the service location. When the deadline isn't known, the lines read "Free cancellation", "USD 24.00 back if cancelled now" and "The cancellation window has passed". When the percentage isn't known, a partial refund reads "Partial refund if cancelled before 12 Dec, 04:30".
 
 ### Statuses
 
@@ -152,11 +152,14 @@ Add-ons that are not live show their status instead of terms:
 | `PENDING` | Waiting for the provider to confirm |
 | `CANCELLATION_INITIATED` | Cancellation in progress |
 | `CANCELLED` | Cancelled |
-| `REFUND_IN_PROGRESS` | Cancelled · refund on its way. When your airline took the payment: Cancelled · refund due from the airline (see [Who Refunds the Passenger](#who-refunds-the-passenger)). |
+| `REFUND_IN_PROGRESS` | Cancelled · refund on its way. When your airline took the payment: Cancelled · refund due from the airline (see [Who Refunds the Passenger](#who-refunds-the-passenger)). An add-on the supplier never confirmed reads "Couldn't be booked · refund on its way". |
 | `REFUNDED` | Cancelled · refunded |
 | `REFUND_MANUAL_REVIEW` | Cancelled · refund under review |
 | `FAILED` | Couldn't be booked · refund on its way |
 | `COMPLETED`, `DELIVERED` | Can't be cancelled online |
+| Any other status | The status in words, for example "Uncertain". |
+
+Right after a cancellation, until the order reloads, the line reads "Cancelled · USD 48.00 refund on its way", "Cancelled · the airline will refund USD 48.00", "Cancelled" when nothing was refunded, or "Cancelled · refund under review".
 
 ---
 
@@ -168,19 +171,20 @@ The **Cancel** link appears only when all of these hold:
 2. It is an airport transfer, car rental or parking booking. eSIMs, lounge access, fast track, carbon offsets and baggage protection can't be cancelled from the widget.
 3. Arcube confirms the add-on can be cancelled at that moment. The terms are checked when the page loads and again immediately before cancelling.
 
-If the terms change between the two checks, for example because the free-cancellation deadline passed while the page was open, nothing is cancelled. The panel shows either the reason the add-on can no longer be cancelled, or the new refund, which the passenger must confirm again.
+If the terms change between the two checks, for example because the free-cancellation deadline passed while the page was open, nothing is cancelled. The panel shows either "This add-on can't be cancelled online any more" with Arcube's explanation and a **Close** button, or "The refund for this add-on has changed to USD 40.00. Check it and confirm again."
 
 ---
 
 ## Cancelling an Add-on
 
 1. The passenger selects **Cancel** on an add-on. A panel opens under it with the refund ("Full refund", "Partial refund" or "No refund") and the amount.
-2. The passenger confirms with **Cancel and refund USD 48.00**, or **Cancel without refund** after ticking the acknowledgement. **Keep it** closes the panel.
+2. The passenger confirms with **Cancel and refund USD 48.00**, or **Cancel without refund** after ticking the acknowledgement. **Keep it** closes the panel. While the cancellation is sent, the button reads "Cancelling…".
 3. The widget shows the outcome under the add-on:
    - "Transfer cancelled. USD 48.00 is on its way back to the card you paid with and should appear within 5–10 business days. Reference cncl_…" when Arcube took the payment.
    - "Transfer cancelled. The airline will refund USD 48.00 to the card you paid with. Reference cncl_…" when your airline took the payment.
-   - "Transfer cancelled. Your booking has been released. No refund was due." after a cancellation without refund.
-   - "Cancellation received. We're checking the refund with the provider and will process it shortly." when the cancellation needs a manual review.
+   - "Transfer cancelled. Your booking has been released. No refund was due. Reference cncl_…" after a cancellation without refund.
+   - "Transfer cancelled. We're checking the refund and will process it shortly. Reference cncl_…" when the supplier confirmed the cancellation but the refund needs a check by Arcube.
+   - "Cancellation received. We're checking the refund with the provider and will process it shortly. Reference cncl_…" when the supplier has not confirmed the cancellation yet.
 4. The widget sends `ARCUBE_WIDGET_CANCELLED` to your page.
 
 A cancelled add-on can't be restored; the passenger can book it again.
@@ -194,7 +198,7 @@ Refunds go back to the card the passenger paid with. Who sends them depends on w
 | Arcube's checkout | Arcube, automatically | The refund should appear within 5–10 business days. |
 | Your airline, through its own payment provider (orders created with `externalPSP`) | Your airline | The airline will refund the passenger. No timing is promised, since the timing is your airline's. |
 
-The confirmation panel follows the same rule. For a full refund it reads "Back to the card you paid with within 5–10 business days." when Arcube took the payment, and "The airline will refund this to the card you paid with." when your airline did.
+The confirmation panel follows the same rule. For a full refund it reads "Back to the card you paid with within 5–10 business days." when Arcube took the payment, and "The airline will refund this to the card you paid with." when your airline did, followed by the free-cancellation deadline when it is known. For a partial refund it starts "The provider keeps the rest of the price." For no refund it shows Arcube's explanation of the terms.
 
 <Callout type="warn" title="Your airline must refund and confirm">
   When your airline took the payment, Arcube cancels the add-on but cannot refund the passenger.
@@ -229,7 +233,7 @@ https://CANCELLATION_WIDGET_URL/?pnr=ABC123&token=WIDGET_TOKEN&accent=%23B3122E&
 https://CANCELLATION_WIDGET_URL/?pnr=ABC123&token=WIDGET_TOKEN&theme=your-airline
 ```
 
-**Your own stylesheet** - pass its URL in `cssUrl`. It is loaded only over HTTPS, and only from the origin of the page embedding the widget or from an origin Arcube has allow-listed for you (for example your CDN). Any other URL is ignored.
+**Your own stylesheet** - pass its URL in `cssUrl`. It is loaded only over HTTPS, and only from the origin of the page embedding the widget or from an origin Arcube has allow-listed for you (for example your CDN). Any other URL is ignored. A stylesheet URL sent with `ARCUBE_WIDGET_STYLE` (below) only has to be HTTPS, since only the page embedding the widget can send that message.
 
 ```text
 https://CANCELLATION_WIDGET_URL/?pnr=ABC123&token=WIDGET_TOKEN&cssUrl=https%3A%2F%2Fwww.airline.com%2Fwidget.css
@@ -237,7 +241,7 @@ https://CANCELLATION_WIDGET_URL/?pnr=ABC123&token=WIDGET_TOKEN&cssUrl=https%3A%2
 
 The widget learns the embedding page's origin from the browser. If your page sends `Referrer-Policy: no-referrer`, some browsers withhold it, so host the stylesheet on an origin Arcube has allow-listed, or send it with `ARCUBE_WIDGET_STYLE`.
 
-**From your page** - after the widget sends `ARCUBE_WIDGET_READY`, post `ARCUBE_WIDGET_STYLE`. Every field is optional; sending a field again replaces what you sent before, and an empty value clears it. CSS text is limited to 200 KB.
+**From your page** - after the widget sends `ARCUBE_WIDGET_READY`, post `ARCUBE_WIDGET_STYLE`. Every field is optional; sending a field again replaces what you sent before, and an empty value clears it. CSS text longer than 200,000 characters is cut off.
 
 ```javascript
 window.addEventListener("message", (event) => {
@@ -258,11 +262,11 @@ window.addEventListener("message", (event) => {
 
 ### Design Tokens
 
-Set any of these on `:root` in your stylesheet, or by name in the `tokens` of `ARCUBE_WIDGET_STYLE`. The `tokens` object also accepts `accent`, `accentText`, `font`, `radius`, `background` and `text` as short names.
+Set any of these on `:root` in your stylesheet, or by name in the `tokens` of `ARCUBE_WIDGET_STYLE`. The `tokens` object also accepts `accent`, `accentText`, `font`, `radius`, `background` and `text` as short names. Values must be valid CSS: `radius` takes any CSS length, such as `12px` or `0.75rem`. Unknown token names, and values that try to do more than set a value (for example ones containing `;`, `{`, `}` or `url(`), are ignored.
 
 | Token | Default | Used for |
 |---|---|---|
-| `--arc-font` | Helvetica Neue, Helvetica, Arial | All text |
+| `--arc-font` | Helvetica Neue, Helvetica, Arial, sans-serif | All text |
 | `--arc-font-size` | `15px` | Base text size |
 | `--arc-title-size` / `--arc-title-weight` / `--arc-title-tracking` | `32px` / `500` / `-0.02em` | "Add-ons" heading |
 | `--arc-heading-size` / `--arc-heading-weight` | `17px` / `600` | Order headings |
@@ -368,7 +372,7 @@ Each `.arc-item` describes its state in data attributes, so you can style each c
 | `data-category` | The add-on's category, for example `AIRPORT_TRANSFER`, `CAR_RENTAL`, `PARKING`, `ESIMS`, `LOUNGE_ACCESS` |
 | `data-open` | `true` while the add-on's refund panel or confirmation is showing |
 
-The refund panel carries `data-refund` (`full`, `partial` or `none`).
+The refund panel carries `data-refund` (`full`, `partial` or `none`). Each `.arc-order` carries `data-order-id`. The **Receipt** link carries `data-state="busy"` while it downloads ("Downloading…") and `data-state="error"` when the receipt can't be downloaded ("Receipt unavailable, try again"). The acknowledgement `.arc-ack` carries `aria-checked`, for styling the ticked box.
 
 ```css
 :root {
@@ -397,11 +401,14 @@ Class names, data attributes and tokens are part of the widget's public interfac
 
 ## Error Handling
 
-- **Orders can't be loaded** (for example an expired token or a network failure): "We couldn't load your add-ons." with the reason and a **Try again** button. An expired token needs a new token and a reload of the iframe.
-- **No add-ons on the PNR:** "There are no add-ons on this booking yet."
+- **No add-ons on the PNR:** "There are no add-ons on this booking yet." This is also what a token issued for a different PNR shows.
+- **Expired or invalid token:** "We couldn't load your add-ons. This page has expired. Reload the page to see them." Request a new token and reload the iframe.
+- **Orders can't be loaded** for another reason: "We couldn't load your add-ons. Check your connection and try again." when the request didn't reach Arcube, or "…Please try again in a moment." otherwise, with a **Try again** button.
 - **Missing parameters:** "Missing required parameters: pnr and token."
-- **A cancellation fails:** the reason is shown in red inside the refund panel. The passenger can try again; a retry does not cancel twice.
 - **The terms can't be checked:** the add-on shows "Cancellation options unavailable right now" and offers no Cancel.
+- **The terms can't be re-checked when the passenger confirms** (for example the token expired while the page was open): "We couldn't confirm the cancellation terms right now. Please try again." in red inside the refund panel. Nothing is cancelled.
+- **A cancellation fails:** "We couldn't cancel this add-on right now." followed by Arcube's reason, in red inside the refund panel. The passenger can try again; a retry does not cancel twice.
+- **The receipt can't be downloaded:** the **Receipt** link reads "Receipt unavailable, try again".
 
 ---
 

@@ -16,7 +16,7 @@ Airlines embed it on their "Manage my booking" or trip pages. Your page requests
 3. The widget lists every add-on order for the PNR, one section per purchase, with the purchase date and a receipt download.
 4. For each add-on that can be cancelled online, the widget asks Arcube whether it can be cancelled right now and for what refund, and shows the terms on the row, for example "Free cancellation until 13 Dec, 04:30".
 5. The passenger selects **Cancel**, reviews the refund in a panel under the add-on, and confirms. The widget checks the terms again immediately before cancelling: if the deadline has passed or the refund has changed in the meantime, nothing is cancelled and the passenger is told why.
-6. The widget shows the outcome (cancelled with the refund on its way, cancelled with the refund due from your airline when your airline took the payment, or received and under review) and notifies your page.
+6. The widget shows the outcome (cancelled with the refund on its way, cancelled with the refund due from your airline when your airline took the payment, cancelled with no refund due, or received and under review) and notifies your page.
 
 When your airline took the payment through its own payment provider, your airline refunds the passenger and confirms it to Arcube. See [Airline Refunds](/docs/cancellation-widget/refunds).
 
@@ -38,5 +38,5 @@ Every part of the widget can be restyled with your own CSS: colours, fonts, spac
 - A token opens only the orders for its own PNR with your airline.
 - Whether an add-on can be cancelled, and the refund, are decided by Arcube at the moment of cancelling, not by the page.
 - An add-on is cancelled at most once: repeated clicks and retries do not cancel or refund it twice.
-- Custom stylesheets are only loaded from origins you control (see [Styling and Branding](/docs/cancellation-widget/implementation#styling-and-branding)).
+- A stylesheet URL in the embed link is only loaded from origins you control. Styling sent by message is accepted only from the page embedding the widget (see [Styling and Branding](/docs/cancellation-widget/implementation#styling-and-branding)).
 - All communication is over HTTPS.
