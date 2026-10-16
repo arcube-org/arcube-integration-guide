@@ -33,7 +33,7 @@ After an order is created you can retrieve it individually or list a customer's 
 | Field | Description |
 | --- | --- |
 | `Order.OrderID` | The resolved order id. |
-| `Order.Status` | Roll-up status across the order's items (e.g. `CONFIRMED`, `PARTIALLY_CONFIRMED`, `REFUNDED`, `FAILED`). |
+| `Order.Status` | Roll-up status across the order's items (e.g. `CONFIRMED`, `PARTIALLY_CONFIRMED`, `REFUND_IN_PROGRESS`, `REFUNDED`, `FAILED`). `REFUND_IN_PROGRESS` means a cancelled item's refund is still owed; see [Airline Refunds](/docs/reference/airline-refunds). |
 | `Order.AssociatedRecords[]` | Linked records — the `PNR` and the underlying transaction id(s) (`TX`). |
 | `Order.Customer` / `Order.Passengers[]` | Buyer and traveller details. |
 | `Order.Items[]` | One entry per booked line: `OrderItemID`, `Name`, `ServiceTypeCode`, `Quantity`, `Status`, `PriceDetail.TotalAmount`, `Metadata`, plus the **delivered product** (see below). |

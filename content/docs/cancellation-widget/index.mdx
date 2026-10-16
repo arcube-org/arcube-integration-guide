@@ -16,7 +16,9 @@ Airlines embed it on their "Manage my booking" or trip pages. Your page requests
 3. The widget lists every add-on order for the PNR, one section per purchase, with the purchase date and a receipt download.
 4. For each add-on that can be cancelled online, the widget asks Arcube whether it can be cancelled right now and for what refund, and shows the terms on the row, for example "Free cancellation until 13 Dec, 04:30".
 5. The passenger selects **Cancel**, reviews the refund in a panel under the add-on, and confirms. The widget checks the terms again immediately before cancelling: if the deadline has passed or the refund has changed in the meantime, nothing is cancelled and the passenger is told why.
-6. The widget shows the outcome (cancelled with the refund on its way, or received and under review) and notifies your page.
+6. The widget shows the outcome (cancelled with the refund on its way, cancelled with the refund due from your airline when your airline took the payment, or received and under review) and notifies your page.
+
+When your airline took the payment through its own payment provider, your airline refunds the passenger and confirms it to Arcube. See [Airline Refunds](/docs/reference/airline-refunds).
 
 <img src="/images/cancellation-widget/cancellation-flow.svg" alt="Cancellation widget flow from embed to refund confirmation" style={{display: 'block', margin: '0 auto', width: '100%'}} />
 

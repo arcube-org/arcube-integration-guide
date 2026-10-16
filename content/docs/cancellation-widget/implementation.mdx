@@ -152,6 +152,7 @@ Add-ons that are not live show their status instead of terms:
 | `PENDING` | Waiting for the provider to confirm |
 | `CANCELLATION_INITIATED` | Cancellation in progress |
 | `CANCELLED` | Cancelled |
+| `REFUND_IN_PROGRESS` | Cancelled · refund on its way. When your airline took the payment: Cancelled · refund due from the airline (see [Who Refunds the Passenger](#who-refunds-the-passenger)). |
 | `REFUNDED` | Cancelled · refunded |
 | `REFUND_MANUAL_REVIEW` | Cancelled · refund under review |
 | `FAILED` | Couldn't be booked · refund on its way |
@@ -176,12 +177,30 @@ If the terms change between the two checks, for example because the free-cancell
 1. The passenger selects **Cancel** on an add-on. A panel opens under it with the refund ("Full refund", "Partial refund" or "No refund") and the amount.
 2. The passenger confirms with **Cancel and refund USD 48.00**, or **Cancel without refund** after ticking the acknowledgement. **Keep it** closes the panel.
 3. The widget shows the outcome under the add-on:
-   - "Transfer cancelled. USD 48.00 is on its way back to the card you paid with and should appear within 5–10 business days. Reference cncl_…"
+   - "Transfer cancelled. USD 48.00 is on its way back to the card you paid with and should appear within 5–10 business days. Reference cncl_…" when Arcube took the payment.
+   - "Transfer cancelled. The airline will refund USD 48.00 to the card you paid with. Reference cncl_…" when your airline took the payment.
    - "Transfer cancelled. Your booking has been released. No refund was due." after a cancellation without refund.
    - "Cancellation received. We're checking the refund with the provider and will process it shortly." when the cancellation needs a manual review.
 4. The widget sends `ARCUBE_WIDGET_CANCELLED` to your page.
 
-Refunds go back to the card the passenger paid with. A cancelled add-on can't be restored; the passenger can book it again.
+A cancelled add-on can't be restored; the passenger can book it again.
+
+### Who Refunds the Passenger
+
+Refunds go back to the card the passenger paid with. Who sends them depends on who took the payment:
+
+| Payment taken by | Refund sent by | What the widget says |
+|---|---|---|
+| Arcube's checkout | Arcube, automatically | The refund should appear within 5–10 business days. |
+| Your airline, through its own payment provider (orders created with `externalPSP`) | Your airline | The airline will refund the passenger. No timing is promised, since the timing is your airline's. |
+
+The confirmation panel follows the same rule. For a full refund it reads "Back to the card you paid with within 5–10 business days." when Arcube took the payment, and "The airline will refund this to the card you paid with." when your airline did.
+
+<Callout type="warn" title="Your airline must refund and confirm">
+  When your airline took the payment, Arcube cancels the add-on but cannot refund the passenger.
+  Your airline refunds them and confirms each refund to Arcube, from the dashboard or the API. See
+  [Airline Refunds](/docs/reference/airline-refunds).
+</Callout>
 
 ---
 
