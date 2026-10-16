@@ -1,4 +1,4 @@
 {
   "title": "Reference",
-  "pages": ["authentication", "essential-api-calls", "airline-refunds", "error-model", "rate-limits", "api-versioning"]
+  "pages": ["authentication", "essential-api-calls", "error-model", "rate-limits", "api-versioning"]
 }

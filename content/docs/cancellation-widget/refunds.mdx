@@ -1,11 +1,11 @@
 ---
 title: Airline Refunds
-description: Refund passengers for cancelled add-ons on orders your airline charged, and confirm each refund to Arcube from the dashboard or the API.
+description: Refund passengers who cancel in the Cancellation Widget on orders your airline charged, and confirm each refund to Arcube from the dashboard or the API.
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-When your airline charges the passenger through its own payment provider, Arcube never holds the money. This covers every order created with an `externalPSP` payment block, which includes every [OrderCreate](/docs/api-offer-order-integration/order-create) order. When the passenger cancels an add-on on such an order, Arcube cancels it with the supplier but cannot refund the passenger. Your airline refunds the passenger, then tells Arcube.
+When your airline charges the passenger through its own payment provider (orders created with an `externalPSP` payment block), Arcube never holds the money. When the passenger cancels an add-on on such an order in the Cancellation Widget, Arcube cancels it with the supplier but cannot refund the passenger. Your airline refunds the passenger, then tells Arcube.
 
 Orders paid through Arcube's checkout are refunded by Arcube automatically. Nothing on this page applies to them.
 
@@ -13,8 +13,8 @@ Orders paid through Arcube's checkout are refunded by Arcube automatically. Noth
 
 ## How It Works
 
-1. The passenger cancels an add-on, in the [Cancellation Widget](/docs/cancellation-widget) or through [OrderCancel](/docs/api-offer-order-integration/order-cancel).
-2. Arcube cancels it with the supplier and records the refund your airline owes. The add-on's status becomes `REFUND_IN_PROGRESS`, and Arcube emails the passenger that your airline will refund them.
+1. The passenger cancels an add-on in the Cancellation Widget. The widget tells them the airline will refund them (see [Who Refunds the Passenger](/docs/cancellation-widget/implementation#who-refunds-the-passenger)).
+2. Arcube cancels it with the supplier and records the refund your airline owes. The add-on's status becomes `REFUND_IN_PROGRESS`, the widget shows "Cancelled · refund due from the airline", and Arcube emails the passenger that your airline will refund them.
 3. Your airline refunds the passenger through its own payment provider.
 4. Your airline reports the refund to Arcube, either as refunded, with the reference your payment provider gave it, or as failed. Report it from the Refunds page of the Arcube dashboard or through the API.
 5. A refunded report settles the add-on as `REFUNDED`, and Arcube emails the passenger that your airline has refunded them. A failed report goes to Arcube operations, who follow up with you. The passenger gets no email.
@@ -36,7 +36,7 @@ Reported refunds move to the **Refunded** and **Failed** tabs. Only airline admi
 
 ## Through the API
 
-Call these endpoints on your Arcube API environment URL (for example `https://api.arcube.com`), referred to below as `${arcube-url}`. Send the Bearer token from [Authentication](/docs/reference/authentication), the same token you use for the other API calls.
+Call these endpoints on your Arcube API environment URL (for example `https://api.arcube.com`), referred to below as `${arcube-url}`. Send a Bearer token from your airline's API credentials (see [Authentication](/docs/reference/authentication)). A widget token can't be used: it only opens one passenger's orders.
 
 ### List refunds
 
@@ -97,7 +97,7 @@ Only your airline's refunds are returned, from up to the 200 most recent matchin
 |---|---|
 | `refundId` | The id to report the refund against. |
 | `status` | `PENDING`, `REFUNDED` or `FAILED`. |
-| `transactionId` | Arcube's order id: the `OrderID` in OrderList and the `TX` record in OrderView. |
+| `transactionId` | Arcube's order id. |
 | `pnr` | The booking's PNR. |
 | `paymentReference` | Your reference for the original charge, as sent in `externalPSP`, so you can find the charge to refund. |
 | `amount`, `currency` | What to refund, in the currency the passenger paid. |

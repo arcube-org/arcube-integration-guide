@@ -113,20 +113,11 @@ To safely retry, resend with the **same** idempotency key.
 | --- | --- |
 | `OrderCancelRS.Order.OrderID` | The order id. |
 | `OrderCancelRS.Order.Cancellation` | `{ CancellationID, ItemID, Status, Mode? }`. `Status` is `completed`, `REJECTED`, or a pending/review state. |
-| `OrderCancelRS.Order.Refund` | `{ RefundID?, Status, Amount?, Currency?, Message? }`. See [Refund status](#refund-status). |
+| `OrderCancelRS.Order.Refund` | `{ RefundID?, Status, Amount?, Currency?, Message? }`. `Status` is `REFUNDED`, `PENDING`, or `FAILED`. |
 | `OrderCancelRS.Order.CancellationPolicy` | The eligibility that was applied (same shape as OrderView). |
 | `OrderCancelRS.Metadata.CorrelationID` | Correlation id for traceability. |
 
-### Refund status
-
-| `Refund.Status` | Meaning |
-| --- | --- |
-| `REFUND_IN_PROGRESS` | The item is cancelled and your airline owes the passenger the refund. See [Who refunds the passenger](#who-refunds-the-passenger). |
-| `REFUNDED` | The passenger has been refunded. |
-| `PENDING` | The cancellation was routed to manual review. The refund completes out of band. |
-| `FAILED` | The refund could not be started. Arcube operations review it. |
-
-### Example response — cancelled, refund due from your airline
+### Example response — cancelled + refunded
 
 ```json
 {
@@ -139,7 +130,7 @@ To safely retry, resend with the **same** idempotency key.
         "ItemID": "ORDI-1",
         "Status": "completed"
       },
-      "Refund": { "RefundID": "3d0fa504-0b48-4e72-b503-8f6551bece8a", "Status": "REFUND_IN_PROGRESS", "Amount": 389.72, "Currency": "USD" },
+      "Refund": { "RefundID": "3d0fa504-0b48-4e72-b503-8f6551bece8a", "Status": "REFUNDED", "Amount": 389.72, "Currency": "USD" },
       "CancellationPolicy": {
         "Refundable": true,
         "RefundPercentage": 100,
@@ -169,17 +160,10 @@ To safely retry, resend with the **same** idempotency key.
 }
 ```
 
-### Who refunds the passenger
-
-OrderCreate orders are paid through your own payment provider (the `externalPSP` block), so Arcube
-holds no payment to refund. When a cancellation is confirmed with a refund due, OrderCancel returns
-`REFUND_IN_PROGRESS`. Arcube emails the passenger that your airline will refund them.
-
-<Callout type="warn" title="Refund the passenger, then report it">
-  Refund the passenger through your payment provider, then report the refund to Arcube with
-  `POST /airline-refunds/{refundId}`, or mark it refunded in the dashboard. Take the `refundId`,
-  and the amount to refund in the passenger's currency, from `GET /airline-refunds`: the `RefundID`
-  in this response is not accepted there. See [Airline Refunds](/docs/reference/airline-refunds).
+<Callout type="warn" title="Refund timing">
+  When the vendor confirms the cancellation, `Refund.Status` is `REFUNDED` once the refund has been
+  processed. If it is routed to manual review, the response returns a `PENDING` refund and it
+  completes out of band.
 </Callout>
 
 ## Common failure modes
