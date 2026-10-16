@@ -1,0 +1,162 @@
+---
+title: Airline Refunds
+description: Refund passengers who cancel in the Cancellation Widget on orders your airline charged, and confirm each refund to Arcube from the dashboard or the API.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+When your airline charges the passenger through its own payment provider (orders created with an `externalPSP` payment block), Arcube never holds the money. When the passenger cancels an add-on on such an order in the Cancellation Widget, Arcube cancels it with the supplier but cannot refund the passenger. Your airline refunds the passenger, then tells Arcube.
+
+Orders paid through Arcube's checkout are refunded by Arcube automatically. Nothing on this page applies to them.
+
+---
+
+## How It Works
+
+1. The passenger cancels an add-on in the Cancellation Widget. The widget tells them the airline will refund them (see [Who Refunds the Passenger](/docs/cancellation-widget/implementation#who-refunds-the-passenger)).
+2. Arcube cancels it with the supplier and records the refund your airline owes. The add-on's status becomes `REFUND_IN_PROGRESS`, the widget shows "Cancelled · refund due from the airline", and Arcube emails the passenger that your airline will refund them.
+3. Your airline refunds the passenger through its own payment provider.
+4. Your airline reports the refund to Arcube, either as refunded, with the reference your payment provider gave it, or as failed. Report it from the Refunds page of the Arcube dashboard or through the API.
+5. A refunded report settles the add-on as `REFUNDED`, and Arcube emails the passenger that your airline has refunded them. A failed report goes to Arcube operations, who follow up with you. The passenger gets no email.
+
+Report each refund as soon as it is made. Arcube follows up on refunds still open after 7 days.
+
+---
+
+## From the Dashboard
+
+In the Arcube dashboard, open **Refunds**. The **To refund** tab lists every refund your airline owes, with the PNR, the add-on, the amount and your payment reference for the original charge.
+
+- **Mark refunded** asks for the reference your payment provider gave the refund.
+- **Report failed** takes an optional reason. Arcube follows up with you.
+
+Reported refunds move to the **Refunded** and **Failed** tabs. Only airline admins can mark refunds; other airline users can view them.
+
+---
+
+## Through the API
+
+Call these endpoints on your Arcube API environment URL (for example `https://api.arcube.com`), referred to below as `${arcube-url}`. Send a Bearer token from your airline's API credentials (see [Authentication](/docs/reference/authentication)). A widget token can't be used: it only opens one passenger's orders.
+
+### List refunds
+
+<Callout type="info" title="HTTP Method: GET">
+  **URL:** `${arcube-url}/airline-refunds?status=PENDING`
+</Callout>
+
+| Query parameter | Description |
+|---|---|
+| `status` | `PENDING` (default) for refunds not yet reported, `REFUNDED`, `FAILED`, or `ALL`. |
+
+Only your airline's refunds are returned, from up to the 200 most recent matching orders, newest first.
+
+```json
+{
+  "success": true,
+  "refunds": [
+    {
+      "refundId": "f76f1343-73e9-4be4-9c18-ea283dae5dd5",
+      "status": "PENDING",
+      "transactionId": "62b6e549-709c-4649-a414-ea7203c04542",
+      "pnr": "RFTB03",
+      "paymentReference": "RFT-RFTB03-1792077256929",
+      "amount": 509.72,
+      "currency": "USD",
+      "items": [
+        {
+          "itemId": "8df71f39bbd9da895e11b0e05f2fdf20",
+          "category": "AIRPORT_TRANSFER"
+        }
+      ],
+      "requestedAt": "2026-10-15T15:14:28.294Z",
+      "resolvedAt": null,
+      "reference": null
+    },
+    {
+      "refundId": "9e814542-a700-485f-b69c-108332f352a9",
+      "status": "REFUNDED",
+      "transactionId": "f9e0b4c7-747d-4551-b9e7-60a1dbaa0e24",
+      "pnr": "RFTA05",
+      "paymentReference": "RFT-RFTA05-1792077031214",
+      "amount": 509.72,
+      "currency": "USD",
+      "items": [
+        {
+          "itemId": "fea8f1fe5449408dcb6609177e23c1f5",
+          "category": "AIRPORT_TRANSFER"
+        }
+      ],
+      "requestedAt": "2026-10-15T15:11:53.895Z",
+      "resolvedAt": "2026-10-15T18:31:20.558Z",
+      "reference": "VJ-RFND-RFTA05"
+    }
+  ]
+}
+```
+| Field | Description |
+|---|---|
+| `refundId` | The id to report the refund against. |
+| `status` | `PENDING`, `REFUNDED` or `FAILED`. |
+| `transactionId` | Arcube's order id. |
+| `pnr` | The booking's PNR. |
+| `paymentReference` | Your reference for the original charge, as sent in `externalPSP`, so you can find the charge to refund. |
+| `amount`, `currency` | What to refund, in the currency the passenger paid. |
+| `items[]` | The add-ons the refund covers: `itemId`, `category` and, when the add-on has one, `title`. |
+| `requestedAt` | When the passenger cancelled. |
+| `resolvedAt` | When the refund was reported refunded or failed. |
+| `reference` | Your refund reference, once reported refunded. |
+
+### Report a refund
+
+<Callout type="info" title="HTTP Method: POST">
+  **URL:** `${arcube-url}/airline-refunds/{refundId}`
+</Callout>
+
+| Field | Required | Description |
+|---|---|---|
+| `status` | Yes | `REFUNDED` or `FAILED`. |
+| `reference` | With `REFUNDED` | The reference your payment provider gave the refund, up to 128 characters. Arcube keeps it as the record that the passenger was paid. |
+| `message` | No | Why the refund failed, up to 500 characters. Read by Arcube operations. |
+
+```bash
+curl --location "${arcube-url}/airline-refunds/f76f1343-73e9-4be4-9c18-ea283dae5dd5" \
+  --header "Content-Type: application/json" \
+  --header "Authorization: Bearer <token>" \
+  --data-raw '{ "status": "REFUNDED", "reference": "VJ-RFND-RFTB03" }'
+```
+
+```bash
+curl --location "${arcube-url}/airline-refunds/f76f1343-73e9-4be4-9c18-ea283dae5dd5" \
+  --header "Content-Type: application/json" \
+  --header "Authorization: Bearer <token>" \
+  --data-raw '{ "status": "FAILED", "message": "Card expired, the provider rejected the refund" }'
+```
+
+A successful report returns:
+
+```json
+{ "success": true, "refundId": "f76f1343-73e9-4be4-9c18-ea283dae5dd5", "status": "REFUNDED" }
+```
+
+<Callout type="info" title="Retries are safe">
+  Reporting a refund that already has that outcome returns `200` with `"alreadyApplied": true` and
+  changes nothing; the first reference is kept. If two reports for the same refund arrive at once,
+  one is applied and the other returns `alreadyApplied`.
+</Callout>
+
+### Errors
+
+Errors return `success: false` with a `code` and an `error` message:
+
+```json
+{ "success": false, "code": "REFUND_NOT_FOUND", "error": "Refund not found" }
+```
+
+| HTTP | `code` | Meaning |
+|---|---|---|
+| `400` | `INVALID_REFUND_REPORT` | `status` is missing or invalid, `reference` is missing on `REFUNDED`, or a field is too long. |
+| `400` | `INVALID_STATUS` | The list `status` is not `PENDING`, `REFUNDED`, `FAILED` or `ALL`. |
+| `403` | `FORBIDDEN` | The token is not your airline's API credential or an airline admin's dashboard login. |
+| `404` | `REFUND_NOT_FOUND` | No such refund for your airline. |
+| `409` | `NOT_AIRLINE_REFUND` | Arcube refunds this order, so there is nothing for your airline to report. |
+| `409` | `REFUND_ALREADY_FINAL` | The refund was already reported with the other outcome, for example `FAILED` after `REFUNDED`. It is left unchanged, and Arcube operations review it. |
