@@ -928,8 +928,6 @@ HTTP `201`, `success: true`, and the top-level `status: "confirmed"` do **not** 
 In this example, show the lounge as confirmed and the car rental as unsuccessful. The customer still has a valid lounge booking; the car rental must not be presented as booked.
 
 - Inspect each item's `status`: `CONFIRMED`, `DELIVERED`, or `COMPLETED` indicates a successful booking; `FAILED` indicates a booking failure. Use `statusReason`, when present, to explain the outcome.
-- Keep successful bookings and show failed items separately. Do not resubmit the entire order, as this could duplicate successful bookings.
-- For `pointOfSale: "AIRLINE_WEBSITE"`, the airline handles any customer refund through its own payment provider. A failed item or an Arcube accounting reversal is not proof that the customer has received a refund.
 
 ##### Invalid Payment Details
 
