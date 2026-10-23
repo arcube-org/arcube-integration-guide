@@ -869,7 +869,11 @@ curl --location "${arcube-url}/transactions/widget-order-create" \
 
 #### Responses
 
-On success the order is confirmed immediately - no payment redirect is returned, because the airline already captured the charge.
+For airline-owned checkout, a completed order-create request returns HTTP `201` without a payment redirect, because the airline already captured the charge. Check the individual `transactionItems` statuses to determine which ancillaries were successfully booked.
+
+##### Successful Booking
+
+The baggage protection item from the request above was confirmed. The example shows only the relevant response fields; items may contain additional product and confirmation details.
 
 ```json
 {
@@ -878,11 +882,56 @@ On success the order is confirmed immediately - no payment redirect is returned,
   "pnr": "YOUR_PNR",
   "status": "confirmed",
   "paymentRequired": false,
-  "transactionItems": [],
+  "transactionItems": [
+    {
+      "id": "baggage-protection-gold",
+      "description": "Baggage Protection - Gold Service",
+      "status": "CONFIRMED"
+    }
+  ],
   "message": "No payment required",
   "timestamp": "2026-03-25T10:30:01.000Z"
 }
 ```
+
+##### Partial Success
+
+When a request contains several ancillaries, one item can fail without cancelling the successfully booked items. For example, an order containing lounge access and a car rental could return the following HTTP `201` response. This example shows only the relevant fields; item IDs and the failure reason are illustrative.
+
+```json
+{
+  "success": true,
+  "transactionId": "TRANSACTION_ID",
+  "pnr": "YOUR_PNR",
+  "status": "confirmed",
+  "paymentRequired": false,
+  "transactionItems": [
+    {
+      "id": "dragonpass_BER_N02469",
+      "description": "Lounge Tegel - Terminal 1, BER",
+      "status": "CONFIRMED"
+    },
+    {
+      "id": "CAR_OFFER_TOKEN",
+      "description": "Alfa Romeo 105 - London Bow, 3 days",
+      "status": "FAILED",
+      "statusReason": "Car rental booking could not be confirmed"
+    }
+  ],
+  "message": "No payment required",
+  "timestamp": "2026-10-23T10:30:01.000Z"
+}
+```
+
+HTTP `201`, `success: true`, and the top-level `status: "confirmed"` do **not** guarantee that every item was booked. In this flow, partial success is identified from `transactionItems`, not a separate top-level partial-success flag. `paymentRequired: false` only means that no additional Arcube payment step is required.
+
+In this example, show the lounge as confirmed and the car rental as unsuccessful. The customer still has a valid lounge booking; the car rental must not be presented as booked.
+
+- Inspect each item's `status`: `CONFIRMED`, `DELIVERED`, or `COMPLETED` indicates a successful booking; `FAILED` indicates a booking failure. Use `statusReason`, when present, to explain the outcome.
+- Keep successful bookings and show failed items separately. Do not resubmit the entire order, as this could duplicate successful bookings.
+- For `pointOfSale: "AIRLINE_WEBSITE"`, the airline handles any customer refund through its own payment provider. A failed item or an Arcube accounting reversal is not proof that the customer has received a refund.
+
+##### Invalid Payment Details
 
 If `externalPSP` is missing or invalid, the request is rejected:
 
