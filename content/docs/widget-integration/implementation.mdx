@@ -873,61 +873,514 @@ For airline-owned checkout, a completed order-create request returns HTTP `201` 
 
 ##### Successful Booking
 
-The baggage protection item from the request above was confirmed. The example shows only the relevant response fields; items may contain additional product and confirmation details.
+The following response example shows one Baggage Protection policy successfully issued for one passenger. Personal details, booking and policy references, and event credentials have been replaced with example values; all response fields are retained.
 
 ```json
 {
   "success": true,
-  "transactionId": "TRANSACTION_ID",
-  "pnr": "YOUR_PNR",
-  "status": "confirmed",
+  "transactionId": "22222222-3333-4444-8555-666666666666",
+  "pnr": "EX1234",
+  "status": "CONFIRMED",
+  "statusReason": null,
+  "refundPayer": "AIRLINE",
   "paymentRequired": false,
   "transactionItems": [
     {
-      "id": "baggage-protection-gold",
-      "description": "Baggage Protection - Gold Service",
-      "status": "CONFIRMED"
+      "id": "GOLD_Gold_Service",
+      "ancillaryId": "68b99b5692ea4d16bd6e7583",
+      "description": "Baggage Protection - Gold Service ($1000)",
+      "vendor": "blueribbonbags",
+      "price": 3.83,
+      "currency": "USD",
+      "pointsOfInterest": [],
+      "quantity": 1,
+      "metadata": {
+        "productCode": "GOLD",
+        "ProductCode": "GOLD",
+        "PassengerList": [
+          {
+            "id": "pax_1",
+            "title": "Mr",
+            "firstName": "Adam",
+            "lastName": "Smith",
+            "email": "customer@example.com",
+            "phone": "2025550147",
+            "callingCode": "+1"
+          }
+        ],
+        "productId": "GOLD_Gold_Service",
+        "passengers": [
+          {
+            "id": "pax_1",
+            "title": "Mr",
+            "firstName": "Adam",
+            "lastName": "Smith",
+            "email": "customer@example.com",
+            "phone": "2025550147",
+            "callingCode": "+1"
+          }
+        ]
+      },
+      "vendorReferenceId": "GOLD",
+      "serviceDetails": {
+        "Coverage Level": "Gold Service",
+        "Coverage Amount": "$1000"
+      },
+      "category": "BAGGAGE_PROTECTION",
+      "extras": [],
+      "countryCode": "GR",
+      "optionalAmenities": [],
+      "status": "CONFIRMED",
+      "_id": "6adb2c39c84ae001a3b5370a",
+      "confirmation": {
+        "status": "CONFIRMED",
+        "errorCode": null,
+        "product": {
+          "type": "DELAY_GUARANTEE",
+          "code": "GOLD",
+          "name": "Gold Service",
+          "referenceLabel": "Service Agreement Number",
+          "termsUrl": "https://www.blueribbonbags.com/ServiceAgreement?lang=en"
+        },
+        "coverage": {
+          "issuance": "PER_PASSENGER",
+          "validityScope": "PNR",
+          "headlineCode": "PER_BAG_LIMIT",
+          "benefits": [
+            {
+              "code": "PER_BAG_LIMIT",
+              "label": "Coverage per bag",
+              "unit": "MONEY",
+              "amount": 1000,
+              "currency": "USD"
+            },
+            {
+              "code": "MAX_BAGS_PER_POLICY",
+              "label": "Bags covered per policy",
+              "unit": "COUNT",
+              "amount": 2,
+              "currency": null
+            }
+          ]
+        },
+        "terms": {
+          "payoutTriggerHours": 96,
+          "reportDeadlineHours": 24,
+          "isTransferable": false,
+          "notes": [
+            "Coverage applies to all bags checked on your flight.",
+            "You must report the bag to the airline before reporting it to the provider."
+          ]
+        },
+        "claims": {
+          "trackingUrl": "https://www.blueribbonbags.com/tracking",
+          "email": "info@blueribbonbags.com"
+        },
+        "flight": {
+          "pnr": "EX1234",
+          "airlineCode": "DM",
+          "airlineCodeType": "IATA",
+          "flightNumber": "DM5801",
+          "departureDate": "2026-12-23",
+          "arrivalDate": "2027-01-11"
+        },
+        "fulfillment": {
+          "requestedQuantity": 1,
+          "deliveredQuantity": 1,
+          "failedQuantity": 0,
+          "failedErrorCode": null,
+          "failedReason": null
+        },
+        "policies": [
+          {
+            "policyNumber": "EXAMPLE_POLICY_1",
+            "customerReference": "22222222-3333-4444-8555-666666666666-BRB-1",
+            "status": "CONFIRMED",
+            "statusReason": null,
+            "issuedAt": "2026-10-23T09:43:23.182525978Z",
+            "passenger": {
+              "id": "pax_1",
+              "title": "Mr",
+              "firstName": "Adam",
+              "lastName": "Smith",
+              "fullName": "Adam Smith",
+              "email": "customer@example.com",
+              "phone": "2025550147"
+            }
+          }
+        ]
+      },
+      "statusReason": null,
+      "statusUpdatedAt": "2026-10-23T09:43:23.188Z"
     }
   ],
   "message": "No payment required",
-  "timestamp": "2026-03-25T10:30:01.000Z"
+  "timestamp": "2026-10-23T09:43:24.061Z",
+  "orderEvents": {
+    "channel": "/orders/22222222-3333-4444-8555-666666666666",
+    "token": "ORDER_EVENTS_TOKEN",
+    "expiresAt": "2026-10-23T09:58:21.000Z",
+    "httpEndpoint": "https://EXAMPLE_API_ID.appsync-api.us-east-1.amazonaws.com/event",
+    "realtimeEndpoint": "wss://EXAMPLE_API_ID.appsync-realtime-api.us-east-1.amazonaws.com/event/realtime"
+  }
 }
 ```
+
+The transaction and item both have `status: "CONFIRMED"`. No `refundDue` block is present because the policy was issued successfully.
 
 ##### Partial Success
 
-When a request contains several ancillaries, one item can fail without cancelling the successfully booked items. For example, an order containing lounge access and a car rental could return the following HTTP `201` response. This example shows only the relevant fields; item IDs and the failure reason are illustrative.
+An order can contain both confirmed items and failed items. The following complete response example is based on a tested order with Fast Track and Baggage Protection confirmed, and Airport Transfer failed and recorded as refunded. Personal details, booking references, vouchers, and event credentials have been replaced with example values; all response fields are retained.
 
 ```json
 {
   "success": true,
-  "transactionId": "TRANSACTION_ID",
-  "pnr": "YOUR_PNR",
-  "status": "confirmed",
+  "transactionId": "11111111-2222-4333-8444-555555555555",
+  "pnr": "EX1234",
+  "status": "PARTIALLY_REFUNDED",
+  "statusReason": "1 of 3 items refunded",
+  "refundPayer": "AIRLINE",
   "paymentRequired": false,
   "transactionItems": [
     {
-      "id": "dragonpass_BER_N02469",
-      "description": "Lounge Tegel - Terminal 1, BER",
-      "status": "CONFIRMED"
+      "id": "dragonpass_ATH_C10702",
+      "ancillaryId": "688cb4a20194f21ee88fcb26",
+      "description": "Athens International Airport - Main Terminal, ATH",
+      "vendor": "dragonpass",
+      "price": 11.41,
+      "currency": "USD",
+      "pointsOfInterest": [],
+      "quantity": 2,
+      "metadata": {
+        "visitDate": "2026-12-23",
+        "visitTime": "09:00",
+        "visitTimeRange": "09:00 - 09:30",
+        "visitDateTime": "2026-12-23T09:00",
+        "passengers": [
+          {
+            "id": "pax_1",
+            "title": "Mr",
+            "firstName": "Adam",
+            "lastName": "Smith",
+            "email": "customer@example.com",
+            "passengersType": 1
+          },
+          {
+            "id": "pax_2",
+            "title": "Ms",
+            "firstName": "Sarah",
+            "lastName": "Smith",
+            "email": "customer@example.com",
+            "passengersType": 1
+          }
+        ]
+      },
+      "vendorReferenceId": "C10702",
+      "serviceDetails": {
+        "Fast Track Name": "Athens International Airport",
+        "Terminal": "Main Terminal",
+        "Airport Code": "ATH",
+        "Airport Name": "Athens International Airport",
+        "Location": "Landside - Intra Shenghen Area at the security screening/check points"
+      },
+      "category": "FAST_TRACK",
+      "extras": [],
+      "countryCode": "GR",
+      "optionalAmenities": [],
+      "status": "CONFIRMED",
+      "_id": "6adb295bc84ae001a3b536ab",
+      "confirmation": {
+        "status": "CONFIRMED",
+        "errorCode": null,
+        "orderDate": "2026-10-23T09:31:13Z",
+        "fastTrackName": "Athens International Airport",
+        "airportIata": "ATH",
+        "airportName": "Athens International Airport",
+        "terminal": "Main Terminal",
+        "locationDescription": "Landside - Intra Shenghen Area at the security screening/check points",
+        "visitDate": "2026-12-23T09:00",
+        "laneEntryTime": "09:00 - 09:30",
+        "flightNumber": "DM6262",
+        "epass": {
+          "epassId": "EXAMPLE_EPASS_ID",
+          "vendorOrderId": "EXAMPLE_VENDOR_ORDER_ID",
+          "validFrom": null,
+          "validTo": null,
+          "usages": {
+            "available": 2
+          }
+        },
+        "vouchers": [
+          {
+            "firstName": "Adam",
+            "lastName": "Smith",
+            "value": "EXAMPLE_VOUCHER",
+            "type": 1
+          },
+          {
+            "firstName": "Sarah",
+            "lastName": "Smith",
+            "value": "EXAMPLE_VOUCHER",
+            "type": 1
+          }
+        ],
+        "passengers": [
+          {
+            "firstName": "Adam",
+            "lastName": "Smith",
+            "email": "customer@example.com",
+            "phone": "+1 2025550147"
+          },
+          {
+            "firstName": "Sarah",
+            "lastName": "Smith",
+            "email": "customer@example.com",
+            "phone": "+1 2025550147"
+          }
+        ]
+      },
+      "statusReason": null,
+      "statusUpdatedAt": "2026-10-23T09:31:14.708Z"
     },
     {
-      "id": "CAR_OFFER_TOKEN",
-      "description": "Alfa Romeo 105 - London Bow, 3 days",
-      "status": "FAILED",
-      "statusReason": "Car rental booking could not be confirmed"
+      "id": "GOLD_Gold_Service",
+      "ancillaryId": "68b99b5692ea4d16bd6e7583",
+      "description": "Baggage Protection - Gold Service ($1000)",
+      "vendor": "blueribbonbags",
+      "price": 3.83,
+      "currency": "USD",
+      "pointsOfInterest": [],
+      "quantity": 2,
+      "metadata": {
+        "productCode": "GOLD",
+        "ProductCode": "GOLD",
+        "PassengerList": [
+          {
+            "id": "pax_1",
+            "title": "Mr",
+            "firstName": "Adam",
+            "lastName": "Smith",
+            "email": "customer@example.com",
+            "phone": "2025550147",
+            "callingCode": "+1"
+          },
+          {
+            "id": "pax_2",
+            "title": "Ms",
+            "firstName": "Sarah",
+            "lastName": "Smith",
+            "email": "customer@example.com"
+          }
+        ],
+        "productId": "GOLD_Gold_Service",
+        "passengers": [
+          {
+            "id": "pax_1",
+            "title": "Mr",
+            "firstName": "Adam",
+            "lastName": "Smith",
+            "email": "customer@example.com",
+            "phone": "2025550147",
+            "callingCode": "+1"
+          },
+          {
+            "id": "pax_2",
+            "title": "Ms",
+            "firstName": "Sarah",
+            "lastName": "Smith",
+            "email": "customer@example.com"
+          }
+        ]
+      },
+      "vendorReferenceId": "GOLD",
+      "serviceDetails": {
+        "Coverage Level": "Gold Service",
+        "Coverage Amount": "$1000"
+      },
+      "category": "BAGGAGE_PROTECTION",
+      "extras": [],
+      "countryCode": "GR",
+      "optionalAmenities": [],
+      "status": "CONFIRMED",
+      "_id": "6adb295bc84ae001a3b536ac",
+      "confirmation": {
+        "status": "CONFIRMED",
+        "errorCode": null,
+        "product": {
+          "type": "DELAY_GUARANTEE",
+          "code": "GOLD",
+          "name": "Gold Service",
+          "referenceLabel": "Service Agreement Number",
+          "termsUrl": "https://www.blueribbonbags.com/ServiceAgreement?lang=en"
+        },
+        "coverage": {
+          "issuance": "PER_PASSENGER",
+          "validityScope": "PNR",
+          "headlineCode": "PER_BAG_LIMIT",
+          "benefits": [
+            {
+              "code": "PER_BAG_LIMIT",
+              "label": "Coverage per bag",
+              "unit": "MONEY",
+              "amount": 1000,
+              "currency": "USD"
+            },
+            {
+              "code": "MAX_BAGS_PER_POLICY",
+              "label": "Bags covered per policy",
+              "unit": "COUNT",
+              "amount": 2,
+              "currency": null
+            }
+          ]
+        },
+        "terms": {
+          "payoutTriggerHours": 96,
+          "reportDeadlineHours": 24,
+          "isTransferable": false,
+          "notes": [
+            "Coverage applies to all bags checked on your flight.",
+            "You must report the bag to the airline before reporting it to the provider."
+          ]
+        },
+        "claims": {
+          "trackingUrl": "https://www.blueribbonbags.com/tracking",
+          "email": "customer@example.com"
+        },
+        "flight": {
+          "pnr": "EX1234",
+          "airlineCode": "DM",
+          "airlineCodeType": "IATA",
+          "flightNumber": "DM5801",
+          "departureDate": "2026-12-23",
+          "arrivalDate": "2027-01-11"
+        },
+        "fulfillment": {
+          "requestedQuantity": 2,
+          "deliveredQuantity": 2,
+          "failedQuantity": 0,
+          "failedErrorCode": null,
+          "failedReason": null
+        },
+        "policies": [
+          {
+            "policyNumber": "EXAMPLE_POLICY_1",
+            "customerReference": "11111111-2222-4333-8444-555555555555-BRB-1",
+            "status": "CONFIRMED",
+            "statusReason": null,
+            "issuedAt": "2026-10-23T09:31:09.607615069Z",
+            "passenger": {
+              "id": "pax_1",
+              "title": "Mr",
+              "firstName": "Adam",
+              "lastName": "Smith",
+              "fullName": "Adam Smith",
+              "email": "customer@example.com",
+              "phone": "2025550147"
+            }
+          },
+          {
+            "policyNumber": "EXAMPLE_POLICY_2",
+            "customerReference": "11111111-2222-4333-8444-555555555555-BRB-2",
+            "status": "CONFIRMED",
+            "statusReason": null,
+            "issuedAt": "2026-10-23T09:31:09.847776453Z",
+            "passenger": {
+              "id": "pax_2",
+              "title": "Ms",
+              "firstName": "Sarah",
+              "lastName": "Smith",
+              "fullName": "Sarah Smith",
+              "email": "customer@example.com",
+              "phone": "+12025550147"
+            }
+          }
+        ]
+      },
+      "statusReason": null,
+      "statusUpdatedAt": "2026-10-23T09:31:14.709Z"
+    },
+    {
+      "id": "9f620d88b8ebb0bf4c1bc68ca1e5c61c",
+      "ancillaryId": "69a59003021b944ba601a472",
+      "description": "Manchester Airport to London, UK - Standard",
+      "vendor": "mozio",
+      "price": 5862.68,
+      "currency": "USD",
+      "pointsOfInterest": [],
+      "quantity": 1,
+      "metadata": {
+        "extra_pax_required": false,
+        "passengers": 3
+      },
+      "vendorReferenceId": "a7fedb4a73314daa9f989eecf19d0904",
+      "vendorSecondaryId": "9f620d88b8ebb0bf4c1bc68ca1e5c61c",
+      "serviceDetails": {
+        "From": "Manchester Airport",
+        "To": "London, UK",
+        "Vehicle": "Standard",
+        "Passengers": "3",
+        "Trip Type": "Round Trip",
+        "Pickup Date": "2026-12-24",
+        "Pickup Time": "05:00"
+      },
+      "category": "AIRPORT_TRANSFER",
+      "extras": [],
+      "pickupDatetime": "2026-12-24 05:00",
+      "mode": "round_trip",
+      "numPassengers": 3,
+      "start_coordinates": {
+        "lat": 53.362907,
+        "lng": -2.273354
+      },
+      "end_coordinates": {
+        "lat": 51.5072178,
+        "lng": -0.1275862
+      },
+      "flight": {
+        "airline": "DM",
+        "flight_number": "DM6262"
+      },
+      "return_airline": "DM",
+      "return_flight_number": "DM5803",
+      "return_pickup_datetime": "2027-01-10 08:52",
+      "optionalAmenities": [],
+      "status": "REFUNDED",
+      "_id": "6adb295bc84ae001a3b536ad",
+      "confirmation": {
+        "status": "FAILED",
+        "errorCode": null,
+        "cancellationPolicy": null,
+        "booking": null,
+        "legs": []
+      },
+      "refundDue": {
+        "quantity": 1,
+        "refundPercentage": 100,
+        "amount": 5862.68,
+        "currency": "USD",
+        "settled": true,
+        "refundId": "46a92d53-52ee-46f1-aeb0-18d621b39a1e",
+        "settledAt": "2026-10-23T09:31:15.718Z",
+        "settledVia": "auto"
+      },
+      "statusReason": "VENDOR_FAILED_AUTO_REFUNDED",
+      "statusUpdatedAt": "2026-10-23T09:31:15.718Z"
     }
   ],
   "message": "No payment required",
-  "timestamp": "2026-10-23T10:30:01.000Z"
+  "timestamp": "2026-10-23T09:31:18.822Z",
+  "orderEvents": {
+    "channel": "/orders/11111111-2222-4333-8444-555555555555",
+    "token": "ORDER_EVENTS_TOKEN",
+    "expiresAt": "2026-10-23T09:46:07.000Z",
+    "httpEndpoint": "https://EXAMPLE_API_ID.appsync-api.us-east-1.amazonaws.com/event",
+    "realtimeEndpoint": "wss://EXAMPLE_API_ID.appsync-realtime-api.us-east-1.amazonaws.com/event/realtime"
+  }
 }
 ```
 
-HTTP `201`, `success: true`, and the top-level `status: "confirmed"` do **not** guarantee that every item was booked. In this flow, partial success is identified from `transactionItems`, not a separate top-level partial-success flag. `paymentRequired: false` only means that no additional Arcube payment step is required.
-
-In this example, show the lounge as confirmed and the car rental as unsuccessful. The customer still has a valid lounge booking; the car rental must not be presented as booked.
-
-- Inspect each item's `status`: `CONFIRMED`, `DELIVERED`, or `COMPLETED` indicates a successful booking; `FAILED` indicates a booking failure. Use `statusReason`, when present, to explain the outcome.
+Fast Track and Baggage Protection were confirmed; Airport Transfer failed. Check each item's status. The transfer's `refundDue` shows **USD 5,862.68** to refund, and `refundPayer: "AIRLINE"` means the airline handles the customer refund.
 
 ##### Invalid Payment Details
 
