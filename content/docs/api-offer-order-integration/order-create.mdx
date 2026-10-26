@@ -40,6 +40,7 @@ The body is a single `OrderCreateRQ`.
 | `Metadata.Tenant` | Yes | Tenant id. |
 | `Metadata.PricedSessionID` | Yes | The cart id from OfferPrice. |
 | `Metadata.PNR` | Conditional | Airline record locator. Optional **only if Arcube has enabled no-PNR ordering for your tenant** — then you omit it and the order generates its own. Otherwise a real PNR is required. Either way, a stale/unknown PNR is rejected with `404 Recommendation schedule not found`. |
+| `Async` | No | Opt-in. Send the boolean `true` to be answered as soon as the order is accepted and book the suppliers in the background, following each item live instead of waiting for the whole order. Omit it (or send `false`) for today's synchronous behaviour. See [Asynchronous orders](#asynchronous-orders-live-updates). |
 
 <Callout type="info" title="OrderCreate books the whole cart">
   The transaction is bound to the `PricedSessionID`, which represents the entire cart. For a
@@ -156,6 +157,46 @@ vendor delivers per unit, so a partially-fulfilled line is visible rather than i
   it does not settle in time. Poll
   [OrderView](/docs/api-offer-order-integration/order-management) for the final state; the same
   blocks appear there once the line confirms.
+</Callout>
+
+### Asynchronous orders (live updates)
+
+By default OrderCreate waits until every supplier has answered. Send `Async: true` and it instead
+returns **as soon as the order is accepted**, with the lines still being booked in the background —
+so a slow supplier cannot hold up (or time out) the request, and you can show each item settling on
+its own.
+
+An asynchronous response differs from the one above in three ways:
+
+| Field | Synchronous | Asynchronous |
+| --- | --- | --- |
+| `Order.Status` | `confirmed` (or the final state) | `PROCESSING` |
+| `Order.Items[].Status` | final (`CONFIRMED` / `PENDING` / …) | `PENDING` — nothing is booked yet |
+| `Order.OrderEvents` | absent | present — the channel to follow |
+| `Metadata.Processing` | absent | `true` |
+
+`OrderEvents` is the block you subscribe to for progress:
+
+```json
+"OrderEvents": {
+  "channel": "/orders/675c8870-f458-4073-b00e-8bc70d6d6c5a",
+  "token": "<short-lived token, ~15 min>",
+  "expiresAt": "2026-10-16T09:13:31.000Z",
+  "httpEndpoint": "https://<id>.appsync-api.<region>.amazonaws.com/event",
+  "realtimeEndpoint": "wss://<id>.appsync-realtime-api.<region>.amazonaws.com/event/realtime"
+}
+```
+
+Subscribe to that channel, update each line as its event arrives, and finish on `order_processed`.
+The whole flow — connecting, the event types, and the polling fallback — is on its own page:
+**[Live order updates](/docs/api-offer-order-integration/live-order-updates)**.
+
+<Callout type="info" title="Opt-in and backward compatible">
+  Without `Async: true` nothing changes. And if the feature is switched off in an environment (or
+  not yet deployed there), an `Async: true` request simply returns today's synchronous response with
+  no `OrderEvents` block — so always treat `OrderEvents` as optional and
+  [fall back to polling](/docs/api-offer-order-integration/live-order-updates#if-there-is-no-orderevents-block)
+  when it is absent.
 </Callout>
 
 ### Example response
