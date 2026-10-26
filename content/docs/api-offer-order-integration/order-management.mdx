@@ -7,6 +7,13 @@ import { Callout } from 'fumadocs-ui/components/callout';
 
 After an order is created you can retrieve it individually or list a customer's orders.
 
+<Callout type="info" title="OrderView is the catch-up for asynchronous orders">
+  For an order created with [`Async: true`](/docs/api-offer-order-integration/order-create#asynchronous-orders-live-updates),
+  OrderView is both the **final read** — the delivered-artifact blocks (eSIM QR, lounge pass, …) land
+  here once each line confirms — and the **fallback**: poll it when there is no live-events channel or
+  the socket cannot carry you to the end. See [Live order updates](/docs/api-offer-order-integration/live-order-updates).
+</Callout>
+
 ## OrderView
 
 `POST /orderview` — retrieve a single order and its current status.

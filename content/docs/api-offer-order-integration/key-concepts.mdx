@@ -130,3 +130,9 @@ prices them together into one cart.
 3. On OrderCreate, send a real **PNR** (never the correlation id) — or omit it if your tenant is enabled for no-PNR ordering.
 4. Keep a cart to a **single currency**.
 5. Send a fresh **`x-idempotency-key`** on every OrderCreate.
+
+By default OrderCreate completes the booking before it responds. Opt into
+[`Async: true`](/docs/api-offer-order-integration/order-create#asynchronous-orders-live-updates) and
+it returns as soon as the order is accepted, with the suppliers booked in the background — you then
+follow [live order updates](/docs/api-offer-order-integration/live-order-updates) or poll OrderView
+to the final state.

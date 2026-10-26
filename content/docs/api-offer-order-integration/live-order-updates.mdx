@@ -1,0 +1,156 @@
+---
+title: Live Order Updates
+description: Follow an asynchronous order as it is booked — subscribe to AppSync Events, handle item_started / item_finished / order_processed, and fall back to polling when events are unavailable.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+When you create an order with [`Async: true`](/docs/api-offer-order-integration/order-create#asynchronous-orders-live-updates),
+OrderCreate returns straight away with the items still `PENDING` and an `OrderEvents` block. This
+page is how you follow that order to completion: subscribe to its channel, update each line as it
+settles, and finish on a summary event — instead of one spinner that waits for the whole order.
+
+```text
++0.0s   POST /ordercreate  (Async: true)  → PROCESSING   carbon: PENDING   eSIM: PENDING
++8.0s   item_finished  CARBON_OFFSET → CONFIRMED
++11.9s  item_finished  ESIMS         → CONFIRMED
++13.3s  order_processed               → CONFIRMED, 2 of 2, 0 failed
+```
+
+## 1. Ask for an asynchronous order
+
+Send `Async: true` on [OrderCreate](/docs/api-offer-order-integration/order-create). The response
+carries `Order.Status: "PROCESSING"`, every line `PENDING`, and an `OrderEvents` block:
+
+```json
+"OrderEvents": {
+  "channel": "/orders/675c8870-f458-4073-b00e-8bc70d6d6c5a",
+  "token": "<short-lived token, ~15 min>",
+  "expiresAt": "2026-10-16T09:13:31.000Z",
+  "httpEndpoint": "https://<id>.appsync-api.<region>.amazonaws.com/event",
+  "realtimeEndpoint": "wss://<id>.appsync-realtime-api.<region>.amazonaws.com/event/realtime"
+}
+```
+
+Everything you need to subscribe is in this block — nothing is hard-coded.
+
+## 2. Subscribe to the channel
+
+Connect to `realtimeEndpoint` and subscribe to `channel`, passing `token` as the authorization token
+(no `Bearer ` prefix). The token is scoped to that one order's channel and lasts about 15 minutes.
+
+Using AWS Amplify (recommended):
+
+```js
+import { Amplify } from 'aws-amplify';
+import { events } from 'aws-amplify/data';
+
+Amplify.configure({
+  API: { Events: { endpoint: orderEvents.httpEndpoint, region: '<region>', defaultAuthMode: 'lambda' } },
+});
+
+const channel = await events.connect(orderEvents.channel, {
+  authMode: 'lambda',
+  authToken: orderEvents.token,
+});
+
+const sub = channel.subscribe({
+  next: (event) => handleOrderEvent(event),
+  error: () => startPollingFallback(),   // see below
+});
+```
+
+The endpoints speak the AppSync Events WebSocket protocol, so a raw client works too — connect with
+the subprotocols `aws-appsync-event-ws` and `header-<base64url(auth)>`, send `connection_init`, then
+`subscribe` to the channel.
+
+## 3. Handle the events
+
+Every event has `type`, `operationId` (the order / transaction id), `source` and `at`. Match an item
+event to a line by its `itemId`. **Ignore event types you do not recognise** — new ones may be added.
+
+| `type` | Extra fields | What to do |
+| --- | --- | --- |
+| `payment_confirmed` | `status: "CONFIRMED"` | Payment flow only: "Payment received, booking your extras…" |
+| `payment_failed` | `status: "FAILED"` | Payment flow only: show the payment error; no booking follows |
+| `item_started` | `itemId`, `category` | Show that line as "Booking…" |
+| `item_finished` | `itemId`, `category`, `status`, `reason`, `message` | Update that line (statuses below) |
+| `order_processed` | `status`, `processingStatus`, `summary { total, successful, failed }` | Final state; unsubscribe and close |
+
+`item_finished` statuses:
+
+| `status` | Show as |
+| --- | --- |
+| `CONFIRMED` | Confirmed |
+| `PARTIAL_SUCCESS` | Partly confirmed (some units delivered; the rest refunded) |
+| `PENDING` | Awaiting supplier confirmation (e.g. on-request car rental) |
+| `FAILED` | Not booked, will be refunded — `reason` / `message` explain why (`message` is for logs, not customers) |
+| `UNCERTAIN`, `DUPLICATE_SUSPECTED` | Being checked (parking only) |
+
+```json title="item_finished"
+{ "type": "item_finished", "status": "CONFIRMED", "reason": null, "message": null,
+  "itemId": "tellisim_88d065a6-c752-4460-b902-f009d6e9c2df", "category": "ESIMS",
+  "operationId": "675c8870-f458-4073-b00e-8bc70d6d6c5a", "source": "arcube-backend",
+  "at": "2026-10-16T08:58:43.153Z" }
+```
+
+```json title="order_processed"
+{ "type": "order_processed", "status": "CONFIRMED", "processingStatus": "COMPLETED",
+  "summary": { "total": 2, "successful": 2, "failed": 0 },
+  "operationId": "675c8870-f458-4073-b00e-8bc70d6d6c5a", "source": "arcube-backend",
+  "at": "2026-10-16T08:58:44.628Z" }
+```
+
+<Callout type="info" title="Events carry statuses, not booking details">
+  `order_processed` tells you the order is done; it does not carry the voucher. For the eSIM QR, the
+  lounge pass, the car-rental booking and so on, do one
+  [OrderView](/docs/api-offer-order-integration/order-management) once the order has finished — the
+  delivered-artifact blocks are there, exactly as in the synchronous flow.
+</Callout>
+
+## 4. Finish
+
+On `order_processed`, show the summary ("2 of 2 confirmed"), unsubscribe, and close the connection.
+Then, if you need the booking details, do the final OrderView described above.
+
+## Catch up right after subscribing
+
+AppSync does not replay: anything published before your subscription is ready never reaches the
+socket. A fast item — or `item_started` — can settle in that gap. So **immediately after subscribing,
+do one [OrderView](/docs/api-offer-order-integration/order-management)** and paint the lines from it,
+then let the socket drive the rest. An item already `CONFIRMED` in that read simply will not get a
+socket event, and that is fine.
+
+<Callout type="warn" title="Backfill and token refresh are not yet on the NDC surface">
+  The backend keeps every event for an hour and can replay them by sequence number, and it can mint a
+  fresh channel token — but those two endpoints are **not exposed through the NDC-like API** yet. So
+  for now:
+
+  - You cannot fetch missed events by sequence. Use the OrderView catch-up above instead of a replay.
+  - You cannot refresh the channel token. If the order outruns the ~15-minute token (rare; only a
+    slow on-request supplier), stop relying on the socket and
+    [poll OrderView](#if-there-is-no-orderevents-block) to the final state.
+
+  When these are added to the NDC surface this page will cover the sequence-based backfill and the
+  dedupe rule; until then, OrderView is the catch-up and the recovery path.
+</Callout>
+
+## If there is no `OrderEvents` block
+
+The feature is switched on per environment. If a response comes back **without** `OrderEvents` (off,
+or not deployed there), the order is being booked the old way — just poll it:
+
+- `POST /orderview` every ~5 seconds until the order's status is final (`CONFIRMED`, or a terminal
+  mix of confirmed/failed lines), then show the result.
+
+Use the same fallback whenever the socket cannot carry you to the end — a dropped connection, an
+expired token, or no `order_processed` within ~2 minutes. OrderView is always authoritative.
+
+## Acceptance checklist
+
+- An `Async: true` order shows every line "Booking…" at once, without waiting for suppliers.
+- Each line updates on its own `item_finished`, in whatever order they arrive.
+- A `FAILED` line shows "Not booked, will be refunded" while the others carry on.
+- `order_processed` shows the summary and closes the connection.
+- A line that settled before you subscribed is still shown correctly (from the OrderView catch-up).
+- With no `OrderEvents` block, the page reaches the final state by polling.
