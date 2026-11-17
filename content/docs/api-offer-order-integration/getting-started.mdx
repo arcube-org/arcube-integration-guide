@@ -50,6 +50,63 @@ Authorization: Bearer <accessToken>
   [Authentication](/docs/reference/authentication) for token lifecycle details.
 </Callout>
 
+### Check a token
+
+To confirm a token is still accepted without running a search, call `GET /auth/validate` with the
+token in the `Authorization` header. There is no request body.
+
+<Callout type="info" title="HTTP Method: GET">
+  **URL:** `${arcube-url}/auth/validate`
+</Callout>
+
+```bash title="Request"
+curl -s ${arcube-url}/auth/validate \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+```json title="200 OK"
+{
+  "AuthValidateRS": {
+    "Valid": true,
+    "Role": "api_client",
+    "TokenType": "API"
+  },
+  "Metadata": {
+    "CorrelationID": "0fd5dae2-7345-46bd-98e7-6159d16e0a24"
+  }
+}
+```
+
+If the token is missing, invalid or expired, the response is `401` with an `Errors` list. Each
+entry has a `Code` you can branch on:
+
+```json title="401 Unauthorized"
+{
+  "Errors": [
+    { "Code": "TOKEN_EXPIRED", "Message": "Token expired" }
+  ],
+  "Metadata": {
+    "CorrelationID": "232025a2-8ad9-4244-8609-15ded829237b"
+  }
+}
+```
+
+| Code | Meaning | What to do |
+| --- | --- | --- |
+| `TOKEN_MISSING` | No `Authorization: Bearer` header was sent. | Send the token in the header. |
+| `TOKEN_INVALID` | The token is malformed, was issued for a different environment, or is no longer accepted. | Log in again, or ask Arcube for a new token. |
+| `TOKEN_EXPIRED` | The token is past its expiry. | Log in again, or ask Arcube for a new token. |
+| `AIRLINE_NOT_FOUND` | The tenant the token belongs to no longer exists. | Contact Arcube. |
+
+A `502` with code `AUTH_UNAVAILABLE` means the token could not be checked at that moment. It does
+not mean the token is bad, so retry rather than discarding it.
+
+<Callout type="info" title="Long-lived tokens">
+  If your integration cannot use a `clientId` and `clientSecret`, Arcube can issue a long-lived
+  token instead. Send it the same way. Use `GET /auth/validate` to check it, for example when your
+  service starts.
+</Callout>
+
 ## Required headers
 
 | Header | Applies to | Required | Notes |
@@ -69,6 +126,7 @@ Authorization: Bearer <accessToken>
 | Method | Path | Description |
 | --- | --- | --- |
 | `POST` | `/auth/api/login` | Obtain a Bearer token |
+| `GET` | `/auth/validate` | Check that a Bearer token is still accepted |
 | `POST` | `/airshopping` | Discover ancillary offers |
 | `POST` | `/offerprice` | Cart + price selected offers |
 | `POST` | `/ordercreate` | Book the cart |
