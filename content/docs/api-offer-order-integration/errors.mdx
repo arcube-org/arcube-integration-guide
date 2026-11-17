@@ -24,6 +24,31 @@ originating status where available, prefixed `[Aggregation <status>]`.
   the fastest way for Arcube support to trace a failed journey end to end.
 </Callout>
 
+## Authentication
+
+On AirShopping, OfferPrice and OrderCreate, a rejected token comes back as a `400` whose message
+starts with `[Aggregation 401]`:
+
+```json title="Rejected token on AirShopping"
+{
+  "message": "[Aggregation 401] Request failed with status code 401",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+That message does not say why the token was rejected. Call
+[`GET /auth/validate`](/docs/api-offer-order-integration/getting-started#check-a-token) with the
+same token. It returns `401` with one of these codes:
+
+| Code | Cause | Fix |
+| --- | --- | --- |
+| `TOKEN_MISSING` | No `Authorization: Bearer` header | Send the token on every call. |
+| `TOKEN_INVALID` | Malformed token, or a token from another environment | Use the token issued for this environment; log in again. |
+| `TOKEN_EXPIRED` | Token past its expiry | Log in again, or ask Arcube for a new long-lived token. |
+| `AIRLINE_NOT_FOUND` | The tenant behind the token no longer exists | Contact Arcube. |
+| `AUTH_UNAVAILABLE` (`502`) | The token could not be checked at that moment | Retry. The token itself may still be valid. |
+
 ## AirShopping
 
 | Message | Cause | Fix |
