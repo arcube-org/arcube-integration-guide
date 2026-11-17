@@ -66,8 +66,9 @@ the subprotocols `aws-appsync-event-ws` and `header-<base64url(auth)>`, send `co
 
 ## 3. Handle the events
 
-Every event has `type`, `operationId` (the order / transaction id), `source` and `at`. Match an item
-event to a line by its `itemId`. **Ignore event types you do not recognise** — new ones may be added.
+Every event has `type`, `operationId` (the order / transaction id), `source`, `at`, and a `seq` — a
+1-based sequence number used for [catch-up and dedupe](#catch-up-right-after-subscribing). Match an
+item event to a line by its `itemId`. **Ignore event types you do not recognise** — new ones may be added.
 
 | `type` | Extra fields | What to do |
 | --- | --- | --- |
@@ -116,23 +117,53 @@ Then, if you need the booking details, do the final OrderView described above.
 ## Catch up right after subscribing
 
 AppSync does not replay: anything published before your subscription is ready never reaches the
-socket. A fast item — or `item_started` — can settle in that gap. So **immediately after subscribing,
-do one [OrderView](/docs/api-offer-order-integration/order-management)** and paint the lines from it,
-then let the socket drive the rest. An item already `CONFIRMED` in that read simply will not get a
-socket event, and that is fine.
+socket. A fast item — or `item_started` — can settle in that gap. The backend keeps every event for
+an hour, each with its `seq`, so you fetch what you missed instead of losing it.
 
-<Callout type="warn" title="Backfill and token refresh are not yet on the NDC surface">
-  The backend keeps every event for an hour and can replay them by sequence number, and it can mint a
-  fresh channel token — but those two endpoints are **not exposed through the NDC-like API** yet. So
-  for now:
+**Immediately after `subscribe_success`, call `POST /orderevents` with `After: 0`**, then merge the
+result with the socket stream, deduping by `seq`:
 
-  - You cannot fetch missed events by sequence. Use the OrderView catch-up above instead of a replay.
-  - You cannot refresh the channel token. If the order outruns the ~15-minute token (rare; only a
-    slow on-request supplier), stop relying on the socket and
-    [poll OrderView](#if-there-is-no-orderevents-block) to the final state.
+```json title="POST /orderevents"
+{ "OrderEventsRQ": { "OrderID": "<the async OrderCreate's Order.OrderID>", "After": 0 } }
+```
 
-  When these are added to the NDC surface this page will cover the sequence-based backfill and the
-  dedupe rule; until then, OrderView is the catch-up and the recovery path.
+```json title="OrderEventsRS"
+{ "OrderEventsRS": {
+    "OrderID": "675c8870-f458-4073-b00e-8bc70d6d6c5a",
+    "Events": [
+      { "seq": 1, "type": "payment_confirmed", "status": "CONFIRMED", "operationId": "675c8870-…", "at": "…" },
+      { "seq": 2, "type": "item_started", "category": "CARBON_OFFSET", "operationId": "675c8870-…", "at": "…" }
+    ],
+    "LastSeq": 2
+} }
+```
+
+- `OrderID` is the `Order.OrderID` the async OrderCreate returned (the id the `OrderEvents.channel` is
+  built from).
+- Every kept event carries a `seq`; so does every socket event. Keep the highest `seq` you have seen
+  and **ignore any event whose `seq` you already hold** — that is the whole dedupe rule.
+- `After` returns only events after that sequence number, so to recover after a dropped connection
+  send `After: <highest seq you have>` and you get just the gap.
+- `Events: []` with an unchanged `LastSeq` means nothing new yet. A `503` means the log is briefly
+  unavailable — retry, or fall back to OrderView.
+
+### Refresh the channel token
+
+The `token` from OrderCreate lasts about 15 minutes. If an order outruns it (rare — only a slow
+on-request supplier), get a fresh `OrderEvents` block and resubscribe:
+
+```json title="POST /ordereventstoken"
+{ "OrderEventsTokenRQ": { "OrderID": "<the async OrderCreate's Order.OrderID>" } }
+```
+
+It returns `{ "OrderEventsTokenRS": { "OrderID": "…", "OrderEvents": { … } } }` — the same block
+OrderCreate carries, with a new `token` and `expiresAt`.
+
+<Callout type="info" title="OrderView is always the fallback">
+  If you would rather not track `seq`, or `/orderevents` is unavailable, do one
+  [OrderView](/docs/api-offer-order-integration/order-management) after subscribing and paint the
+  lines from it — an item already `CONFIRMED` there simply will not get a socket event, and that is
+  fine. OrderView is authoritative.
 </Callout>
 
 ## If there is no `OrderEvents` block
@@ -152,5 +183,6 @@ expired token, or no `order_processed` within ~2 minutes. OrderView is always au
 - Each line updates on its own `item_finished`, in whatever order they arrive.
 - A `FAILED` line shows "Not booked, will be refunded" while the others carry on.
 - `order_processed` shows the summary and closes the connection.
-- A line that settled before you subscribed is still shown correctly (from the OrderView catch-up).
+- A line that settled before you subscribed is still shown correctly (recovered via the
+  `POST /orderevents` backfill and deduped by `seq`, or from an OrderView catch-up).
 - With no `OrderEvents` block, the page reaches the final state by polling.
